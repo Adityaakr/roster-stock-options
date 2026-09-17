@@ -16,7 +16,7 @@ export function SiteNav() {
           <a className="navlink" href="#roster">The roster</a>
           <a className="navlink" href="#questions">What this is not</a>
         </nav>
-        <Link href="/trade" className="btn primary"><Roll>Open the app</Roll></Link>
+        <Link href="/markets" className="btn primary"><Roll>Open the app</Roll></Link>
       </div>
     </div>
   );
@@ -34,7 +34,7 @@ export function SiteFooter({ network, source }: { network?: string; source?: str
           </div>
           <div>
             <h6>Product</h6>
-            <ul><li><Link className="navlink" href="/trade">App</Link></li><li><Link className="navlink" href="/positions">Positions</Link></li><li><Link className="navlink" href="/roster">Roster</Link></li><li><Link className="navlink" href="/underwrite">Underwrite</Link></li><li><Link className="navlink" href="/pre-ipo">First Print</Link></li></ul>
+            <ul><li><Link className="navlink" href="/markets">App</Link></li><li><Link className="navlink" href="/positions">Positions</Link></li><li><Link className="navlink" href="/roster">Roster</Link></li><li><Link className="navlink" href="/underwrite">Underwrite</Link></li><li><Link className="navlink" href="/pre-ipo">First Print</Link></li></ul>
           </div>
           <div>
             <h6>Read</h6>

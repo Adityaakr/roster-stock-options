@@ -36,13 +36,13 @@ export default function PositionsPage() {
         </div>
         <div className="flex items-center gap-2">
           <button className="btn secondary sm" onClick={reload} data-testid="refresh">Refresh</button>
-          <Link href="/trade" className="btn primary sm">Buy another</Link>
+          <Link href="/markets" className="btn primary sm">Buy another</Link>
         </div>
       </div>
       {error || perror ? <ErrorState message={`Could not read positions: ${error ?? perror}`} next="Reload the page." /> : null}
       {!data && !error ? <Loading what="positions" /> : null}
       {data && data.cluster !== "fixture" && !publicKey ? <Empty title="Connect a wallet" action="Positions are read from the wallet's position tokens, so there is nothing to show until one is connected." cta={<button className="btn primary" onClick={() => setVisible(true)}>Connect wallet</button>} /> : null}
-      {data && list && list.length === 0 && history.length === 0 && (publicKey || data.cluster === "fixture") ? <Empty title="No positions" action="Buy a Gap or a Floor from the terms and it appears here with its countdown and its exercise terms." cta={<Link href="/trade" className="btn primary">See the terms</Link>} /> : null}
+      {data && list && list.length === 0 && history.length === 0 && (publicKey || data.cluster === "fixture") ? <Empty title="No positions" action="Buy a Gap or a Floor from the terms and it appears here with its countdown and its exercise terms." cta={<Link href="/markets" className="btn primary">See the terms</Link>} /> : null}
       {data && list && list.length > 0 ? (
         <>
           <div className="grid-4" style={{ marginBottom: 16 }}>

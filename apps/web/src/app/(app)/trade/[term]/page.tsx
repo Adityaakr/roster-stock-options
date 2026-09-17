@@ -33,7 +33,7 @@ export default function ActPage({ params }: { params: Promise<{ term: string }> 
   if (error) return <ErrorState message={`Could not read the term: ${error}`} next="Reload the page." />;
   if (!data) return <Loading what="the term" />;
   const t = data.terms.find((x) => x.id === id);
-  if (!t) return <ErrorState message="This term is not live." next={<Link className="link" href="/trade">Back to the terms</Link>} />;
+  if (!t) return <ErrorState message="This term is not live." next={<Link className="link" href="/markets">Back to the markets</Link>} />;
 
   const u = data.underlying;
   const market = data.markets.find((m) => m.symbol === u.symbol);
@@ -55,7 +55,7 @@ export default function ActPage({ params }: { params: Promise<{ term: string }> 
 
   return (
     <div>
-      <div className="small" style={{ marginBottom: 14 }}><Link className="muted" href="/trade">Terms</Link> <span className="muted">/</span> <Link className="muted" href={`/trade?m=${u.symbol}`}>{u.symbol}</Link> <span className="muted">/</span> {name} ${usdK(t.strike)} · {dayLabel(t.expiryTs)}</div>
+      <div className="small" style={{ marginBottom: 14 }}><Link className="muted" href="/markets">Markets</Link> <span className="muted">/</span> <Link className="muted" href={`/markets/${u.symbol}`}>{u.symbol}</Link> <span className="muted">/</span> {name} ${usdK(t.strike)} · {dayLabel(t.expiryTs)}</div>
       <div className="page-head">
         <div>
           <div className="flex items-center gap-2 flex-wrap">

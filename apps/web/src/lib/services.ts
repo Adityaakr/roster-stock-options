@@ -7,7 +7,7 @@ import "server-only";
  */
 
 export const SERVICES_URL = process.env.SERVICES_URL ?? "http://127.0.0.1:8787";
-const TIMEOUT_MS = Number(process.env.SERVICES_TIMEOUT_MS ?? 4_000);
+const TIMEOUT_MS = Number(process.env.SERVICES_TIMEOUT_MS ?? 8_000);
 
 export interface ServicesAsk { remaining_lots6: string; ask_per_lot: string; seq: string; writer_slot: number; writer: string | null }
 export interface ServicesWriter { writer: string; deposited_lots6: string; withdrawn_lots6: string; sold_lots6: string; open_lots6: string; assigned_lots6: string; premium_claimable: string; settled: boolean }
@@ -17,7 +17,7 @@ export interface ServicesSeries {
   unassigned_lots6: string; halted: number; collateral_balance: string; settlement_balance: string; asks: ServicesAsk[]; writers: ServicesWriter[];
 }
 export interface ServicesMarket {
-  symbol: string; name: string; wrapper: "xStock" | "Tessera" | "PreStocks"; feeBps: number; mint: string; market: string; decimals: number; tier: number; listed: boolean; paused: boolean;
+  symbol: string; name: string; wrapper: "xStock" | "Tessera" | "PreStocks"; feeBps: number; mint: string; sparkline?: [number, number][]; market: string; decimals: number; tier: number; listed: boolean; paused: boolean;
   hasTransferFee: boolean; hasPermanentDelegate: boolean; pausable: boolean; hookProgram: string; allowedExpiries: string[]; strikeStep: string;
   minLots6: string; maxLots6: string; maxLiveSeries: number; liveSeries: number; price: number | null; priceAt: number; priceSource: "hermes" | "reference" | "xstocks" | "tessera" | "prestocks" | "none";
   equityPrice: number | null; basisBps: number | null; multiplier: number; pendingActivationTs: number | null; inActivationWindow: boolean; vol: number; volSource: string;
@@ -30,6 +30,7 @@ export interface ServicesRoster {
 export interface ServicesEvent { signature: string; ix_index: number; slot: number; block_time: number; name: string; data_json: string }
 export interface ServicesPosition { series: string; market: string; side: "call" | "put"; strike_usdc_per_lot: string; expiry_ts: number; position_mint: string; lots6: string; autoExercise: boolean }
 export interface ServicesPositions { wallet: string; positions: ServicesPosition[]; events: ServicesEvent[] }
+export interface ServicesPrices { mint: string; mark: [number, number][]; token: [number, number][]; equity: [number, number][]; basis: { bps: number; at: number }[] }
 export interface ServicesHealth { ok: boolean; cluster: string; lastTick: number; blocked: string | null; program: string; hermesKeyed: boolean }
 
 async function get<T>(path: string, timeoutMs = TIMEOUT_MS): Promise<T> {
@@ -42,6 +43,7 @@ export const services = {
   health: () => get<ServicesHealth>("/v1/health"),
   roster: () => get<ServicesRoster>("/v1/roster"),
   positions: (wallet: string) => get<ServicesPositions>(`/v1/positions/${wallet}`, 15_000),
+  prices: (mint: string, sinceUnix: number) => get<ServicesPrices>(`/v1/prices/${mint}?since=${sinceUnix}`),
   events: (q: { name?: string; series?: string; limit?: number }) => {
     const p = new URLSearchParams();
     if (q.name) p.set("name", q.name);

@@ -6,7 +6,8 @@ import { expect, test } from "@playwright/test";
  */
 const pages = [
   { path: "/", heading: "Stock leverage without margin liquidation.", name: "landing", wait: "#terms table.table"},
-  { path: "/trade", heading: "Terms", name: "trade", wait: "table.table"},
+  { path: "/markets", heading: "Markets", name: "trade", wait: "table.table"},
+  { path: "/markets/NVDAx", heading: "NVDAx", name: "market", wait: "table.table"},
   { path: "/trade/TERM", heading: /Gap at \$/, name: "act", wait: ".chart svg"},
   { path: "/positions", heading: "Positions", name: "positions", wait: ".card"},
   { path: "/underwrite", heading: "Underwrite", name: "underwrite", wait: "table.table"},

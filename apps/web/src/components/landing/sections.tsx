@@ -8,7 +8,7 @@ import { CountUp, MountReveal, PixelMask, Reveal, Roll, ScrollColorText, SlideIn
 import { DiscoverTable } from "@/components/discover-table";
 import { MarketList } from "@/components/market-list";
 import { usd, usd0, dayLabel } from "@/lib/format";
-import { TIER_RULE, type RosterData, type Tier } from "@/lib/model";
+import type { RosterData, Tier } from "@/lib/model";
 import { SOURCES } from "./sources";
 import { Sketch } from "./sketches";
 import { Sec } from "./sec";
@@ -59,7 +59,7 @@ export function Hero({ data }: { data: RosterData }) {
                   <div className="h6">Listed markets by executable depth</div>
                   <div className="small" style={{ marginTop: 4 }}>{data.markets.length} listed · best ask, recent volatility and basis per name · pick a name to see its terms</div>
                 </div>
-                <Link href="/trade" className="btn secondary"><Roll>All markets</Roll></Link>
+                <Link href="/markets" className="btn secondary"><Roll>All markets</Roll></Link>
               </div>
               <MarketList markets={data.markets} compact />
               <div className="flex items-center justify-between gap-3 flex-wrap" style={{ margin: "24px 0 14px" }}>
@@ -67,7 +67,7 @@ export function Hero({ data }: { data: RosterData }) {
                   <div className="h6">Live terms on {data.underlying.symbol}, nearest expiry</div>
                   <div className="small" style={{ marginTop: 4 }}>{data.underlying.name} · wrapper tier <span className="mono">{data.underlying.wrapperTier}</span> · pick a row to see the payoff and buy</div>
                 </div>
-                <Link href={`/trade?m=${data.underlying.symbol}`} className="btn secondary"><Roll>All expiries</Roll></Link>
+                <Link href={`/markets/${data.underlying.symbol}`} className="btn secondary"><Roll>All expiries</Roll></Link>
               </div>
               <DiscoverTable data={data} compact />
             </div>
@@ -221,10 +221,10 @@ export function Counters() {
 /* 5b. Every stock, honestly tiered (addendum H): the three liquidity tiers, the live count in each, and the promotion rule. */
 export function Tiers({ data }: { data: RosterData }) {
   const count = (t: Tier) => data.markets.filter((m) => m.tier === t).length;
-  const items: { tier: Tier; title: string }[] = [
-    { tier: 1, title: "Tier 1 · the launch set" },
-    { tier: 2, title: "Tier 2 · nearest expiry" },
-    { tier: 3, title: "Tier 3 · listed, unquoted by us" }
+  const items: { tier: Tier; title: string; who: string; what: string }[] = [
+    { tier: 1, title: "Tier 1", who: "The launch set", what: "The treasury quotes every expiry, both sides, at three sizes." },
+    { tier: 2, title: "Tier 2", who: "Quoted at the front", what: "The treasury quotes the nearest expiry and pre-creates the next as it approaches." },
+    { tier: 3, title: "Tier 3", who: "Listed, open to underwriters", what: "Tradable the moment someone quotes it; the treasury holds no capital there." }
   ];
   return (
     <Sec id="tiers" className="integration" ticks={false}>
@@ -233,15 +233,21 @@ export function Tiers({ data }: { data: RosterData }) {
           <ScrollColorText as="h2" text="Every stock, honestly tiered." className="h-section" style={{ textAlign: "center" }} />
           <Reveal y={18} delay={0.1}><p className="body" style={{ margin: 0, maxWidth: 640, textAlign: "center" }}>Every tokenized stock that can be escrowed safely is listed. Where our capital quotes is a published rule, not a promise, and a market moves up a tier by filling, not by asking.</p></Reveal>
         </div>
-        <div className="counters">
+        <div className="tiers">
           {items.map((it, j) => (
-            <Reveal key={it.tier} y={26} delay={j * 0.1} className="counter">
-              <div className="v"><CountUp value={String(count(it.tier))} /></div>
-              <div className="t"><b style={{ color: "var(--ink)", fontWeight: 500 }}>{it.title}.</b> {TIER_RULE[it.tier]}</div>
-              <span className="tick bl" aria-hidden /><span className="tick br" aria-hidden />
+            <Reveal key={it.tier} y={26} delay={j * 0.1} className="tier">
+              <div className="tier-head">
+                <span className="tier-name">{it.title}</span>
+                <span className="tier-count"><CountUp value={String(count(it.tier))} /> <span className="tier-unit">market{count(it.tier) === 1 ? "" : "s"}</span></span>
+              </div>
+              <div className="tier-who">{it.who}</div>
+              <p className="tier-what">{it.what}</p>
             </Reveal>
           ))}
         </div>
+        <Reveal y={12} delay={0.3}>
+          <div className="tier-rule"><b>Promotion rule.</b> A market moves up a tier when its executable depth at the standard size stays above the published threshold for seven consecutive days. Demotion is the same rule in reverse. Every tier&apos;s depth is on the roster, live.</div>
+        </Reveal>
       </div>
     </Sec>
   );

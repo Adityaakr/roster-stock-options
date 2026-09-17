@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui";
 
 const NAV = [
   { group: "Trade", items: [
-    { href: "/trade", label: "Terms", icon: Icon.Grid, match: (p: string) => p.startsWith("/trade") },
+    { href: "/markets", label: "Markets", icon: Icon.Grid, match: (p: string) => p.startsWith("/markets") || p.startsWith("/trade") },
     { href: "/positions", label: "Positions", icon: Icon.Wallet, match: (p: string) => p.startsWith("/positions") }
   ] },
   { group: "Supply", items: [
@@ -23,7 +23,7 @@ const NAV = [
   ] }
 ];
 
-const CRUMB: Record<string, string> = { trade: "Terms", positions: "Positions", underwrite: "Underwrite", roster: "Roster", buy: "Protected Buy", "pre-ipo": "First Print" };
+const CRUMB: Record<string, string> = { markets: "Markets", trade: "Terms", positions: "Positions", underwrite: "Underwrite", roster: "Roster", buy: "Protected Buy", "pre-ipo": "First Print" };
 
 /** The market the screen is on, from `?m=` or the term id, so the nav keeps it when moving between screens. */
 function useMarketParam(pathname: string): string | null {
@@ -31,7 +31,9 @@ function useMarketParam(pathname: string): string | null {
   const m = params.get("m");
   if (m) return m;
   const term = pathname.match(/^\/trade\/([a-z0-9]+)-(?:call|put)-/);
-  return term ? term[1]!.toUpperCase().replace(/X$/, "x") : null;
+  if (term) return term[1]!.toUpperCase().replace(/X$/, "x");
+  const market = pathname.match(/^\/markets\/([^/]+)/);
+  return market ? decodeURIComponent(market[1]!) : null;
 }
 
 /** The product shell: sidebar with grouped nav, sticky topbar with crumbs, the cluster on every screen (CLAUDE.md 4.4). */
@@ -47,7 +49,7 @@ function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const cluster = useCluster();
   const market = useMarketParam(pathname);
-  const withMarket = (href: string) => (market && ["/trade", "/underwrite", "/roster"].includes(href) ? `${href}?m=${encodeURIComponent(market)}` : href);
+  const withMarket = (href: string) => (market && ["/underwrite", "/roster", "/buy"].includes(href) ? `${href}?m=${encodeURIComponent(market)}` : href);
   const first = pathname.split("/")[1] ?? "";
   return (
     <div className="shell">

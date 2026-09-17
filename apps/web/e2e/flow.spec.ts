@@ -44,9 +44,9 @@ test("buy a Gap, buy a Floor, write a Floor, exercise, see the release", async (
   page.on("pageerror", (e) => errors.push(e.message));
 
   // Discover: the market list, then the Gap grid of NVDAx.
-  await page.goto("/trade?m=NVDAx");
-  await expect(page.getByRole("heading", { level: 1, name: "Terms" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /NVDAx/ }).first()).toBeVisible();
+  await page.goto("/markets/NVDAx");
+  await expect(page.getByRole("heading", { level: 1, name: "NVDAx" })).toBeVisible();
+  await expect(page.getByTestId("term-row").first()).toBeVisible({ timeout: 30_000 });
   const wallet = await connectBurner(page);
   await fund(wallet);
 
@@ -60,7 +60,8 @@ test("buy a Gap, buy a Floor, write a Floor, exercise, see the release", async (
   expect(buySig.length).toBeGreaterThan(10);
 
   // A Floor too.
-  await page.getByRole("link", { name: "Terms" }).first().click();
+  await page.getByRole("link", { name: "Markets" }).first().click();
+  await page.getByRole("link", { name: /^NVDAx$/ }).first().click();
   await page.getByRole("tab", { name: /Floor · exit/ }).click();
   await page.getByTestId("term-row").first().click();
   await expect(page.getByRole("heading", { level: 1, name: /Floor at/ })).toBeVisible();

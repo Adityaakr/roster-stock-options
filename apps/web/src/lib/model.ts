@@ -45,6 +45,12 @@ export interface Market {
   /** Executable depth: USDC notional fillable right now across every live term. */
   depthUsdc: number;
   bestAsk: number | null;
+  /** The issuer's logo when the registry has one; null is rendered as the symbol's initials, never a placeholder image. */
+  logo: string | null;
+  /** Marks recorded by the services over the last day, [unix, price], for the list's sparkline. */
+  sparkline: [number, number][];
+  /** Change over the sparkline's window, percent; null until two points exist. */
+  changePct: number | null;
 }
 
 export interface Term {

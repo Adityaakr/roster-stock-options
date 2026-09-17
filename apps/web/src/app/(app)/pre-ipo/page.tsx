@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Address, Badge, ErrorState, Loading } from "@/components/ui";
 import { useCluster, explorerUrl } from "@/lib/cluster";
 import { usd, usd0 } from "@/lib/format";
@@ -21,6 +22,7 @@ interface Token {
 
 export default function PreIpoPage() {
   const cluster = useCluster();
+  const router = useRouter();
   const [data, setData] = useState<{ tokens: Token[]; generatedAt: string | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -45,17 +47,17 @@ export default function PreIpoPage() {
           </thead>
           <tbody>
             {data.tokens.map((t) => (
-              <tr key={t.mint} data-testid="preipo-row">
-                <td><div style={{ fontWeight: 500 }}>{t.symbol}</div><div className="small">{t.rights.what}</div></td>
+              <tr key={t.mint} data-testid="preipo-row" className="row-link" onClick={() => router.push(`/pre-ipo/${encodeURIComponent(t.symbol)}`)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/pre-ipo/${encodeURIComponent(t.symbol)}`); }}>
+                <td><div style={{ fontWeight: 500 }}><Link href={`/pre-ipo/${encodeURIComponent(t.symbol)}`} onClick={(e) => e.stopPropagation()}>{t.symbol}</Link></div><div className="small">{t.rights.what}</div></td>
                 <td><Badge tone={t.issuer === "Tessera" ? "purple" : "blue"}>{t.issuer}</Badge></td>
-                <td><Address value={t.mint} n={5} href={explorerUrl(cluster, "address", t.mint)} /></td>
+                <td onClick={(e) => e.stopPropagation()}><Address value={t.mint} n={5} href={explorerUrl(cluster, "address", t.mint)} /></td>
                 <td className="num">{t.markPrice === null ? <span className="muted">n/a</span> : `$${usd(t.markPrice)}`}</td>
                 <td className="num">{t.tokenPrice === null ? <span className="muted">not published</span> : `$${usd(t.tokenPrice)}`}</td>
                 <td className="num">{t.discountPct === null ? <span className="muted">n/a</span> : <span className={t.discountPct > 0 ? "down" : "up"}>{t.discountPct > 0 ? "−" : "+"}{Math.abs(t.discountPct).toFixed(1)}%</span>}</td>
                 <td className="num">{t.holders === null ? <span className="muted">n/a</span> : t.holders.toLocaleString("en-US")}</td>
                 <td className="small">{t.feeBps === null ? <span className="muted">not read</span> : t.feeBps === 0 ? "none" : `${(t.feeBps / 100).toFixed(2)}% on every transfer`}</td>
                 <td><Badge tone={t.verdict === "eligible" || t.verdict === "eligible_with_fee" ? "green" : t.verdict === "not checked" ? undefined : "amber"}>{t.verdict.replaceAll("_", " ")}</Badge>{t.escrowProven ? <div className="small">escrow proven</div> : null}</td>
-                <td className="small">{t.market ? <Link className="link" href={`/trade?m=${t.market.symbol}`}>{t.market.liveSeries} Gap series · ${usd0(t.market.depthUsdc)} depth</Link> : t.tier === 3 ? "Tier 3: quote it yourself" : "not listed here"}</td>
+                <td className="small" onClick={(e) => e.stopPropagation()}>{t.market ? <Link className="link" href={`/markets/${t.market.symbol}`}>{t.market.liveSeries} Gap series · ${usd0(t.market.depthUsdc)} depth</Link> : t.tier === 3 ? "Tier 3: quote it yourself" : "not listed here"}</td>
               </tr>
             ))}
           </tbody>

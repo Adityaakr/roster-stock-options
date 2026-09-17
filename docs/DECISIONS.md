@@ -1,0 +1,18 @@
+# Decisions
+
+Deviations from CLAUDE.md wording and choices the brief left open. Dated; the reasoning lives in `docs/01-architecture.md`.
+
+- 2026-09-17 **Assignment at exercise, not at expiry.** Part 2 §3's pro-rata-at-expiry settlement lets a late writer take earlier writers' settlement proceeds (worked example in 01-architecture §2.1). Replaced by stability-pool accounting (`P`, scale, epoch, independent floors). Addendum F's test stays and gains four more.
+- 2026-09-17 **The program never reads a multiplier.** `strike_usdc_per_lot` is stored as given and is the PDA seed; the quoter chooses per-lot strikes off-chain using the live multiplier and the xStocks API `reason` (a pending split and a pending dividend are indistinguishable from the multiplier alone). The only multiplier read is inside `auto_exercise`, for the per-share comparison. Part 1 §4.1 taken literally.
+- 2026-09-17 **Lots.** One position token (6 dp) = one lot = `10^decimals` raw. `create_market` rejects decimals < 6.
+- 2026-09-17 **Writer state inside the Series** (32 slots) and **premiums pulled**, not pushed to writer ATAs during `buy`. Deviation from Part 2 §3 "pays each writer their premium": economically identical, removes the dead-ATA book DoS and the simulate-versus-sign account race. `claim_premium` added.
+- 2026-09-17 **`close_series` does not wait for position-mint supply to reach zero** (addendum C wording). Expired tokens sit in wallets and pools forever; the mint is closed only if supply is zero, otherwise abandoned (small rent). No permanent delegate on the position mint.
+- 2026-09-17 **Keeper fee is paid from the FeeVault**, never from the holder's proceeds, so addendum G ("fees are never taken at exercise or settlement") holds and the ticket's max loss is exact. Part 1 §4.2's "fee from proceeds" is superseded.
+- 2026-09-17 **Exercise and settle are never pausable.** `pause_market`/`pause_all` gate `quote`, `buy`, `create_series`, `auto_exercise`, `protected_buy` only. A pause key that cannot unpause holds pause power; the Squads vault holds everything else.
+- 2026-09-17 **Auto-exercise delegate is a program PDA with per-holder opt-in**, approving both the position ATA and the cash or underlying ATA; cashless exercise (keeper fronts the strike and swaps) is P8. Manage states what the wallet must hold at expiry.
+- 2026-09-17 **Pyth on-chain check uses `post_update_atomic` on the pro receiver** (`rec2HH…`, SDK 2.0.0 `pro-compatible`), which yields `Full` at 3 of 5 Pyth-operated guardians; disclosed in `/risk`. Falls back to the multi-transaction flow or an off-chain decision if dourolabs payloads do not verify.
+- 2026-09-17 **Protected Buy is client-composed** (Jupiter swap instruction + `buy` in one transaction), not a program CPI. First Print uses a `has_transfer_fee` flag and measured vault deltas, not separate instructions.
+- 2026-09-17 **One `services` process and `node:sqlite` on the fork**; per-tier processes and Postgres are a deployment change, not a design change.
+- 2026-09-17 **Mainnet P5 targets Sep 21 evening with a Sep 22 16:00 NY expiry** so a real expiry settles on the tape before Sep 23. Stop-and-ask stands.
+- 2026-09-17 **Backpack mints on hold** until their terms and jurisdiction profile are read (regulatory lens); Ondo excluded per Part 2 §1 default.
+- 2026-09-17 **Copy corrections before P5**: Tessera redemption is "no deadline to open, then a 90-day window, forfeiture after"; "delivers the token" not "the stock"; "buy NVDAx" not "buy Nvidia"; "Nothing else on earth" softened; the treasury-is-a-market-maker line wherever treasury performance appears.

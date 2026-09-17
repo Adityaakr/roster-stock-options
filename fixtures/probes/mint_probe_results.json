@@ -1,0 +1,1727 @@
+{
+  "rpc": "https://api.mainnet-beta.solana.com",
+  "slot": 447797526,
+  "epoch": 1036,
+  "fetchedAt": "2026-09-17T12:40:21.591Z",
+  "results": [
+    {
+      "symbol": "NVDAx",
+      "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+      "source": "https://api.xstocks.fi/api/v2/public/assets/NVDAx",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 679,
+      "lamports": 617943468,
+      "decimals": 8,
+      "supplyRaw": "32127750030061",
+      "supplyUi": "321277.50030061",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 166
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1.0009180758490996,
+          "newMultiplierEffectiveTimestamp": "1789000200",
+          "newMultiplier": 1.001701196801074
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+          "name": "NVIDIA xStock",
+          "symbol": "NVDAx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/NVDAx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "TSLAx",
+      "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+      "source": "https://api.xstocks.fi/api/v2/public/assets/TSLAx",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 678,
+      "lamports": 1043189183,
+      "decimals": 8,
+      "supplyRaw": "22963696203642",
+      "supplyUi": "229636.96203642",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 165
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1,
+          "newMultiplierEffectiveTimestamp": "0",
+          "newMultiplier": 1
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+          "name": "Tesla xStock",
+          "symbol": "TSLAx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/TSLAx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "SPYx",
+      "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "source": "https://api.xstocks.fi/api/v2/public/assets/SPYx",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 676,
+      "lamports": 36662853,
+      "decimals": 8,
+      "supplyRaw": "9523184414021",
+      "supplyUi": "95231.84414021",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 163
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1.003909240011759,
+          "newMultiplierEffectiveTimestamp": "1781755200",
+          "newMultiplier": 1.005714560286254
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+          "name": "SP500 xStock",
+          "symbol": "SPYx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/SPYx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "SPYx(CLAUDE.md 2.1)",
+      "mint": "XsEH7wWfJJu2ZT3UCFeVfALnVA6CP5ur7Ee11KmzVpL",
+      "source": "CLAUDE.md section 2.1 (not from API)",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 680,
+      "lamports": 5623680,
+      "decimals": 8,
+      "supplyRaw": "15505686156840",
+      "supplyUi": "155056.8615684",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 167
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1,
+          "newMultiplierEffectiveTimestamp": "1763337300",
+          "newMultiplier": 10
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "XsEH7wWfJJu2ZT3UCFeVfALnVA6CP5ur7Ee11KmzVpL"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "XsEH7wWfJJu2ZT3UCFeVfALnVA6CP5ur7Ee11KmzVpL",
+          "name": "Netflix xStock",
+          "symbol": "NFLXx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/NFLXx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "AAPLx",
+      "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+      "source": "https://api.xstocks.fi/api/v2/public/assets/AAPLx",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 678,
+      "lamports": 647086478,
+      "decimals": 8,
+      "supplyRaw": "15376341379043",
+      "supplyUi": "153763.41379043",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 165
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1.0026642075893797,
+          "newMultiplierEffectiveTimestamp": "1786149000",
+          "newMultiplier": 1.0032690125398187
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+          "name": "Apple xStock",
+          "symbol": "AAPLx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/AAPLx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "MSFTx",
+      "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
+      "source": "https://api.xstocks.fi/api/v2/public/assets/MSFTx",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 682,
+      "lamports": 5637601,
+      "decimals": 8,
+      "supplyRaw": "10497090909127",
+      "supplyUi": "104970.90909127",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 169
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1.0045820905025638,
+          "newMultiplierEffectiveTimestamp": "1787185800",
+          "newMultiplier": 1.0059033904787456
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
+          "name": "Microsoft xStock",
+          "symbol": "MSFTx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/MSFTx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "GOOGLx",
+      "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+      "source": "https://api.xstocks.fi/api/v2/public/assets/GOOGLx",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 683,
+      "lamports": 31644560,
+      "decimals": 8,
+      "supplyRaw": "16040666763557",
+      "supplyUi": "160406.66763557",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 170
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1.001926722393864,
+          "newMultiplierEffectiveTimestamp": "1788481800",
+          "newMultiplier": 1.0023772500603487
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+          "name": "Alphabet xStock",
+          "symbol": "GOOGLx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/GOOGLx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "AMZNx",
+      "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
+      "source": "https://api.xstocks.fi/api/v2/public/assets/AMZNx",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 683,
+      "lamports": 5644560,
+      "decimals": 8,
+      "supplyRaw": "17229522615187",
+      "supplyUi": "172295.22615187",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 170
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1,
+          "newMultiplierEffectiveTimestamp": "0",
+          "newMultiplier": 1
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
+          "name": "Amazon.com xStock",
+          "symbol": "AMZNx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/AMZNx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "METAx",
+      "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
+      "source": "https://api.xstocks.fi/api/v2/public/assets/METAx",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 677,
+      "lamports": 5602800,
+      "decimals": 8,
+      "supplyRaw": "7237782604924",
+      "supplyUi": "72377.82604924",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 164
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1.0016490257902244,
+          "newMultiplierEffectiveTimestamp": "1781481300",
+          "newMultiplier": 1.002298265651938
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
+          "name": "Meta xStock",
+          "symbol": "METAx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/METAx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "CRCLx",
+      "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+      "source": "https://api.xstocks.fi/api/v2/public/assets/CRCLx",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 679,
+      "lamports": 2477494330,
+      "decimals": 8,
+      "supplyRaw": "82107815119119",
+      "supplyUi": "821078.15119119",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 166
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1,
+          "newMultiplierEffectiveTimestamp": "0",
+          "newMultiplier": 1
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+          "name": "Circle xStock",
+          "symbol": "CRCLx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/CRCLx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "MSTRx",
+      "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+      "source": "https://api.xstocks.fi/api/v2/public/assets/MSTRx",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 686,
+      "lamports": 5665440,
+      "decimals": 8,
+      "supplyRaw": "48631617041971",
+      "supplyUi": "486316.17041971",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 173
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1,
+          "newMultiplierEffectiveTimestamp": "0",
+          "newMultiplier": 1
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+          "name": "MicroStrategy xStock",
+          "symbol": "MSTRx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/MSTRx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "QQQx",
+      "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+      "source": "https://api.xstocks.fi/api/v2/public/assets/QQQx",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 677,
+      "lamports": 106602830,
+      "decimals": 8,
+      "supplyRaw": "8436078036217",
+      "supplyUi": "84360.78036217",
+      "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+      "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 164
+        }
+      ],
+      "extensionsLib": [
+        "MetadataPointer",
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "ScaledUiAmountConfig",
+        "PausableConfig",
+        "ConfidentialTransferMint",
+        "TransferHook",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "programId": "11111111111111111111111111111111"
+        },
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "pausable": {
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+          "multiplier": 1.0019546533977475,
+          "newMultiplierEffectiveTimestamp": "1782086100",
+          "newMultiplier": 1.0027250296551051
+        },
+        "metadataPointer": {
+          "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "metadataAddress": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+          "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+          "name": "Nasdaq xStock",
+          "symbol": "QQQx",
+          "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/QQQx/metadata.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "43f9f1ee2e37b807ea45cb74e6009722bec009296026e4e4558b435e24a5e9c6000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "tOpenAI",
+      "mint": "oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ",
+      "source": "https://rest-api.tessera.pe/v1/public/tokens (+CLAUDE.md 2.4)",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 492,
+      "lamports": 4315200,
+      "decimals": 9,
+      "supplyRaw": "684809475478",
+      "supplyUi": "684.809475478",
+      "mintAuthority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+      "freezeAuthority": "7n2PNcDXVDMK2m8dyV9cVPNY7p4jM4ZMHv7TzfibEt8o",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 1,
+          "name": "TransferFeeConfig",
+          "len": 108
+        },
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 142
+        }
+      ],
+      "extensionsLib": [
+        "TransferFeeConfig",
+        "MetadataPointer",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferFee": {
+          "transferFeeConfigAuthority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+          "withdrawWithheldAuthority": "DjMKLEZe8d1nfCWQjoeoihqCU1owkxM8j2WqgFcCbzft",
+          "withheldAmount": "2114549019",
+          "older": {
+            "epoch": "987",
+            "bps": 20,
+            "maxFee": "18446744073709551615"
+          },
+          "newer": {
+            "epoch": "987",
+            "bps": 20,
+            "maxFee": "18446744073709551615"
+          },
+          "currentEpoch": 1036,
+          "effectiveNow": {
+            "bps": 20,
+            "maxFee": "18446744073709551615"
+          }
+        },
+        "metadataPointer": {
+          "authority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+          "metadataAddress": "oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+          "mint": "oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ",
+          "name": "T-OpenAI",
+          "symbol": "tOpenAI",
+          "uri": "https://cdn.tesseralab.co/tessera/t-openai.json",
+          "additionalMetadata": []
+        }
+      }
+    },
+    {
+      "symbol": "tKalshi",
+      "mint": "TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ",
+      "source": "https://rest-api.tessera.pe/v1/public/tokens (+CLAUDE.md 2.4)",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 492,
+      "lamports": 4315200,
+      "decimals": 9,
+      "supplyRaw": "1557906620633",
+      "supplyUi": "1557.906620633",
+      "mintAuthority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+      "freezeAuthority": "7n2PNcDXVDMK2m8dyV9cVPNY7p4jM4ZMHv7TzfibEt8o",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 1,
+          "name": "TransferFeeConfig",
+          "len": 108
+        },
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 142
+        }
+      ],
+      "extensionsLib": [
+        "TransferFeeConfig",
+        "MetadataPointer",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferFee": {
+          "transferFeeConfigAuthority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+          "withdrawWithheldAuthority": "5P6aL1imw2Vi7GptqoRHPu8fowJvXM8eVrs8nWnxVx5h",
+          "withheldAmount": "371609938",
+          "older": {
+            "epoch": "922",
+            "bps": 20,
+            "maxFee": "18446744073709551615"
+          },
+          "newer": {
+            "epoch": "922",
+            "bps": 20,
+            "maxFee": "18446744073709551615"
+          },
+          "currentEpoch": 1036,
+          "effectiveNow": {
+            "bps": 20,
+            "maxFee": "18446744073709551615"
+          }
+        },
+        "metadataPointer": {
+          "authority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+          "metadataAddress": "TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+          "mint": "TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ",
+          "name": "T-Kalshi",
+          "symbol": "tKalshi",
+          "uri": "https://cdn.tesseralab.co/tessera/t-kalshi.json",
+          "additionalMetadata": []
+        }
+      }
+    },
+    {
+      "symbol": "tSpaceX",
+      "mint": "TSPXcLV76s6V2zDiZQ18kBfcbnjaE2ZzNT3ga2Pd99v",
+      "source": "https://rest-api.tessera.pe/v1/public/tokens (+CLAUDE.md 2.4)",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 492,
+      "lamports": 772637012,
+      "decimals": 9,
+      "supplyRaw": "1189973352648",
+      "supplyUi": "1189.973352648",
+      "mintAuthority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+      "freezeAuthority": "7n2PNcDXVDMK2m8dyV9cVPNY7p4jM4ZMHv7TzfibEt8o",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 1,
+          "name": "TransferFeeConfig",
+          "len": 108
+        },
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 142
+        }
+      ],
+      "extensionsLib": [
+        "TransferFeeConfig",
+        "MetadataPointer",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferFee": {
+          "transferFeeConfigAuthority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+          "withdrawWithheldAuthority": "BnWEwDEZFGZkDQDMs7q7UtK8dFR9VUXprhH1xnLqD2j7",
+          "withheldAmount": "12357",
+          "older": {
+            "epoch": "918",
+            "bps": 20,
+            "maxFee": "18446744073709551615"
+          },
+          "newer": {
+            "epoch": "918",
+            "bps": 20,
+            "maxFee": "18446744073709551615"
+          },
+          "currentEpoch": 1036,
+          "effectiveNow": {
+            "bps": 20,
+            "maxFee": "18446744073709551615"
+          }
+        },
+        "metadataPointer": {
+          "authority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+          "metadataAddress": "TSPXcLV76s6V2zDiZQ18kBfcbnjaE2ZzNT3ga2Pd99v"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+          "mint": "TSPXcLV76s6V2zDiZQ18kBfcbnjaE2ZzNT3ga2Pd99v",
+          "name": "T-SpaceX",
+          "symbol": "tSpaceX",
+          "uri": "https://cdn.tesseralab.co/tessera/t-spacex.json",
+          "additionalMetadata": []
+        }
+      }
+    },
+    {
+      "symbol": "OPENAI(PreStocks)",
+      "mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+      "source": "https://prestocks.com/api/prestocks (+CLAUDE.md 2.5)",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 902,
+      "lamports": 362899490,
+      "decimals": 9,
+      "supplyRaw": "1901939936317",
+      "supplyUi": "1901.939936317",
+      "mintAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+      "freezeAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 1,
+          "name": "TransferFeeConfig",
+          "len": 108
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 16,
+          "name": "UNKNOWN",
+          "len": 129
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 144
+        }
+      ],
+      "extensionsLib": [
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "TransferFeeConfig",
+        "ConfidentialTransferMint",
+        16,
+        "TransferHook",
+        "ScaledUiAmountConfig",
+        "MetadataPointer",
+        "PausableConfig",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "programId": "11111111111111111111111111111111"
+        },
+        "transferFee": {
+          "transferFeeConfigAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "withdrawWithheldAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "withheldAmount": "637520193",
+          "older": {
+            "epoch": "848",
+            "bps": 0,
+            "maxFee": "0"
+          },
+          "newer": {
+            "epoch": "1032",
+            "bps": 50,
+            "maxFee": "18446744073709551615"
+          },
+          "currentEpoch": 1036,
+          "effectiveNow": {
+            "bps": 50,
+            "maxFee": "18446744073709551615"
+          }
+        },
+        "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "pausable": {
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "multiplier": 1,
+          "newMultiplierEffectiveTimestamp": "1784305800",
+          "newMultiplier": 1.4861347
+        },
+        "metadataPointer": {
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "metadataAddress": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+          "name": "OpenAI PreStocks",
+          "symbol": "OPENAI",
+          "uri": "https://prestocks.com/metadata/openai.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "078daaa78203d77bc823b96863da4d8651c643fc10eb6cbe5b9787e056da4bdd000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "symbol": "SPACEX(PreStocks)",
+      "mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+      "source": "https://prestocks.com/api/prestocks (+CLAUDE.md 2.5)",
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "ownerName": "Token-2022",
+      "dataLen": 902,
+      "lamports": 1397830680,
+      "decimals": 9,
+      "supplyRaw": "8742515833967",
+      "supplyUi": "8742.515833967",
+      "mintAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+      "freezeAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+      "isInitialized": true,
+      "extensions": [
+        {
+          "type": 12,
+          "name": "PermanentDelegate",
+          "len": 32
+        },
+        {
+          "type": 6,
+          "name": "DefaultAccountState",
+          "len": 1
+        },
+        {
+          "type": 1,
+          "name": "TransferFeeConfig",
+          "len": 108
+        },
+        {
+          "type": 4,
+          "name": "ConfidentialTransferMint",
+          "len": 65
+        },
+        {
+          "type": 16,
+          "name": "UNKNOWN",
+          "len": 129
+        },
+        {
+          "type": 14,
+          "name": "TransferHook",
+          "len": 64
+        },
+        {
+          "type": 25,
+          "name": "ScaledUiAmountConfig",
+          "len": 56
+        },
+        {
+          "type": 18,
+          "name": "MetadataPointer",
+          "len": 64
+        },
+        {
+          "type": 26,
+          "name": "PausableConfig",
+          "len": 33
+        },
+        {
+          "type": 19,
+          "name": "TokenMetadata",
+          "len": 144
+        }
+      ],
+      "extensionsLib": [
+        "PermanentDelegate",
+        "DefaultAccountState",
+        "TransferFeeConfig",
+        "ConfidentialTransferMint",
+        16,
+        "TransferHook",
+        "ScaledUiAmountConfig",
+        "MetadataPointer",
+        "PausableConfig",
+        "TokenMetadata"
+      ],
+      "config": {
+        "transferHook": {
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "programId": "11111111111111111111111111111111"
+        },
+        "transferFee": {
+          "transferFeeConfigAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "withdrawWithheldAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "withheldAmount": "25844",
+          "older": {
+            "epoch": "848",
+            "bps": 0,
+            "maxFee": "0"
+          },
+          "newer": {
+            "epoch": "1032",
+            "bps": 50,
+            "maxFee": "18446744073709551615"
+          },
+          "currentEpoch": 1036,
+          "effectiveNow": {
+            "bps": 50,
+            "maxFee": "18446744073709551615"
+          }
+        },
+        "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "pausable": {
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "paused": false
+        },
+        "scaledUiAmount": {
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "multiplier": 1,
+          "newMultiplierEffectiveTimestamp": "1781065800",
+          "newMultiplier": 5
+        },
+        "metadataPointer": {
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "metadataAddress": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh"
+        },
+        "defaultAccountState": {
+          "state": 1,
+          "stateName": "Initialized"
+        },
+        "tokenMetadata": {
+          "updateAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+          "mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+          "name": "SpaceX PreStocks",
+          "symbol": "SPACEX",
+          "uri": "https://prestocks.com/metadata/spacex.json",
+          "additionalMetadata": []
+        },
+        "confidentialTransferMint": {
+          "rawHex": "078daaa78203d77bc823b96863da4d8651c643fc10eb6cbe5b9787e056da4bdd000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    }
+  ]
+}

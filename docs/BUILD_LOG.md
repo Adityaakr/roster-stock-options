@@ -69,3 +69,16 @@ One entry per phase (CLAUDE.md 0): what was built, what was verified against whi
 **Cut.** Nothing from the M1 list. Fees, auto-exercise, halt rule, property test and the fork lifecycle are M2.
 
 **Open risks.** CU per instruction not yet measured (`docs/COMPUTE.md` in M2). The `Fill` events use `emit!`; an 8-fill buy is within the log budget on litesvm but `#[event_cpi]` is the fallback if the indexer ever sees truncation.
+
+## 2026-09-17 · M2 · P1b: fees, auto-exercise, halt rule, invariants, fork lifecycle
+
+**Built.** `update_protocol` / `withdraw_fees` (authority only; the pause key can only pause), `enable_auto_exercise` / `disable_auto_exercise` (program PDA delegate on the position and the paying account), `auto_exercise` (window `[expiry − grace, expiry)`, `PriceUpdateV2` from `pyth-solana-receiver-sdk` 2.0.0 `pro-compatible` checked for age, feed id, full verification and confidence; the only multiplier read in the program; keeper fee from the fee vault), `observe_halt` and the 24 h settlement grace after an issuer pause or vault freeze, `fold` skipping lossless snapshots (removes per-fill dust). `packages/sdk`: `@anchor-lang/core` client with PDAs, decoders for the zero-copy series, and unsigned-transaction builders for every instruction. `tests/e2e/p1-fork-lifecycle.test.ts`. `docs/COMPUTE.md`.
+
+**Verified.**
+- `cargo test --release -p roster_finance`: 7 unit + 13 core + 4 P1b + sizes + compute, all green. P1b covers: fees to the treasury only, pause-key privilege limits, exercise never pausable; auto-exercise declines when not opted in, outside the window, out of the money, stale, wrong feed, partially verified or wide-confidence, and fires when fresh and in the money with the keeper paid from the fee vault; the halt rule; a 160-step seeded random walk over quote/buy/exercise/withdraw holding supply = sold − exercised, Σ sold = total, open ≤ unassigned, assigned ≤ exercised, vault ≥ (unassigned + free) × unit, followed by settlement of every writer with only dust left.
+- Fork (surfpool 1.0.0 forked from public mainnet, program deployed at `FJUdsdmxAp3zAwZBg3ai34xzeCBDobnH1XDarvVa7uFV`): 5 passed on the **real NVDAx mint** `Xsc9qvGR…` and real USDC: extension flags derived on-chain match `docs/MINT.md`; series created; 100 lots of NVDAx quoted; 20 bought; 5 exercised (USDC in, NVDAx out); expiry reached with `surfnet_timeTravel`; writer settled 95 lots back plus 5 × 180 USDC; series closed after grace.
+- CU: `create_series` 76k, `quote` 17k, `buy` walking 8 asks 74k, `exercise` 46k.
+
+**Cut.** `#[event_cpi]` (plain `emit!` fits the log budget); the on-chain Pyth `post_update_atomic` is composed by the keeper in M3 (needs `PYTH_CORE_API_KEY`).
+
+**Open risks.** Auto-exercise approves the delegate for the balance at opt-in time; positions bought later need a re-enable (Manage shows this). The independent skeptic review of the program is running; its findings become fix milestones before M3 lands.

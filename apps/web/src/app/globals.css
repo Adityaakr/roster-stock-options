@@ -205,7 +205,7 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .footer .inner { max-width: var(--frame); margin: 0 auto; padding: 64px 30px 40px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); font-size: 13px; color: var(--slate); }
 @media (max-width: 1260px) { .footer .inner { border-left: 0; border-right: 0; } }
 @media (max-width: 809px) { .footer .inner { padding: 40px 18px 32px; } }
-.footer .cols { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 32px; }
+.footer .cols { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr; gap: 32px; }
 .footer h6 { font-family: var(--display); font-weight: 500; font-size: 18px; color: var(--ink); margin: 0 0 12px; }
 .footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .footer a:hover { color: var(--ink); }
@@ -591,3 +591,13 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .wc-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); border: 1px solid var(--line); border-radius: 3px; padding: 2px 8px 2px 4px; }
 .wc-foot { margin: 10px 2px 0; }
 @media (max-width: 640px) { .wc { padding: 16px; } .wc-form { flex-direction: column; } .wc-head { grid-template-columns: auto minmax(0, 1fr); } .wc-amt { grid-column: 2; text-align: left; } }
+
+/* Plain-text pages: risk, terms, privacy, fees. */
+.prose h2 { font-family: var(--display); font-weight: 500; font-size: 22px; line-height: 1.2; letter-spacing: -0.02em; margin: 36px 0 10px; }
+.prose p, .prose li { font-size: 16px; line-height: 1.6; letter-spacing: -0.01em; color: var(--slate); }
+.prose p { margin: 0 0 14px; }
+.prose ul { margin: 0 0 14px; padding-left: 20px; }
+.prose li { margin: 6px 0; }
+.prose b { color: var(--ink); font-weight: 500; }
+.prose code { font-family: var(--mono); font-size: 14px; }
+.prose a { color: var(--ink); border-bottom: 1px solid var(--line-strong); }

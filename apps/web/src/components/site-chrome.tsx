@@ -37,8 +37,12 @@ export function SiteFooter({ network, source }: { network?: string; source?: str
             <ul><li><Link className="navlink" href="/trade">App</Link></li><li><Link className="navlink" href="/positions">Positions</Link></li><li><Link className="navlink" href="/roster">Roster</Link></li><li><Link className="navlink" href="/underwrite">Underwrite</Link></li><li><Link className="navlink" href="/pre-ipo">First Print</Link></li></ul>
           </div>
           <div>
+            <h6>Read</h6>
+            <ul><li><Link className="navlink" href="/risk">Risk</Link></li><li><Link className="navlink" href="/fees">Fees</Link></li><li><Link className="navlink" href="/terms">Terms</Link></li><li><Link className="navlink" href="/privacy">Privacy</Link></li></ul>
+          </div>
+          <div>
             <h6>Source</h6>
-            <ul><li><a className="navlink" href="https://github.com/adityakrx/roster#readme" target="_blank" rel="noreferrer">Docs</a></li><li><a className="navlink" href="https://github.com/adityakrx/roster" target="_blank" rel="noreferrer">Source</a></li><li><a className="navlink" href="#risk">Risk</a></li></ul>
+            <ul><li><a className="navlink" href="https://github.com/Adityaakr/roster-stock-options#readme" target="_blank" rel="noreferrer">Docs</a></li><li><a className="navlink" href="https://github.com/Adityaakr/roster-stock-options" target="_blank" rel="noreferrer">Source</a></li><li><a className="navlink" href="#risk">Risk</a></li></ul>
           </div>
           <div>
             <h6>Reading</h6>

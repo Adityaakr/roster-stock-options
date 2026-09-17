@@ -44,6 +44,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@roster/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@roster/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@solana/wallet-adapter-base':
         specifier: ^0.9.23
         version: 0.9.28(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))
@@ -53,6 +59,9 @@ importers:
       '@solana/wallet-adapter-react-ui':
         specifier: ^0.9.35
         version: 0.9.40(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bs58@6.0.0)(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(react-dom@19.2.8(react@19.2.8))(react-native@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.2.8)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.2.8)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      '@solana/wallet-adapter-unsafe-burner':
+        specifier: 0.1.12
+        version: 0.1.12(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))
       '@solana/web3.js':
         specifier: 1.99.0
         version: 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
@@ -127,10 +136,16 @@ importers:
       '@solana/web3.js':
         specifier: 1.99.0
         version: 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      bn.js:
+        specifier: 5.2.1
+        version: 5.2.1
       zod:
         specifier: ^4.6.5
         version: 4.6.5
     devDependencies:
+      '@types/bn.js':
+        specifier: ^5.2.0
+        version: 5.2.0
       '@types/node':
         specifier: ^22.19.0
         version: 22.20.3
@@ -1589,6 +1604,12 @@ packages:
     peerDependencies:
       '@solana/web3.js': ^1.99.0
       react: '*'
+
+  '@solana/wallet-adapter-unsafe-burner@0.1.12':
+    resolution: {integrity: sha512-6dfPSLHvEWsWbWlYpKa4fu11FNgfx0oT3Eg83SH3kK3+8Z1rOA0HTd34IWOmqXIxPN5m2RW8m3Vb7lk0L0EdVQ==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@solana/web3.js': ^1.99.0
 
   '@solana/wallet-standard-chains@1.1.2':
     resolution: {integrity: sha512-EZobEGclDBAFplpJC5F3d/s8Xnlqc5isNKuPrd5o9ZPZ7tWN84O0e68yIZ8MAOj9V7ieRadNiHtql7uIXCTyXg==}
@@ -5640,6 +5661,14 @@ snapshots:
       - react-native
       - typescript
       - utf-8-validate
+
+  '@solana/wallet-adapter-unsafe-burner@0.1.12(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))':
+    dependencies:
+      '@noble/curves': 1.9.7
+      '@solana/wallet-adapter-base': 0.9.28(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))
+      '@solana/wallet-standard-features': 1.5.0
+      '@solana/wallet-standard-util': 1.1.4
+      '@solana/web3.js': 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
 
   '@solana/wallet-standard-chains@1.1.2':
     dependencies:

@@ -1,15 +1,55 @@
 /*
- * The contract model the app renders. Every contract is two integers on-chain, raw_qty and total_strike (CLAUDE.md 4.1);
- * everything here is the display layer over those two numbers: shares = raw_qty x multiplier, strike per share =
- * total_strike / shares. The quoter prices in per-share terms against Pyth; the program never reads either.
+ * The contract model the app renders. On-chain a series is a strike in USDC per lot and positions are lots of one
+ * underlying token each (CLAUDE.md 4.1, Part 2 section 3); everything here is the display layer over those integers:
+ * shares = lots x multiplier, strike per share = strike per lot / multiplier. The quoter prices in per-share terms
+ * against Pyth; the program never reads a price except in auto-exercise.
  */
 
 export type Side = "call" | "put";
 export type Session = "regular" | "pre" | "post" | "overnight" | "closed";
 
+export type Tier = 1 | 2 | 3;
+
+export interface Market {
+  symbol: string;
+  name: string;
+  /** Null only on the fixture cluster: an address is never invented. */
+  mint: string | null;
+  address: string | null;
+  decimals: number;
+  tier: Tier;
+  listed: boolean;
+  paused: boolean;
+  wrapperTier: string;
+  hasTransferFee: boolean;
+  hasPermanentDelegate: boolean;
+  pausable: boolean;
+  /** Token mark from the 24/7 token feed, USD per share equivalent; null when no feed answered. */
+  mark: number | null;
+  priceSource: "hermes" | "reference" | "fixture" | "none";
+  equityMark: number | null;
+  basisBps: number | null;
+  multiplier: number;
+  pendingActivationTs: number | null;
+  inActivationWindow: boolean;
+  /** Realised volatility the quoter used, annualised, and where it came from. */
+  vol: number;
+  volSource: string;
+  expiries: number[];
+  liveSeries: number;
+  maxLiveSeries: number;
+  /** Executable depth: USDC notional fillable right now across every live term. */
+  depthUsdc: number;
+  bestAsk: number | null;
+}
+
 export interface Term {
-  /** Stable id used in URLs: `${side}-${strike}-${expiryTs}`. */
+  /** Stable id used in URLs: `${symbol}-${side}-${strike per lot in USDC}-${expiryTs}` with the symbol lower-cased. */
   id: string;
+  market: string;
+  /** Series account and its position mint; null on the fixture cluster. */
+  series: string | null;
+  positionMint: string | null;
   side: Side;
   /** Display strike per share, USD. */
   strike: number;
@@ -17,12 +57,24 @@ export interface Term {
   expiryTs: number;
   /** Best ask, premium per share in USD, at the smallest quoted size. */
   ask: number;
-  /** Quoted premium per share at three sizes, ascending. Wider sizes pay more. */
-  ladder: { size: number; ask: number; underwriters: number }[];
+  /** Quoted premium per share at three sizes, ascending. Wider sizes pay more; null when the size is not fillable. */
+  ladder: { size: number; ask: number | null; underwriters: number }[];
   /** Shares still fillable at any price. */
   capacity: number;
   /** Shares filled so far at this term. */
   openInterest: number;
+  /** Strike and best ask in the program's own units, USDC micro per lot, as strings for the transaction builders. */
+  strikePerLot: string;
+  bestAskPerLot: string | null;
+  /** The resident asks, cheapest first, for the exact cost of a size (`walkAsks`). */
+  asks: { askPerLot: string; remainingLots6: string; writerSlot: number; seq: string }[];
+  /** The escrow that backs a fill on this term; null on the fixture cluster. */
+  escrow: { collateralVault: string; settlementVault: string; quoteVault: string; collateralBalance: string; settlementBalance: string } | null;
+  /** Writers with live asks on this term. */
+  writers: { account: string; live: boolean; askLots: number }[];
+  /** Every writer slot in the series, in slot order, in shares (lots x multiplier) and USD. */
+  slots: { slot: number; account: string; deposited: number; withdrawn: number; sold: number; open: number; assigned: number; premiumClaimable: number; settled: boolean }[];
+  halted: boolean;
 }
 
 export interface Underwriter {
@@ -38,6 +90,8 @@ export interface Underwriter {
 export interface Position {
   id: string;
   termId: string;
+  market: string;
+  series: string | null;
   side: Side;
   strike: number;
   expiryTs: number;
@@ -48,6 +102,9 @@ export interface Position {
   exercised: number;
   /** Signature of the buy, null on a cluster with no program. */
   signature: string | null;
+  /** The auto-exercise delegate state for this holder and series. */
+  autoExercise: boolean;
+  expired: boolean;
 }
 
 export interface ExerciseEvent {
@@ -61,7 +118,7 @@ export interface ExerciseEvent {
 }
 
 export interface Underlying {
-  symbol: "NVDAx";
+  symbol: string;
   name: string;
   mint: string | null;
   /** Token mark from the 24/7 token feed, USD per share equivalent. */
@@ -80,8 +137,13 @@ export interface RosterData {
   cluster: "fixture" | "fork" | "devnet" | "mainnet";
   clusterLabel: string;
   programDeployed: boolean;
+  /** Set when the services cannot price: the name of the missing operator input (docs/OPERATOR.md). */
+  blocked: string | null;
   nowTs: number;
   session: Session;
+  /** Every listed market, sorted by executable depth. */
+  markets: Market[];
+  /** The market the screen is on: the first by depth unless `?m=` says otherwise. */
   underlying: Underlying;
   expiries: number[];
   terms: Term[];
@@ -96,15 +158,22 @@ export interface RosterData {
 
 export const DEFAULT_SIZE = 10;
 
-export function termId(side: Side, strike: number, expiryTs: number): string {
-  return `${side}-${strike}-${expiryTs}`;
+export function termId(symbol: string, side: Side, strikePerLotUsdc: number, expiryTs: number): string {
+  return `${symbol.toLowerCase()}-${side}-${strikePerLotUsdc}-${expiryTs}`;
 }
 
-export function parseTermId(id: string): { side: Side; strike: number; expiryTs: number } | null {
-  const m = id.match(/^(call|put)-(\d+(?:\.\d+)?)-(\d+)$/);
+export function parseTermId(id: string): { symbol: string; side: Side; strike: number; expiryTs: number } | null {
+  const m = id.match(/^([a-z0-9]+)-(call|put)-(\d+(?:\.\d+)?)-(\d+)$/);
   if (!m) return null;
-  return { side: m[1] as Side, strike: Number(m[2]), expiryTs: Number(m[3]) };
+  return { symbol: m[1] as string, side: m[2] as Side, strike: Number(m[3]), expiryTs: Number(m[4]) };
 }
+
+export const TIER_LABEL: Record<Tier, string> = { 1: "Tier 1", 2: "Tier 2", 3: "Tier 3" };
+export const TIER_RULE: Record<Tier, string> = {
+  1: "Treasury quotes every term, both sides, at three sizes. The launch set.",
+  2: "Treasury quotes the nearest expiry only. Promoted to Tier 1 after four weeks of fills.",
+  3: "Listed and tradable; quotes come from external underwriters only. Promoted after 30 days of depth."
+};
 
 /** The product name the button carries; the instrument name belongs in the docs. */
 export function productName(side: Side): "Gap" | "Floor" {
@@ -207,8 +276,46 @@ export function commitMath(side: Side, strike: number, ask: number, shares: numb
   return { locked, premium, effective };
 }
 
-/** Premium at a size from the ladder: the smallest rung at or above the size, or the top rung. */
-export function askAtSize(term: Term, shares: number): { ask: number; underwriters: number } {
+/** Premium at a size from the ladder: the smallest rung at or above the size, or the top rung. Null ask means not fillable. */
+export function askAtSize(term: Term, shares: number): { ask: number | null; underwriters: number } {
   const rung = term.ladder.find((r) => shares <= r.size) ?? term.ladder[term.ladder.length - 1];
   return rung ? { ask: rung.ask, underwriters: rung.underwriters } : { ask: term.ask, underwriters: 1 };
+}
+
+/**
+ * Walk the asks for `lots` lots, cheapest first, the way `buy` does on-chain (CLAUDE.md addendum D): total premium in
+ * USDC micro, the number of writers touched, and whether the size is fillable at all.
+ */
+export function walkAsks(asks: { askPerLot: bigint | string; remainingLots6: bigint | string; writerSlot: number }[], lots6: bigint, maxAsks = 8): { premium: bigint; writers: number; filled: bigint; fillable: boolean } {
+  const sorted = asks.map((a) => ({ askPerLot: BigInt(a.askPerLot), remainingLots6: BigInt(a.remainingLots6), writerSlot: a.writerSlot })).sort((a, b) => (a.askPerLot < b.askPerLot ? -1 : a.askPerLot > b.askPerLot ? 1 : 0));
+  let left = lots6;
+  let premium = 0n;
+  const touched = new Set<number>();
+  for (const a of sorted.slice(0, maxAsks)) {
+    if (left === 0n) break;
+    const take = a.remainingLots6 < left ? a.remainingLots6 : left;
+    premium += (take * a.askPerLot) / 1_000_000n;
+    touched.add(a.writerSlot);
+    left -= take;
+  }
+  return { premium, writers: touched.size, filled: lots6 - left, fillable: left === 0n };
+}
+
+/** Taker fee in USDC micro, rounded up as the program does. */
+export function feeCeil(premiumMicro: bigint, feeBps: number): bigint {
+  return (premiumMicro * BigInt(feeBps) + 9_999n) / 10_000n;
+}
+
+/** Lots (1e6 per lot) for a number of shares under the market multiplier: one lot is one underlying token. */
+export function lots6ForShares(shares: number, multiplier: number): bigint {
+  return BigInt(Math.round((shares / (multiplier || 1)) * 1e6));
+}
+
+/** The exact cost of `shares` on a term the way `buy` computes it: premium, fee, total, writers touched. USD numbers for display. */
+export function costOf(term: Term, shares: number, multiplier: number, feeBps: number): { lots6: bigint; premium: number; fee: number; total: number; writers: number; fillable: boolean; maxPremiumPerLot: bigint } {
+  const lots6 = lots6ForShares(shares, multiplier);
+  const w = walkAsks(term.asks, lots6);
+  const fee = feeCeil(w.premium, feeBps);
+  const worst = term.asks.reduce((a, x) => (BigInt(x.askPerLot) > a ? BigInt(x.askPerLot) : a), 0n);
+  return { lots6, premium: Number(w.premium) / 1e6, fee: Number(fee) / 1e6, total: Number(w.premium + fee) / 1e6, writers: w.writers, fillable: w.fillable, maxPremiumPerLot: worst };
 }

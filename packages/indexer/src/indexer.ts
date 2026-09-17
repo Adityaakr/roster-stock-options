@@ -7,6 +7,7 @@
 import * as anchorNs from "@anchor-lang/core";
 import { Connection, PublicKey, type ConfirmedSignatureInfo } from "@solana/web3.js";
 import { getAccount } from "@solana/spl-token";
+import BN from "bn.js";
 import { RosterClient, type MarketState, type SeriesState } from "@roster/sdk";
 import type { Store, SeriesRow, MarketRow } from "./store";
 
@@ -58,6 +59,16 @@ export function fillableAt(s: SeriesState, size: bigint): Fillable {
   return { size_lots6: size.toString(), avg_ask_per_lot: ((cost * 1_000_000n) / size).toString(), cost_usdc: cost.toString(), asks_walked: walked };
 }
 
+/** Event data as decimal strings and base58 keys. `JSON.stringify` would call `BN.toJSON`, which is hex. */
+function plain(v: unknown): unknown {
+  if (typeof v === "bigint") return v.toString();
+  if (BN.isBN(v)) return v.toString(10);
+  if (v instanceof PublicKey) return v.toBase58();
+  if (Array.isArray(v)) return v.map(plain);
+  if (v && typeof v === "object") return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, plain(x)]));
+  return v;
+}
+
 export class Indexer {
   private parser: InstanceType<typeof anchor.EventParser>;
   constructor(private readonly connection: Connection, private readonly client: RosterClient, private readonly store: Store, private readonly meta: Map<string, MarketMeta>) {
@@ -83,7 +94,7 @@ export class Indexer {
         collateral_vault: s.collateralVault.toBase58(), settlement_vault: s.settlementVault.toBase58(), quote_vault: s.quoteVault.toBase58(), total_sold_lots6: s.totalSoldLots6.toString(), total_exercised_lots6: s.totalExercisedLots6.toString(),
         unassigned_lots6: s.unassignedLots6.toString(), halted: s.halted ? 1 : 0,
         asks_json: JSON.stringify(s.asks.map((a) => ({ remaining_lots6: a.remainingLots6.toString(), ask_per_lot: a.askPerLot.toString(), seq: a.seq.toString(), writer: s.writers[a.writerSlot]?.writer.toBase58() ?? null }))),
-        writers_json: JSON.stringify(s.writers.map((w) => ({ writer: w.writer.toBase58(), deposited_lots6: w.depositedLots6.toString(), sold_lots6: w.soldLots6.toString(), open_lots6: w.openLots6.toString(), assigned_lots6: w.assignedLots6.toString(), premium_claimable: w.premiumClaimable.toString(), settled: w.settled }))),
+        writers_json: JSON.stringify(s.writers.map((w) => ({ writer: w.writer.toBase58(), deposited_lots6: w.depositedLots6.toString(), withdrawn_lots6: w.withdrawnLots6.toString(), sold_lots6: w.soldLots6.toString(), open_lots6: w.openLots6.toString(), assigned_lots6: w.assignedLots6.toString(), premium_claimable: w.premiumClaimable.toString(), settled: w.settled }))),
         collateral_balance: cb.toString(), settlement_balance: sb.toString(), updated_at: Math.floor(Date.now() / 1000)
       };
       this.store.upsertSeries(srow);
@@ -124,7 +135,7 @@ export class Indexer {
       const logs = tx?.meta?.logMessages ?? [];
       let i = 0;
       for (const ev of this.parser.parseLogs(logs, false)) {
-        const data = JSON.parse(JSON.stringify(ev.data, (_k, v) => (typeof v === "bigint" ? v.toString() : v && typeof v === "object" && "toBase58" in v ? (v as PublicKey).toBase58() : v && typeof v === "object" && "toString" in v && (v as { constructor?: { name?: string } }).constructor?.name === "BN" ? (v as { toString(): string }).toString() : v)));
+        const data = plain(ev.data);
         // The parser hands back camelCase names; store the IDL's PascalCase so the API matches the program's event names.
         const name = ev.name.charAt(0).toUpperCase() + ev.name.slice(1);
         if (this.store.insertEvent({ signature: s.signature, ix_index: i, slot: s.slot, block_time: s.blockTime ?? tx?.blockTime ?? 0, name, data_json: JSON.stringify(data) })) added += 1;

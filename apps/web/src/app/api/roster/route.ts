@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { rosterData } from "@/lib/roster-data";
 
 export const dynamic = "force-dynamic";
 
-/** Everything the app screens render, in one read. P2 swaps the source for the indexer and the executable-protection endpoint. */
-export async function GET() {
-  return NextResponse.json(await rosterData(), { headers: { "cache-control": "no-store" } });
+/** Everything the app screens render, in one read, for the market in `?m=` (the deepest market otherwise). */
+export async function GET(req: NextRequest) {
+  const m = req.nextUrl.searchParams.get("m") ?? undefined;
+  return NextResponse.json(await rosterData(m), { headers: { "cache-control": "no-store" } });
 }

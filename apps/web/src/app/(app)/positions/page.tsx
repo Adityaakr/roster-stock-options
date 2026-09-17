@@ -2,91 +2,129 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { TxStatus } from "@/components/tx-status";
 import { Badge, Empty, ErrorState, KV, Loading, Stat } from "@/components/ui";
 import { useCluster } from "@/lib/cluster";
-import { usd, usd0, usdSmart, dayLabel, countdown } from "@/lib/format";
-import { buyerPnl, exerciseWords, inTheMoney, productName } from "@/lib/model";
+import { usd, usd0, usdK, usdSmart, dayLabel, countdown } from "@/lib/format";
+import { buyerPnl, exerciseWords, inTheMoney, lots6ForShares, productName, type Market, type Position } from "@/lib/model";
+import { useTransaction } from "@/lib/tx";
+import { usePositions } from "@/lib/use-positions";
 import { useRoster } from "@/lib/use-roster";
 
 /*
- * Manage (CLAUDE.md 5): per position, side, shares and strike in display terms, the countdown, the mark with the basis,
- * in the money or not, what exercising requires in plain words, and the auto-exercise rule. Actions: exercise now
- * (restating the exchange), partial exercise, nothing else until expiry.
+ * Manage (CLAUDE.md 5, Part 2 section 6): per position, side, shares and strike in display terms, the countdown, the
+ * mark with the basis, in the money or not, what exercising requires in plain words, and the auto-exercise delegate
+ * with revoke. Actions: exercise now (restating the exchange), partial exercise, enable or disable auto-exercise.
  */
 export default function PositionsPage() {
   const { data, error } = useRoster();
   const cluster = useCluster();
-  const [confirm, setConfirm] = useState<string | null>(null);
-  const [partial, setPartial] = useState<Record<string, number>>({});
+  const { publicKey } = useWallet();
+  const { setVisible } = useWalletModal();
+  const { positions, error: perror, reload } = usePositions();
+  const list = data?.cluster === "fixture" ? data.positions : positions;
+  const markets = new Map((data?.markets ?? []).map((m) => [m.symbol, m]));
 
   return (
     <div>
       <div className="page-head">
         <div>
           <h1 className="h3">Positions</h1>
-          <p className="body-sm">What you own, what it is worth now, how long until expiry, and exactly what exercising requires.</p>
+          <p className="body-sm">What you own across every market, what it is worth now, how long until expiry, and exactly what exercising requires.</p>
         </div>
         <Link href="/trade" className="btn primary sm">Buy another</Link>
       </div>
-      {error ? <ErrorState message={`Could not read positions: ${error}`} next="Reload the page." /> : null}
+      {error || perror ? <ErrorState message={`Could not read positions: ${error ?? perror}`} next="Reload the page." /> : null}
       {!data && !error ? <Loading what="positions" /> : null}
-      {data && data.positions.length === 0 ? <Empty title="No positions on this cluster" action="Buy a Gap or a Floor from the terms and it appears here with its countdown and its exercise terms." cta={<Link href="/trade" className="btn primary">See the terms</Link>} /> : null}
-      {data && data.positions.length > 0 ? (
+      {data && data.cluster !== "fixture" && !publicKey ? <Empty title="Connect a wallet" action="Positions are read from the wallet's position tokens, so there is nothing to show until one is connected." cta={<button className="btn primary" onClick={() => setVisible(true)}>Connect wallet</button>} /> : null}
+      {data && list && list.length === 0 && (publicKey || data.cluster === "fixture") ? <Empty title="No positions" action="Buy a Gap or a Floor from the terms and it appears here with its countdown and its exercise terms." cta={<Link href="/trade" className="btn primary">See the terms</Link>} /> : null}
+      {data && list && list.length > 0 ? (
         <>
           <div className="grid-4" style={{ marginBottom: 16 }}>
-            <Stat k="Open positions" v={String(data.positions.length)} />
-            <Stat k="Premium paid" v={`$${usdSmart(data.positions.reduce((a, p) => a + p.premiumPaid, 0))}`} s="the most these can lose, plus fees" />
-            <Stat k={`${data.underlying.symbol} mark`} v={`$${usd(data.underlying.mark)}`} s={data.underlying.basisBps === null ? "basis n/a, equity feed closed" : `basis ${data.underlying.basisBps >= 0 ? "+" : ""}${data.underlying.basisBps} bps`} />
-            <Stat k="In the money" v={String(data.positions.filter((p) => inTheMoney(p.side, p.strike, data.underlying.mark)).length)} s={`of ${data.positions.length}, at the current mark`} />
+            <Stat k="Open positions" v={String(list.filter((p) => !p.expired).length)} s={list.some((p) => p.expired) ? `${list.filter((p) => p.expired).length} expired` : undefined} />
+            <Stat k="Premium paid" v={`$${usdSmart(list.reduce((a, p) => a + p.premiumPaid, 0))}`} s="the most these can lose, plus fees" />
+            <Stat k="In the money" v={String(list.filter((p) => { const m = markets.get(p.market); return m?.mark !== null && m?.mark !== undefined && inTheMoney(p.side, p.strike, m.mark); }).length)} s={`of ${list.length}, at the current marks`} />
+            <Stat k="Auto-exercise on" v={String(list.filter((p) => p.autoExercise).length)} s="positions with the delegate enabled" />
           </div>
           <div className="card">
-            {data.positions.map((p) => {
-              const itm = inTheMoney(p.side, p.strike, data.underlying.mark);
-              const remaining = p.shares - p.exercised;
-              const value = buyerPnl(p.side, p.strike, 0, remaining, data.underlying.mark);
-              const n = partial[p.id] ?? remaining;
-              const words = exerciseWords(p.side, p.strike, n, data.underlying.symbol, (v) => usd0(v));
-              return (
-                <div key={p.id} style={{ padding: "18px 20px", borderBottom: "1px solid var(--line)" }} className="flex items-start justify-between gap-4 flex-wrap">
-                  <div style={{ minWidth: 0, flex: "1 1 360px" }}>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Link href={`/trade/${p.termId}`} className="h6">{productName(p.side)} at ${usd0(p.strike)} · {remaining} {data.underlying.symbol}</Link>
-                      <Badge tone={itm ? "green" : "amber"} dot>{itm ? "in the money" : "out of the money"}</Badge>
-                      <Badge>{dayLabel(p.expiryTs)} · {countdown(p.expiryTs, data.nowTs)}</Badge>
-                    </div>
-                    <div className="small" style={{ marginTop: 8 }}>
-                      <KV items={[
-                        { k: "Premium paid", v: <span className="mono">${usdSmart(p.premiumPaid)}</span> },
-                        { k: "Intrinsic value now", v: <span className={`mono ${value > 0 ? "up" : ""}`}>${usdSmart(value)}</span> },
-                        { k: "Exercising requires", v: <span className="mono">{words}</span> },
-                        { k: "Auto-exercise", v: `after expiry minus grace if in the money by more than $${usd(data.keeperFeeUsd)}` },
-                        { k: "Bought", v: <span className="mono">{p.signature ?? "no signature on this cluster"}</span> }
-                      ]} />
-                    </div>
-                  </div>
-                  <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
-                    <div className="h4 num">{remaining} <span className="small">{data.underlying.symbol}</span></div>
-                    {confirm === p.id ? (
-                      <div className="inset" style={{ padding: 12, maxWidth: 320 }}>
-                        <div className="small">Exercise {n} of {remaining}: {words}.</div>
-                        <div className="flex items-center gap-2" style={{ marginTop: 8 }}>
-                          <input className="field mono" type="number" min={1} max={remaining} value={n} onChange={(e) => setPartial({ ...partial, [p.id]: Math.min(remaining, Math.max(1, Math.floor(Number(e.target.value) || 1))) })} style={{ width: 90, height: 34 }} aria-label="Shares to exercise" />
-                          <button className="btn primary sm" disabled={!cluster.programDeployed}>Confirm</button>
-                          <button className="btn secondary sm" onClick={() => setConfirm(null)}>Cancel</button>
-                        </div>
-                        {!cluster.programDeployed ? <div className="msg red" style={{ marginTop: 8 }}>Program not deployed on {cluster.label}; nothing to sign yet.</div> : null}
-                      </div>
-                    ) : (
-                      <button className="btn secondary sm" onClick={() => setConfirm(p.id)} disabled={remaining === 0}>Exercise now</button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {list.map((p) => <PositionRow key={p.id} p={p} market={markets.get(p.market)} nowTs={data.nowTs} keeperFeeUsd={data.keeperFeeUsd} programDeployed={cluster.programDeployed} onChange={reload} />)}
           </div>
           <p className="small" style={{ marginTop: 14 }}>{data.source}</p>
         </>
       ) : null}
+    </div>
+  );
+}
+
+function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, onChange }: { p: Position; market: Market | undefined; nowTs: number; keeperFeeUsd: number; programDeployed: boolean; onChange: () => void }) {
+  const tx = useTransaction();
+  const auto = useTransaction();
+  const [confirm, setConfirm] = useState(false);
+  const [n, setN] = useState<number | null>(null);
+  const mark = market?.mark ?? null;
+  const symbol = p.market;
+  const itm = mark !== null && inTheMoney(p.side, p.strike, mark);
+  const remaining = p.shares - p.exercised;
+  const value = mark === null ? null : buyerPnl(p.side, p.strike, 0, remaining, mark);
+  const count = Math.min(remaining, Math.max(1, n ?? remaining));
+  const words = exerciseWords(p.side, p.strike, count, symbol, (v) => usd0(v));
+  const busy = (s: { status: string }) => s.status === "building" || s.status === "signing" || s.status === "sending";
+  const can = programDeployed && !!p.series && !!market?.mint && !p.expired && remaining > 0;
+
+  async function exercise() {
+    if (!p.series || !market?.mint) return;
+    const sig = await tx.run({ kind: "exercise", mint: market.mint, series: p.series, params: { lots6: lots6ForShares(count, market.multiplier).toString() } });
+    if (sig) { setConfirm(false); onChange(); }
+  }
+  async function toggleAuto() {
+    if (!p.series || !market?.mint) return;
+    const sig = await auto.run({ kind: p.autoExercise ? "disable_auto_exercise" : "enable_auto_exercise", mint: market.mint, series: p.series, params: { minItmBps: 0 } });
+    if (sig) onChange();
+  }
+
+  return (
+    <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--line)" }} className="flex items-start justify-between gap-4 flex-wrap" data-testid="position" data-term={p.termId}>
+      <div style={{ minWidth: 0, flex: "1 1 360px" }}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link href={`/trade/${p.termId}`} className="h6">{symbol} {productName(p.side)} at ${usdK(p.strike)} · {remaining} {symbol}</Link>
+          {p.expired ? <Badge tone="amber" dot>expired</Badge> : <Badge tone={itm ? "green" : "amber"} dot>{mark === null ? "no feed" : itm ? "in the money" : "out of the money"}</Badge>}
+          <Badge>{dayLabel(p.expiryTs)} · {p.expired ? "settled by the term" : countdown(p.expiryTs, nowTs)}</Badge>
+        </div>
+        <div className="small" style={{ marginTop: 8 }}>
+          <KV items={[
+            { k: "Premium paid", v: <span className="mono">${usdSmart(p.premiumPaid)}</span> },
+            { k: "Intrinsic value now", v: <span className={`mono ${value !== null && value > 0 ? "up" : ""}`}>{value === null ? "no feed" : `$${usdSmart(value)}`}</span> },
+            { k: "Exercising requires", v: <span className="mono">{words}</span> },
+            { k: "Auto-exercise", v: p.autoExercise ? `on: the keeper exercises in the hour before expiry if in the money by more than $${usd(keeperFeeUsd)}, paid from the fee vault` : "off: nothing happens at expiry unless you exercise" },
+            { k: "Bought", v: <span className="mono">{p.signature ? `${p.signature.slice(0, 8)}…${p.signature.slice(-8)}` : "no signature on this cluster"}</span> },
+            ...(p.exercised > 0 ? [{ k: "Exercised so far", v: <span className="mono">{p.exercised} {symbol}</span> }] : [])
+          ]} />
+        </div>
+        <TxStatus state={auto.state} onRetry={auto.reset} />
+      </div>
+      <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
+        <div className="h4 num">{remaining} <span className="small">{symbol}</span></div>
+        {confirm ? (
+          <div className="inset" style={{ padding: 12, maxWidth: 340 }}>
+            <div className="small">Exercise {count} of {remaining}: {words}.</div>
+            <div className="flex items-center gap-2" style={{ marginTop: 8 }}>
+              <input className="field mono" type="number" min={1} max={remaining} value={count} onChange={(e) => setN(Math.min(remaining, Math.max(1, Math.floor(Number(e.target.value) || 1))))} style={{ width: 90, height: 34 }} aria-label="Shares to exercise" data-testid="exercise-size" />
+              <button className="btn primary sm" disabled={!can || busy(tx.state)} onClick={exercise} data-testid="exercise-confirm">Confirm</button>
+              <button className="btn secondary sm" onClick={() => { setConfirm(false); tx.reset(); }}>Cancel</button>
+            </div>
+            {!programDeployed ? <div className="msg red" style={{ marginTop: 8 }}>Program not deployed on this cluster; nothing to sign yet.</div> : null}
+            <TxStatus state={tx.state} onRetry={tx.reset} />
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button className="btn secondary sm" onClick={toggleAuto} disabled={!can || busy(auto.state)} data-testid="auto-toggle">{p.autoExercise ? "Revoke auto-exercise" : "Enable auto-exercise"}</button>
+            <button className="btn secondary sm" onClick={() => setConfirm(true)} disabled={remaining === 0 || p.expired} data-testid="exercise">Exercise now</button>
+          </div>
+        )}
+        {tx.state.status === "done" && !confirm ? <TxStatus state={tx.state} /> : null}
+      </div>
     </div>
   );
 }

@@ -1,59 +1,97 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Badge, ErrorState, Loading, Stat } from "@/components/ui";
-import { usd, usd0, dayLabel, timeLabel } from "@/lib/format";
-import { productName } from "@/lib/model";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Address, Badge, ErrorState, Loading, Stat } from "@/components/ui";
+import { useCluster, explorerUrl } from "@/lib/cluster";
+import { usd, usd0, usdK, dayLabel, timeLabel } from "@/lib/format";
+import { productName, TIER_LABEL } from "@/lib/model";
 import { useRoster } from "@/lib/use-roster";
 
 /*
- * Roster (CLAUDE.md 5): the executable-protection page. Quotes at sizes, reserved capital with accounts, capacity,
- * exercise history including failures, and which underwriters are live.
+ * Roster (CLAUDE.md 5, Part 2 section 6): protocol-wide executable protection. Totals, per market, then the chosen
+ * market's terms with quotes at three sizes, reserved capital with the escrow accounts, capacity, and every exercise
+ * including the ones that declined.
  */
 export default function RosterPage() {
-  const { data, error } = useRoster();
+  return (
+    <Suspense fallback={<Loading what="the roster" />}>
+      <RosterInner />
+    </Suspense>
+  );
+}
+
+function RosterInner() {
+  const params = useSearchParams();
+  const { data, error } = useRoster(params.get("m"));
+  const cluster = useCluster();
   const router = useRouter();
   if (error) return <ErrorState message={`Could not read the roster: ${error}`} next="Reload the page." />;
   if (!data) return <Loading what="the roster" />;
   const sym = data.underlying.symbol;
   const usdcTotal = data.underwriters.reduce((a, u) => a + u.usdcReserved, 0);
   const tokTotal = data.underwriters.reduce((a, u) => a + u.underlyingReserved, 0);
-  const capacity = data.terms.reduce((a, t) => a + (t.capacity - t.openInterest), 0);
+  const capacity = data.terms.reduce((a, t) => a + t.capacity, 0);
   const oi = data.terms.reduce((a, t) => a + t.openInterest, 0);
+  const depthAll = data.markets.reduce((a, m) => a + m.depthUsdc, 0);
+  const liveAll = data.markets.reduce((a, m) => a + m.liveSeries, 0);
 
   return (
     <div>
       <div className="page-head">
         <div>
           <h1 className="h3">Roster</h1>
-          <p className="body-sm">The standing list of who is committed: capital locked, quotes live, and every exercise, including the ones that failed.</p>
+          <p className="body-sm">The standing list of who is committed, protocol-wide and per market: capital locked, quotes live, and every exercise, including the ones that failed.</p>
         </div>
-        <Badge tone={data.underwriters.some((u) => u.live) ? "green" : "amber"} dot>{data.underwriters.filter((u) => u.live).length} underwriters live</Badge>
+        <Badge tone={data.underwriters.some((u) => u.live) ? "green" : "amber"} dot>{data.underwriters.filter((u) => u.live).length} underwriters live on {sym}</Badge>
       </div>
+
       <div className="grid-4" style={{ marginBottom: 16 }}>
-        <Stat k="USDC reserved" v={`$${usd0(usdcTotal)}`} s="backing Floors" />
-        <Stat k={`${sym} reserved`} v={`${tokTotal}`} s="backing Gaps" />
-        <Stat k="Fillable now" v={`${capacity} ${sym}`} s="across every live term" />
-        <Stat k="Open interest" v={`${oi} ${sym}`} s="filled and not yet exercised" />
+        <Stat k="Executable depth, all markets" v={`$${usd0(depthAll)}`} s={`${data.markets.length} listed market${data.markets.length === 1 ? "" : "s"}`} />
+        <Stat k="Live series" v={String(liveAll)} s="capped per market so the book cannot sprawl" />
+        <Stat k={`Fillable now, ${sym}`} v={`${Math.floor(capacity)} ${sym}`} s="across every live term" />
+        <Stat k={`Open interest, ${sym}`} v={`${Math.floor(oi)} ${sym}`} s="filled and not yet exercised" />
       </div>
 
       <div className="card scroll-x" style={{ marginBottom: 16 }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
-          <div className="h6">Quotes at three sizes</div>
-          <div className="small" style={{ marginTop: 4 }}>Each ask is executable at the size shown and backed by escrow. Wider sizes pay more.</div>
+          <div className="h6">Per market</div>
+          <div className="small" style={{ marginTop: 4 }}>Executable depth in USDC, live series against the cap, and the tier that sets who quotes.</div>
+        </div>
+        <table className="table">
+          <thead><tr><th>Market</th><th className="num">Depth</th><th className="num">Series</th><th className="num">Best ask</th><th>Tier</th></tr></thead>
+          <tbody>
+            {data.markets.map((m) => (
+              <tr key={m.symbol} className="row-link" onClick={() => router.push(`/roster?m=${m.symbol}`)} aria-current={m.symbol === sym ? "true" : undefined} style={m.symbol === sym ? { background: "var(--inset)" } : undefined}>
+                <td><div style={{ fontWeight: 500 }}>{m.symbol} <span className="small muted" style={{ fontWeight: 400 }}>{m.name}</span></div></td>
+                <td className="num">${usd0(m.depthUsdc)}</td>
+                <td className="num">{m.liveSeries} / {m.maxLiveSeries}</td>
+                <td className="num">{m.bestAsk === null ? <span className="muted">none</span> : `$${usd(m.bestAsk)}`}</td>
+                <td><Badge tone={m.tier === 1 ? "green" : m.tier === 2 ? "blue" : undefined}>{TIER_LABEL[m.tier]}</Badge></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card scroll-x" style={{ marginBottom: 16 }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
+          <div className="h6">{sym}: quotes at three sizes</div>
+          <div className="small" style={{ marginTop: 4 }}>Each ask is executable at the size shown and backed by escrow. Wider sizes pay more; a dash means that size is not fillable right now.</div>
         </div>
         <table className="table">
           <thead>
-            <tr><th>Term</th><th className="num">10 {sym}</th><th className="num">50 {sym}</th><th className="num">200 {sym}</th><th className="num">Fillable</th><th className="num">Open</th></tr>
+            <tr><th>Term</th><th className="num">10 {sym}</th><th className="num">50 {sym}</th><th className="num">200 {sym}</th><th className="num">Fillable</th><th className="num">Open</th><th>Escrow</th></tr>
           </thead>
           <tbody>
-            {data.terms.map((t) => (
+            {data.terms.length === 0 ? <tr><td colSpan={7} className="muted">No live terms on this market.</td></tr> : data.terms.map((t) => (
               <tr key={t.id} className="row-link" onClick={() => router.push(`/trade/${t.id}`)}>
-                <td><div style={{ fontWeight: 500 }}>{productName(t.side)} ${usd0(t.strike)}</div><div className="small mono">{dayLabel(t.expiryTs)}</div></td>
-                {t.ladder.map((r) => <td key={r.size} className="num">${usd(r.ask)} <span className="small muted">×{r.underwriters}</span></td>)}
-                <td className="num">{t.capacity - t.openInterest}</td>
-                <td className="num">{t.openInterest}</td>
+                <td><div style={{ fontWeight: 500 }}>{productName(t.side)} ${usdK(t.strike)}</div><div className="small mono">{dayLabel(t.expiryTs)}{t.halted ? " · halted" : ""}</div></td>
+                {t.ladder.map((r) => <td key={r.size} className="num">{r.ask === null ? <span className="muted">–</span> : <>${usd(r.ask)} <span className="small muted">×{r.underwriters}</span></>}</td>)}
+                <td className="num">{Math.floor(t.capacity)}</td>
+                <td className="num">{Math.floor(t.openInterest)}</td>
+                <td className="small" onClick={(e) => e.stopPropagation()}>{t.escrow ? <Address value={t.escrow.collateralVault} href={explorerUrl(cluster, "address", t.escrow.collateralVault)} /> : <span className="muted">linked at deploy</span>}</td>
               </tr>
             ))}
           </tbody>
@@ -63,33 +101,33 @@ export default function RosterPage() {
       <div className="grid-2" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.4fr)" }}>
         <div className="card">
           <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
-            <div className="h6">Reserved capital</div>
-            <div className="small" style={{ marginTop: 4 }}>With the escrow accounts, once the program is deployed.</div>
+            <div className="h6">Reserved capital on {sym}</div>
+            <div className="small" style={{ marginTop: 4 }}>Quoted and backed by the writer's own deposit in the series vault.</div>
           </div>
           <table className="table">
             <thead><tr><th>Underwriter</th><th className="num">USDC</th><th className="num">{sym}</th><th>Account</th></tr></thead>
             <tbody>
-              {data.underwriters.map((u) => (
+              {data.underwriters.length === 0 ? <tr><td colSpan={4} className="muted">No underwriter has quoted this market yet.</td></tr> : data.underwriters.map((u) => (
                 <tr key={u.name}>
                   <td><div className="flex items-center gap-2">{u.name} <Badge tone={u.live ? "green" : "amber"} dot>{u.live ? "live" : "idle"}</Badge></div></td>
                   <td className="num">${usd0(u.usdcReserved)}</td>
-                  <td className="num">{u.underlyingReserved}</td>
-                  <td className="small mono">{u.account ?? "linked at deploy"}</td>
+                  <td className="num">{Math.floor(u.underlyingReserved)}</td>
+                  <td className="small">{u.account ? <Address value={u.account} href={explorerUrl(cluster, "address", u.account)} /> : <span className="mono">linked at deploy</span>}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           <div style={{ padding: "12px 20px" }}>
-            <div className="bar" role="img" aria-label={`Capacity used: ${oi} of ${oi + capacity}`}>
+            <div className="bar" role="img" aria-label={`Capacity used: ${Math.floor(oi)} of ${Math.floor(oi + capacity)}`}>
               <span style={{ width: `${(oi / Math.max(1, oi + capacity)) * 100}%`, background: "var(--ink)" }} />
             </div>
-            <div className="small" style={{ marginTop: 6 }}>{oi} {sym} open of {oi + capacity} {sym} committed.</div>
+            <div className="small" style={{ marginTop: 6 }}>{Math.floor(oi)} {sym} open of {Math.floor(oi + capacity)} {sym} committed. USDC reserved backs Floors; {sym} reserved backs Gaps.</div>
           </div>
         </div>
         <div className="card">
           <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
             <div className="h6">Exercise history</div>
-            <div className="small" style={{ marginTop: 4 }}>Every exercise, auto-exercise and release, with the signature, including the ones that declined.</div>
+            <div className="small" style={{ marginTop: 4 }}>Every exercise and auto-exercise on {sym} with its signature, including the ones that declined.</div>
           </div>
           <div className="scroll-x">
             <table className="table">
@@ -100,7 +138,7 @@ export default function RosterPage() {
                     <td className="small mono">{timeLabel(e.ts)}</td>
                     <td><div className="flex items-center gap-2">{e.kind === "auto_exercise" ? "Auto-exercise" : e.kind === "release" ? "Release" : "Exercise"} <Badge tone={e.ok ? "green" : "amber"} dot>{e.ok ? "settled" : "declined"}</Badge></div><div className="small">{e.note}</div></td>
                     <td className="num">{e.shares} {sym}</td>
-                    <td className="small mono">{e.signature ?? "no signature on this cluster"}</td>
+                    <td className="small">{e.signature ? <Address value={e.signature} n={6} href={explorerUrl(cluster, "tx", e.signature)} /> : <span className="mono">no signature on this cluster</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -113,7 +151,7 @@ export default function RosterPage() {
           <div className="h6">Want to be on the roster?</div>
           <div className="small" style={{ marginTop: 4 }}>Lock USDC or {sym}, publish an ask, get paid when it fills. Paid risk, disclosed as such.</div>
         </div>
-        <Link href="/underwrite" className="btn primary">Underwrite a term</Link>
+        <Link href={`/underwrite?m=${sym}`} className="btn primary">Underwrite a term</Link>
       </div>
       <p className="small" style={{ marginTop: 14 }}>{data.source}</p>
     </div>

@@ -48,9 +48,9 @@ function Statement({ title, id, rows, ok, base, badge, cols }: { title: string; 
 
 export function RosterProof({ data }: { data: RosterData }) {
   const near = data.expiries[0] ?? data.nowTs;
-  const call = data.terms.find((t) => t.side === "call" && t.strike === 180 && t.expiryTs === near) ?? data.terms[0];
+  const call = data.terms.find((t) => t.side === "call" && t.strike === 180 && t.expiryTs === near) ?? data.terms.find((t) => t.side === "call" && t.ladder.some((r) => r.ask !== null)) ?? data.terms[0];
   const sym = data.underlying.symbol;
-  const quotes: Row[] = call ? call.ladder.map((r) => ({ d: `${r.size}`, entry: `Gap $${usd0(call.strike)} through ${dayLabel(call.expiryTs)}`, note: `${r.underwriters} underwriter${r.underwriters > 1 ? "s" : ""}, executable`, amount: `$${usd(r.ask)} / share`, balance: `$${usdSmart(r.ask * r.size)}`, tone: "in" })) : [];
+  const quotes: Row[] = call ? call.ladder.map((r) => (r.ask === null ? { d: `${r.size}`, entry: `Gap $${usd0(call.strike)} through ${dayLabel(call.expiryTs)}`, note: "not fillable at this size right now", amount: "–", balance: "–", tone: "flat" as const } : { d: `${r.size}`, entry: `Gap $${usd0(call.strike)} through ${dayLabel(call.expiryTs)}`, note: `${r.underwriters} underwriter${r.underwriters > 1 ? "s" : ""}, executable`, amount: `$${usd(r.ask)} / share`, balance: `$${usdSmart(r.ask * r.size)}`, tone: "in" as const })) : [];
   const reserves: Row[] = data.underwriters.filter((u) => u.live).flatMap((u) => [
     { d: "USDC", entry: u.name, note: u.account ?? "escrow account linked at deploy", amount: `$${usd0(u.usdcReserved)}`, balance: "reserved", tone: "in" as const },
     { d: sym, entry: u.name, note: u.account ?? "escrow account linked at deploy", amount: `${u.underlyingReserved} ${sym}`, balance: "reserved", tone: "in" as const }

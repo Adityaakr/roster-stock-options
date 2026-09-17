@@ -4,7 +4,8 @@
  * `signTransaction`-only wallets (CLAUDE.md 4.4); `send()` signs with the provider wallet and confirms by polling.
  */
 import * as anchorNs from "@anchor-lang/core";
-import type { Wallet } from "@anchor-lang/core";
+import type { Wallet as NodeWallet } from "@anchor-lang/core";
+import type { Wallet } from "@anchor-lang/core/dist/cjs/provider";
 import BN from "bn.js";
 
 // @anchor-lang/core ships CJS and ESM; Node's CJS interop exposes the module as `default`, bundlers as the namespace.
@@ -17,6 +18,21 @@ import type { RosterFinance } from "./idl/roster_finance";
 import { autoExerciseAuthority, autoExercisePda, marketPda, protocolPda, seriesPda, vaultPdas, type Side } from "./pda";
 
 export const ROSTER_IDL = idlJson as RosterFinance;
+
+/**
+ * A wallet that can build but never sign: what a server uses to assemble a transaction for a browser wallet to sign
+ * (CLAUDE.md 4.4: the app builds every transaction and asks the wallet for `signTransaction` only).
+ */
+export function readOnlyWallet(publicKey: PublicKey): Wallet {
+  const refuse = () => Promise.reject(new Error("read-only wallet: sign in the browser wallet"));
+  return { publicKey, signTransaction: refuse, signAllTransactions: refuse };
+}
+
+export interface AutoExerciseState {
+  address: PublicKey;
+  enabled: boolean;
+  minItmBps: number;
+}
 export const ROSTER_PROGRAM_ID = new PublicKey((idlJson as { address: string }).address);
 
 export interface ProtocolState {
@@ -128,7 +144,7 @@ export class RosterClient {
   readonly programId: PublicKey;
   priorityMicroLamports = 20_000;
 
-  constructor(connection: Connection, wallet: Wallet, programId: PublicKey = ROSTER_PROGRAM_ID) {
+  constructor(connection: Connection, wallet: Wallet | NodeWallet, programId: PublicKey = ROSTER_PROGRAM_ID) {
     this.provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
     this.program = new Program<RosterFinance>({ ...ROSTER_IDL, address: programId.toBase58() } as RosterFinance, this.provider);
     this.programId = programId;
@@ -254,9 +270,9 @@ export class RosterClient {
     return this.program.methods.claimPremium().accountsPartial({ writer: this.wallet, market: m.address, series: s.address, quoteMint: m.quoteMint, quoteVault: s.quoteVault, writerQuoteAta: getAssociatedTokenAddressSync(m.quoteMint, this.wallet, false, TOKEN_PROGRAM_ID), quoteTokenProgram: TOKEN_PROGRAM_ID }).transaction();
   }
 
-  async buy(m: MarketState, s: SeriesState, lots6: bigint, maxPremiumPerLot: bigint): Promise<Transaction> {
+  async buy(m: MarketState, s: SeriesState, lots6: bigint, maxPremiumPerLot: bigint, referrer: PublicKey | null = null): Promise<Transaction> {
     return this.program.methods
-      .buy(bn(lots6), bn(maxPremiumPerLot), null)
+      .buy(bn(lots6), bn(maxPremiumPerLot), referrer)
       .accountsPartial({ buyer: this.wallet, protocol: this.protocol, market: m.address, series: s.address, quoteMint: m.quoteMint, quoteVault: s.quoteVault, feeVault: getAssociatedTokenAddressSync(m.quoteMint, this.protocol, true, TOKEN_PROGRAM_ID), buyerQuoteAta: getAssociatedTokenAddressSync(m.quoteMint, this.wallet, false, TOKEN_PROGRAM_ID), positionMint: s.positionMint, buyerPositionAta: getAssociatedTokenAddressSync(s.positionMint, this.wallet, false, TOKEN_2022_PROGRAM_ID), quoteTokenProgram: TOKEN_PROGRAM_ID, token2022Program: TOKEN_2022_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
       .transaction();
   }
@@ -287,12 +303,24 @@ export class RosterClient {
   }
 
   async enableAutoExercise(m: MarketState, s: SeriesState, minItmBps: number): Promise<Transaction> {
+    return this.program.methods.enableAutoExercise(minItmBps).accountsPartial(this.autoExerciseAccounts(m, s)).transaction();
+  }
+
+  private autoExerciseAccounts(m: MarketState, s: SeriesState) {
     const payMint = s.side === "call" ? m.quoteMint : m.mint;
     const payProgram = s.side === "call" ? TOKEN_PROGRAM_ID : m.tokenProgram;
-    return this.program.methods
-      .enableAutoExercise(minItmBps)
-      .accountsPartial({ holder: this.wallet, market: m.address, series: s.address, autoExercise: autoExercisePda(this.programId, this.wallet, s.address), delegate: autoExerciseAuthority(this.programId), positionMint: s.positionMint, holderPositionAta: getAssociatedTokenAddressSync(s.positionMint, this.wallet, false, TOKEN_2022_PROGRAM_ID), payMint, holderPayAta: getAssociatedTokenAddressSync(payMint, this.wallet, false, payProgram), payTokenProgram: payProgram, token2022Program: TOKEN_2022_PROGRAM_ID, systemProgram: SystemProgram.programId })
-      .transaction();
+    return { holder: this.wallet, market: m.address, series: s.address, autoExercise: autoExercisePda(this.programId, this.wallet, s.address), delegate: autoExerciseAuthority(this.programId), positionMint: s.positionMint, holderPositionAta: getAssociatedTokenAddressSync(s.positionMint, this.wallet, false, TOKEN_2022_PROGRAM_ID), payMint, holderPayAta: getAssociatedTokenAddressSync(payMint, this.wallet, false, payProgram), payTokenProgram: payProgram, token2022Program: TOKEN_2022_PROGRAM_ID, systemProgram: SystemProgram.programId };
+  }
+
+  /** Revokes the delegate on both accounts and marks the opt-in disabled. */
+  async disableAutoExercise(m: MarketState, s: SeriesState): Promise<Transaction> {
+    return this.program.methods.disableAutoExercise().accountsPartial(this.autoExerciseAccounts(m, s)).transaction();
+  }
+
+  async fetchAutoExercise(holder: PublicKey, series: PublicKey): Promise<AutoExerciseState | null> {
+    const address = autoExercisePda(this.programId, holder, series);
+    const a = await this.program.account.autoExercise.fetchNullable(address);
+    return a ? { address, enabled: a.enabled, minItmBps: a.minItmBps } : null;
   }
 
   async withdrawFees(quoteMint: PublicKey, treasury: PublicKey, amount: bigint): Promise<Transaction> {
@@ -302,35 +330,44 @@ export class RosterClient {
       .transaction();
   }
 
+  /** Priority fee, recent blockhash and fee payer, so a browser wallet can sign the transaction as-is. */
+  async prepare(tx: Transaction): Promise<{ tx: Transaction; lastValidBlockHeight: number }> {
+    const commitment: Commitment = this.provider.opts.commitment ?? "confirmed";
+    tx.instructions.unshift(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: this.priorityMicroLamports }));
+    const latest = await this.provider.connection.getLatestBlockhash(commitment);
+    tx.recentBlockhash = latest.blockhash;
+    tx.feePayer = this.wallet;
+    return { tx, lastValidBlockHeight: latest.lastValidBlockHeight };
+  }
+
   /**
    * Sign with the provider wallet, send, confirm by polling. Anchor's `.rpc()` gives up after 30 s; this waits until the
    * blockhash expires and re-sends the same signature meanwhile.
    */
   async send(tx: Transaction): Promise<string> {
-    const connection = this.provider.connection;
-    const commitment: Commitment = this.provider.opts.commitment ?? "confirmed";
-    tx.instructions.unshift(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: this.priorityMicroLamports }));
-    const latest = await connection.getLatestBlockhash(commitment);
-    tx.recentBlockhash = latest.blockhash;
-    tx.feePayer = this.wallet;
-    const signed = await this.provider.wallet.signTransaction(tx);
-    const raw = signed.serialize();
-    const signature = await connection.sendRawTransaction(raw, { skipPreflight: false, preflightCommitment: commitment, maxRetries: 0 });
-    const wanted = commitment === "finalized" ? ["finalized"] : ["confirmed", "finalized"];
-    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-    let lastResend = Date.now();
-    for (;;) {
-      const st = (await connection.getSignatureStatuses([signature])).value[0];
-      if (st) {
-        if (st.err) throw new Error(`transaction ${signature} failed: ${JSON.stringify(st.err)}`);
-        if (st.confirmationStatus && wanted.includes(st.confirmationStatus)) return signature;
-      } else if (Date.now() - lastResend > 3000) {
-        await connection.sendRawTransaction(raw, { skipPreflight: true, maxRetries: 0 }).catch(() => undefined);
-        lastResend = Date.now();
-      }
-      const height = await connection.getBlockHeight(commitment);
-      if (height > latest.lastValidBlockHeight && !st) throw new Error(`transaction ${signature} expired: block height exceeded before it was seen`);
-      await sleep(400);
+    const { tx: prepared, lastValidBlockHeight } = await this.prepare(tx);
+    const signed = await this.provider.wallet.signTransaction(prepared);
+    return sendRawAndConfirm(this.provider.connection, signed.serialize(), lastValidBlockHeight, this.provider.opts.commitment ?? "confirmed");
+  }
+}
+
+/** Send a signed transaction and poll until it is confirmed, the blockhash expires, or it fails. */
+export async function sendRawAndConfirm(connection: Connection, raw: Buffer | Uint8Array, lastValidBlockHeight: number, commitment: Commitment = "confirmed"): Promise<string> {
+  const signature = await connection.sendRawTransaction(raw, { skipPreflight: false, preflightCommitment: commitment, maxRetries: 0 });
+  const wanted = commitment === "finalized" ? ["finalized"] : ["confirmed", "finalized"];
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  let lastResend = Date.now();
+  for (;;) {
+    const st = (await connection.getSignatureStatuses([signature])).value[0];
+    if (st) {
+      if (st.err) throw new Error(`transaction ${signature} failed: ${JSON.stringify(st.err)}`);
+      if (st.confirmationStatus && wanted.includes(st.confirmationStatus)) return signature;
+    } else if (Date.now() - lastResend > 3000) {
+      await connection.sendRawTransaction(raw, { skipPreflight: true, maxRetries: 0 }).catch(() => undefined);
+      lastResend = Date.now();
     }
+    const height = await connection.getBlockHeight(commitment);
+    if (height > lastValidBlockHeight && !st) throw new Error(`transaction ${signature} expired: block height exceeded before it was seen`);
+    await sleep(400);
   }
 }

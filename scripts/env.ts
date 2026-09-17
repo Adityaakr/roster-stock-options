@@ -17,8 +17,9 @@ function parse(file: string): Record<string, string> {
 
 export function loadEnvFile(env: NodeJS.ProcessEnv = process.env): void {
   const base = parse(".env");
-  for (const [k, v] of Object.entries(base)) if (env[k] === undefined) env[k] = v;
+  // An empty value in the file is "not set": every default in the code keeps working with the example file copied as-is.
+  for (const [k, v] of Object.entries(base)) if (env[k] === undefined && v !== "") env[k] = v;
   if (!env.ROSTER_ENV) return;
   const profile = parse(`.env.${env.ROSTER_ENV}`);
-  for (const [k, v] of Object.entries(profile)) if (env[k] === undefined || env[k] === base[k]) env[k] = v;
+  for (const [k, v] of Object.entries(profile)) if (v !== "" && (env[k] === undefined || env[k] === base[k])) env[k] = v;
 }

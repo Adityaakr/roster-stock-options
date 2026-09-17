@@ -7,6 +7,6 @@
   "types": "./src/index.ts",
   "exports": { ".": "./src/index.ts" },
   "scripts": { "typecheck": "tsc --noEmit -p tsconfig.json" },
-  "dependencies": { "@roster/core": "workspace:*", "@roster/sdk": "workspace:*", "@solana/spl-token": "0.4.15", "@solana/web3.js": "1.99.0", "zod": "^4.6.5" },
-  "devDependencies": { "typescript": "^5.9.0", "@types/node": "^22.19.0" }
+  "dependencies": { "@roster/core": "workspace:*", "@roster/sdk": "workspace:*", "@solana/spl-token": "0.4.15", "@solana/web3.js": "1.99.0", "bn.js": "5.2.1", "zod": "^4.6.5" },
+  "devDependencies": { "@types/bn.js": "^5.2.0", "typescript": "^5.9.0", "@types/node": "^22.19.0" }
 }

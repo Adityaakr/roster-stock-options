@@ -5,7 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Badge, ErrorState, KV, Loading } from "@/components/ui";
 import { useCluster } from "@/lib/cluster";
-import { usd, usd0, usdSmart, dayLabel } from "@/lib/format";
+import { usd, usd0, usdK, usdSmart, dayLabel } from "@/lib/format";
 import { useRoster } from "@/lib/use-roster";
 
 /*
@@ -63,7 +63,7 @@ export default function BuyPage() {
           <p className="body-sm" style={{ margin: "6px 0 16px" }}>The same swap, plus a Floor bought in the same transaction. Purchase cost, premium and protected proceeds, together.</p>
           <label className="lbl">Floor</label>
           <select className="field" value={f?.id ?? ""} onChange={(e) => setFloorId(e.target.value)} aria-label="Floor">
-            {floors.map((x) => <option key={x.id} value={x.id}>${usd0(x.strike)} through {dayLabel(x.expiryTs)} · ${usd(x.ask)} per share</option>)}
+            {floors.map((x) => <option key={x.id} value={x.id}>${usdK(x.strike)} through {dayLabel(x.expiryTs)} · ${usd(x.ask)} per share</option>)}
           </select>
           <div style={{ marginTop: 14 }}>
             <KV items={[

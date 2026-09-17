@@ -3,11 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge, Tabs } from "@/components/ui";
-import { askAtSize, breakEven, DEFAULT_SIZE, maxLoss, moveNeeded, productName, SESSION_LABEL, type RosterData, type Side } from "@/lib/model";
+import { breakEven, costOf, DEFAULT_SIZE, maxLoss, moveNeeded, productName, SESSION_LABEL, type RosterData, type Side } from "@/lib/model";
 import { dayLabel, countdown, usd, usdSmart } from "@/lib/format";
 
 /*
- * Discover: the live terms for NVDAx, one expiry at a time, each with premium, break-even, max loss at the chosen size
+ * Discover: the live terms of one market, one expiry at a time, each with premium, break-even, max loss at the chosen size
  * and the move the buyer needs. Wallet not required. Selecting a row is the transition to Act (CLAUDE.md 5).
  * `compact` renders the nearest expiry only, for the landing hero.
  */
@@ -58,7 +58,20 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
             {rows.length === 0 ? (
               <tr><td colSpan={7} className="muted">No live terms at this expiry.</td></tr>
             ) : rows.map((t) => {
-              const q = askAtSize(t, size);
+              const c = costOf(t, size, u.multiplier, data.feeBps);
+              const q = { ask: c.fillable ? c.premium / size : null, underwriters: c.writers };
+              if (q.ask === null) {
+                return (
+                  <tr key={t.id} className="row-link" onClick={() => router.push(`/trade/${t.id}`)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/trade/${t.id}`); }}>
+                    <td>
+                      <div style={{ fontWeight: 500, whiteSpace: "nowrap" }}>${usd(t.strike)} <span className="muted">per share</span></div>
+                      <div className="small mono" style={{ whiteSpace: "nowrap" }}>{t.side === "call" ? "right to buy" : "right to sell"} through {dayLabel(t.expiryTs)}</div>
+                    </td>
+                    <td className="num muted" colSpan={5}>{t.capacity > 0 ? `not fillable at ${size}; ${Math.floor(t.capacity)} ${u.symbol} available` : "no ask resident on this term"}</td>
+                    <td className="num">{Math.floor(t.capacity)} {u.symbol}</td>
+                  </tr>
+                );
+              }
               const be = breakEven(t.side, t.strike, q.ask);
               const mv = moveNeeded(t.side, t.strike, q.ask, u.mark);
               const ml = maxLoss(q.ask, size, data.feeBps);
@@ -73,7 +86,7 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
                   <td className="num">${usd(be)}</td>
                   <td className="num">${usdSmart(ml)}</td>
                   <td className={`num ${mv <= 0 ? "up" : ""}`}>{mv >= 0 ? "+" : "−"}{Math.abs(mv).toFixed(1)}%</td>
-                  <td className="num">{t.capacity - t.openInterest} {u.symbol}</td>
+                  <td className="num">{Math.floor(t.capacity)} {u.symbol}</td>
                 </tr>
               );
             })}

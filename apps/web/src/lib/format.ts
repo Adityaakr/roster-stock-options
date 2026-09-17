@@ -10,6 +10,11 @@ export function usd0(v: number): string {
   return Math.round(v).toLocaleString("en-US");
 }
 
+/** A strike: whole dollars when it is one, otherwise cents (a multiplier other than 1 makes per-share strikes fractional). */
+export function usdK(v: number): string {
+  return Math.abs(v - Math.round(v)) < 0.005 ? usd0(v) : usd(v);
+}
+
 /** Dollars at the precision the size deserves: cents for anything under 1,000, whole dollars above. */
 export function usdSmart(v: number): string {
   return Math.abs(v) >= 1000 ? usd0(v) : usd(v);

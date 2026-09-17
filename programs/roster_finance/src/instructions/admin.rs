@@ -37,7 +37,7 @@ pub fn handle_update_protocol(ctx: Context<UpdateProtocol>, p: UpdateProtocolPar
     if let Some(v) = p.fee_bps { require!(v <= 1_000, RosterError::FeeOutOfRange); pr.fee_bps = v; }
     if let Some(v) = p.integrator_share_bps { require!(v <= 10_000, RosterError::FeeOutOfRange); pr.integrator_share_bps = v; }
     if let Some(v) = p.keeper_fee_usdc { pr.keeper_fee_usdc = v; }
-    if let Some(v) = p.grace_secs { pr.grace_secs = v; }
+    if let Some(v) = p.grace_secs { require!(v >= 0, RosterError::FeeOutOfRange); pr.grace_secs = v; }
     if let Some(v) = p.paused_all {
         pr.paused_all = v;
         emit!(PauseToggled { market: None, paused: v });

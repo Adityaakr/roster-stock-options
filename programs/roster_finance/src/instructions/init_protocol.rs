@@ -29,7 +29,7 @@ pub struct InitProtocol<'info> {
 }
 
 pub fn handle_init_protocol(ctx: Context<InitProtocol>, params: InitProtocolParams) -> Result<()> {
-    require!(params.fee_bps <= 1_000 && params.integrator_share_bps <= 10_000, RosterError::FeeOutOfRange);
+    require!(params.fee_bps <= 1_000 && params.integrator_share_bps <= 10_000 && params.grace_secs >= 0, RosterError::FeeOutOfRange);
     let p = &mut ctx.accounts.protocol;
     p.bump = ctx.bumps.protocol;
     p.authority = ctx.accounts.authority.key();

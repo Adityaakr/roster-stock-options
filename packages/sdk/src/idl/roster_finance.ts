@@ -82,7 +82,10 @@ export type RosterFinance = {
         },
         {
           "name": "series",
-          "writable": true
+          "writable": true,
+          "relations": [
+            "autoExercise"
+          ]
         },
         {
           "name": "holder",
@@ -108,6 +111,10 @@ export type RosterFinance = {
               {
                 "kind": "account",
                 "path": "holder"
+              },
+              {
+                "kind": "account",
+                "path": "series"
               }
             ]
           }
@@ -1248,10 +1255,6 @@ export type RosterFinance = {
         {
           "name": "expiryTs",
           "type": "i64"
-        },
-        {
-          "name": "symbol",
-          "type": "string"
         }
       ]
     },
@@ -1321,6 +1324,10 @@ export type RosterFinance = {
               {
                 "kind": "account",
                 "path": "holder"
+              },
+              {
+                "kind": "account",
+                "path": "series"
               }
             ]
           }
@@ -1456,6 +1463,10 @@ export type RosterFinance = {
               {
                 "kind": "account",
                 "path": "holder"
+              },
+              {
+                "kind": "account",
+                "path": "series"
               }
             ]
           }
@@ -3179,6 +3190,10 @@ export type RosterFinance = {
             "type": "pubkey"
           },
           {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
             "name": "enabled",
             "type": "bool"
           },
@@ -3325,6 +3340,19 @@ export type RosterFinance = {
           {
             "name": "maxConfBps",
             "type": "u16"
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          },
+          {
+            "name": "feedPricesUiShare",
+            "type": "bool"
           }
         ]
       }
@@ -3583,11 +3611,30 @@ export type RosterFinance = {
             "type": "u16"
           },
           {
+            "name": "symbol",
+            "docs": [
+              "Ticker used in position-token metadata, set at listing; never caller-supplied."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          },
+          {
+            "name": "feedPricesUiShare",
+            "docs": [
+              "The token feed prices one UI share-equivalent (true) or one raw token (false); decides the multiplier factor in auto-exercise."
+            ],
+            "type": "bool"
+          },
+          {
             "name": "reserved",
             "type": {
               "array": [
                 "u8",
-                64
+                55
               ]
             }
           }
@@ -3911,6 +3958,13 @@ export type RosterFinance = {
           },
           {
             "name": "haltedAt",
+            "type": "i64"
+          },
+          {
+            "name": "resumedAt",
+            "docs": [
+              "First observation of the mint unpaused after a halt; settlement waits 24 h from here."
+            ],
             "type": "i64"
           },
           {

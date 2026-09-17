@@ -113,6 +113,106 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
+  packages/indexer:
+    dependencies:
+      '@roster/core':
+        specifier: workspace:*
+        version: link:../core
+      '@roster/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      '@solana/spl-token':
+        specifier: 0.4.15
+        version: 0.4.15(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      '@solana/web3.js':
+        specifier: 1.99.0
+        version: 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.0
+        version: 22.20.3
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/keeper:
+    dependencies:
+      '@roster/core':
+        specifier: workspace:*
+        version: link:../core
+      '@roster/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      '@solana/spl-token':
+        specifier: 0.4.15
+        version: 0.4.15(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      '@solana/web3.js':
+        specifier: 1.99.0
+        version: 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.0
+        version: 22.20.3
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/oracle:
+    dependencies:
+      '@roster/core':
+        specifier: workspace:*
+        version: link:../core
+      '@roster/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      '@solana/spl-token':
+        specifier: 0.4.15
+        version: 0.4.15(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      '@solana/web3.js':
+        specifier: 1.99.0
+        version: 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.0
+        version: 22.20.3
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/quoter:
+    dependencies:
+      '@roster/core':
+        specifier: workspace:*
+        version: link:../core
+      '@roster/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      '@solana/spl-token':
+        specifier: 0.4.15
+        version: 0.4.15(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      '@solana/web3.js':
+        specifier: 1.99.0
+        version: 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.0
+        version: 22.20.3
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
   packages/sdk:
     dependencies:
       '@anchor-lang/core':
@@ -134,6 +234,46 @@ importers:
       '@types/bn.js':
         specifier: ^5.2.0
         version: 5.2.0
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/services:
+    dependencies:
+      '@anchor-lang/core':
+        specifier: 1.2.0
+        version: 1.2.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      '@roster/core':
+        specifier: workspace:*
+        version: link:../core
+      '@roster/indexer':
+        specifier: workspace:*
+        version: link:../indexer
+      '@roster/keeper':
+        specifier: workspace:*
+        version: link:../keeper
+      '@roster/oracle':
+        specifier: workspace:*
+        version: link:../oracle
+      '@roster/quoter':
+        specifier: workspace:*
+        version: link:../quoter
+      '@roster/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      '@solana/spl-token':
+        specifier: 0.4.15
+        version: 0.4.15(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      '@solana/web3.js':
+        specifier: 1.99.0
+        version: 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.0
+        version: 22.20.3
       typescript:
         specifier: ^5.9.0
         version: 5.9.3

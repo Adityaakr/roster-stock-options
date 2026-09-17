@@ -27,7 +27,7 @@ pub struct SetAutoExercise<'info> {
     pub market: Account<'info, MarketConfig>,
     #[account(has_one = market @ RosterError::WrongAccount, has_one = position_mint @ RosterError::WrongAccount)]
     pub series: AccountLoader<'info, Series>,
-    #[account(init_if_needed, payer = holder, space = 8 + AutoExercise::INIT_SPACE, seeds = [AutoExercise::SEED, holder.key().as_ref()], bump)]
+    #[account(init_if_needed, payer = holder, space = 8 + AutoExercise::INIT_SPACE, seeds = [AutoExercise::SEED, holder.key().as_ref(), series.key().as_ref()], bump)]
     pub auto_exercise: Account<'info, AutoExercise>,
     /// CHECK: the program's delegate PDA; it can only act through `auto_exercise`.
     #[account(seeds = [AutoExercise::AUTHORITY_SEED], bump)]
@@ -58,6 +58,7 @@ pub fn handle_enable_auto_exercise(ctx: Context<SetAutoExercise>, min_itm_bps: u
     let a = &mut ctx.accounts.auto_exercise;
     a.bump = ctx.bumps.auto_exercise;
     a.holder = ctx.accounts.holder.key();
+    a.series = ctx.accounts.series.key();
     a.enabled = true;
     a.min_itm_bps = min_itm_bps;
     token_interface::approve_checked(
@@ -93,7 +94,7 @@ pub struct AutoExerciseCrank<'info> {
     pub series: AccountLoader<'info, Series>,
     /// CHECK: the holder being exercised for; its opt-in account and token accounts are derived from it.
     pub holder: UncheckedAccount<'info>,
-    #[account(seeds = [AutoExercise::SEED, holder.key().as_ref()], bump = auto_exercise.bump, has_one = holder @ RosterError::WrongAccount)]
+    #[account(seeds = [AutoExercise::SEED, holder.key().as_ref(), series.key().as_ref()], bump = auto_exercise.bump, has_one = holder @ RosterError::WrongAccount, has_one = series @ RosterError::WrongAccount)]
     pub auto_exercise: Account<'info, AutoExercise>,
     /// CHECK: the delegate PDA signing on the holder's behalf.
     #[account(seeds = [AutoExercise::AUTHORITY_SEED], bump)]
@@ -144,9 +145,12 @@ pub fn handle_auto_exercise(ctx: Context<AutoExerciseCrank>, lots6: u64) -> Resu
     let series_key = ctx.accounts.series.key();
     let series = ctx.accounts.series.load()?;
     let now = clock.unix_timestamp;
-    require!(now >= series.expiry_ts - protocol.grace_secs && now < series.expiry_ts, RosterError::OutsideWindow);
-    require!(lots6 > 0 && lots6 <= series.unassigned_lots6, RosterError::SizeOutOfRange);
-    require!(ctx.accounts.holder_position_ata.amount >= lots6, RosterError::InsufficientPosition);
+    let deadline = series.effective_expiry(crate::instructions::shared::HALT_GRACE_SECS);
+    require!(now >= deadline - protocol.grace_secs && now < deadline, RosterError::OutsideWindow);
+    // The crank exercises the whole position in one call, so the keeper fee is paid once per holder and series and
+    // cannot be farmed by chunking (skeptic finding 1).
+    let whole = ctx.accounts.holder_position_ata.amount.min(series.unassigned_lots6);
+    require!(lots6 > 0 && lots6 == whole && lots6 >= market.min_lots6, RosterError::SizeOutOfRange);
 
     // The only price read in the program: fresh, fully verified, the market's own feed, tight confidence.
     let price = ctx.accounts.price_update.get_price_no_older_than(&clock, u64::from(market.max_price_age_secs), &market.token_feed_id).map_err(|_| RosterError::BadPriceUpdate)?;
@@ -159,7 +163,7 @@ pub fn handle_auto_exercise(ctx: Context<AutoExerciseCrank>, lots6: u64) -> Resu
         }
         Err(_) => 1.0,
     };
-    let lot_value = lot_value_usdc(&price, multiplier)?;
+    let lot_value = lot_value_usdc(&price, if market.feed_prices_ui_share { multiplier } else { 1.0 })?;
     let strike = series.strike_usdc_per_lot;
     let intrinsic_per_lot = match series.side() {
         Side::Call => lot_value.saturating_sub(strike),

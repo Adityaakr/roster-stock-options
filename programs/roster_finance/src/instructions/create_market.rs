@@ -19,6 +19,8 @@ pub struct CreateMarketParams {
     pub tier: u8,
     pub max_price_age_secs: u32,
     pub max_conf_bps: u16,
+    pub symbol: [u8; 8],
+    pub feed_prices_ui_share: bool,
 }
 
 #[derive(Accounts)]
@@ -82,6 +84,8 @@ pub fn handle_create_market(ctx: Context<CreateMarket>, params: CreateMarketPara
     m.issuer_paused_at = 0;
     m.max_price_age_secs = params.max_price_age_secs;
     m.max_conf_bps = params.max_conf_bps;
+    m.symbol = params.symbol;
+    m.feed_prices_ui_share = params.feed_prices_ui_share;
 
     emit!(MarketCreated { market: m.key(), mint: m.mint, tier: m.tier });
     Ok(())

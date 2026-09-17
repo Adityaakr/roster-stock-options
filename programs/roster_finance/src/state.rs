@@ -75,7 +75,11 @@ pub struct MarketConfig {
     pub issuer_paused_at: i64,
     pub max_price_age_secs: u32,
     pub max_conf_bps: u16,
-    pub _reserved: [u8; 64],
+    /// Ticker used in position-token metadata, set at listing; never caller-supplied.
+    pub symbol: [u8; 8],
+    /// The token feed prices one UI share-equivalent (true) or one raw token (false); decides the multiplier factor in auto-exercise.
+    pub feed_prices_ui_share: bool,
+    pub _reserved: [u8; 55],
 }
 
 impl MarketConfig {
@@ -84,6 +88,9 @@ impl MarketConfig {
     /// Raw units in one six-decimal lot unit: 10^(decimals - 6).
     pub fn raw_per_lot6(&self) -> u64 {
         10u64.pow(u32::from(self.decimals) - 6)
+    }
+    pub fn symbol_str(&self) -> String {
+        String::from_utf8_lossy(&self.symbol).trim_end_matches('\0').to_string()
     }
 }
 
@@ -171,6 +178,8 @@ pub struct Series {
     pub unassigned_lots6: u64,
     pub p: [u64; 2],
     pub halted_at: i64,
+    /// First observation of the mint unpaused after a halt; settlement waits 24 h from here.
+    pub resumed_at: i64,
     pub seq: u64,
     pub epoch: u32,
     pub scale: u8,
@@ -207,6 +216,15 @@ impl Series {
     pub fn is_open(&self) -> bool {
         self.state == SERIES_OPEN
     }
+    /// Exercise stays open through a halt that reaches expiry: the deadline is the later of expiry and 24 h after resume.
+    pub fn effective_expiry(&self, halt_grace: i64) -> i64 {
+        if self.state == SERIES_HALTED {
+            let from = if self.resumed_at > 0 { self.resumed_at } else { self.halted_at };
+            self.expiry_ts.max(from.saturating_add(halt_grace))
+        } else {
+            self.expiry_ts
+        }
+    }
 
     pub fn writer_slot(&self, writer: &Pubkey) -> Option<usize> {
         self.writers.iter().position(|w| w.writer == *writer)
@@ -224,6 +242,7 @@ impl Series {
 pub struct AutoExercise {
     pub bump: u8,
     pub holder: Pubkey,
+    pub series: Pubkey,
     pub enabled: bool,
     pub min_itm_bps: u16,
     pub _reserved: [u8; 16],

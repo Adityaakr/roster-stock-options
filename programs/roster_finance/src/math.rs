@@ -60,6 +60,12 @@ pub fn apply_exercise(series: &mut Series, q: u64) {
         p *= P_SCALE;
         series.scale = series.scale.wrapping_add(1);
     }
+    if p == 0 {
+        // The remaining fraction is below 1e-27 of a unit: everything open is assigned, the residue is dust, new epoch.
+        series.epoch = series.epoch.wrapping_add(1);
+        p = P_ONE;
+        series.scale = 0;
+    }
     series.set_p(p);
     series.unassigned_lots6 = u - q;
 }
@@ -88,7 +94,7 @@ fn split(w: &WriterSlot, p: u128, scale: u8, epoch: u32) -> (u64, u64) {
         return (0, w.open_lots6);
     }
     let diff = scale.wrapping_sub(w.scale_snap);
-    if diff >= 2 {
+    if diff >= 2 || w.p_snap() == 0 {
         // Two rescales since the snapshot: the remaining fraction is below 1e-18 of a lot unit, treat as fully assigned.
         return (0, w.open_lots6);
     }
@@ -241,6 +247,29 @@ mod tests {
         // ex2 -> A 2.4348, B 6.6957, C 11.8696. A +3 -> A 5.4348, pool 24, ex7 -> A 5.4348*17/24=3.8496.
         let (a_open, _) = settled(&s, 0);
         assert!((a_open as i128 - 3_849_638).abs() <= 2, "a_open {a_open}");
+    }
+
+    #[test]
+    fn p_reaching_zero_rolls_the_epoch_instead_of_bricking_later_writers() {
+        // Skeptic finding 3: u = 1e9 units, exercise u - 1, sell 1e9 more, exercise u - 1 again drives p to 0.
+        let mut s = series();
+        sell(&mut s, 0, 1_000_000_000);
+        let u = s.unassigned_lots6;
+        exercise(&mut s, u - 1);
+        sell(&mut s, 1, 1_000_000_000);
+        let u = s.unassigned_lots6;
+        exercise(&mut s, u - 1);
+        assert!(s.p() > 0, "p must never be zero");
+        // A writer joining now folds and settles without a division by zero, and is unassigned on what it sold.
+        sell(&mut s, 2, 100 * LOT6);
+        exercise(&mut s, 1);
+        let (open, assigned) = settled(&s, 2);
+        assert!(open + assigned <= 100 * LOT6 && open >= 100 * LOT6 - 2, "open {open} assigned {assigned}");
+        for slot in 0..2 {
+            let (open, assigned) = settled(&s, slot);
+            assert!(open <= 2, "old writer {slot} open {open}");
+            assert!(assigned <= 1_000_000_000);
+        }
     }
 
     #[test]

@@ -11,7 +11,7 @@ fn print_compute_units() {
     let (cv, sv, qv) = env.vaults(&series);
     let ix = Instruction::new_with_bytes(
         env.program_id,
-        &roster_finance::instruction::CreateSeries { side: Side::Call, strike_usdc_per_lot: 180 * USDC, expiry_ts: env.expiries[0], symbol: "NVDAx".into() }.data(),
+        &roster_finance::instruction::CreateSeries { side: Side::Call, strike_usdc_per_lot: 180 * USDC, expiry_ts: env.expiries[0] }.data(),
         roster_finance::accounts::CreateSeries { payer: payer.pubkey(), protocol: env.protocol, market: env.market, underlying_mint: env.mint, quote_mint: env.usdc, collateral_mint: env.mint, settlement_mint: env.usdc, series, position_mint: env.pmint(&series), collateral_vault: cv, settlement_vault: sv, quote_vault: qv, collateral_token_program: spl_token_2022::id(), settlement_token_program: spl_token::id(), quote_token_program: spl_token::id(), token_2022_program: spl_token_2022::id(), system_program: system_program::ID }.to_account_metas(None),
     );
     let cu_create = send_cu(&mut env.svm, &payer, &[&payer], &[ix]).unwrap();

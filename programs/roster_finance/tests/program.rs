@@ -122,17 +122,25 @@ fn exercise_windows_and_rejections() {
     // One second before expiry.
     warp_to(&mut env.svm, expiry - 1);
     env.exercise(&h, &series, 10 * LOT).unwrap();
-    // More than the pool has open: rejected before any transfer.
+    // More than the pool has open: rejected before any transfer. More than held (a second holder with 10): rejected.
     expect_err(env.exercise(&h, &series, 60 * LOT), "SizeOutOfRange");
+    let h2 = env.wallet(0, 100_000);
+    let s2 = load_series(&env.svm, &series);
+    let pm = s2.position_mint;
+    let ix = spl_token_2022::instruction::transfer_checked(&spl_token_2022::id(), &ata(&h.pubkey(), &pm, &spl_token_2022::id()), &pm, &create_ata(&mut env.svm, &h2, &h2.pubkey(), &pm, &spl_token_2022::id()), &h.pubkey(), &[], 10 * LOT, 6).unwrap();
+    send(&mut env.svm, &h, &[&h], &[ix]).unwrap();
+    env.exercise(&h2, &series, 10 * LOT).unwrap();
+    // The same holder cannot exercise the burned tokens twice.
+    expect_err(env.exercise(&h2, &series, 1 * LOT), "InsufficientPosition");
     // After expiry: rejected; settle before expiry was rejected too.
     warp_to(&mut env.svm, expiry - 1);
     expect_err(env.settle_writer(&a.pubkey(), &series), "NotExpired");
     warp_to(&mut env.svm, expiry);
     expect_err(env.exercise(&h, &series, 1 * LOT), "Expired");
     let s = load_series(&env.svm, &series);
-    assert_eq!(s.total_exercised_lots6, 50 * LOT);
-    assert_eq!(s.unassigned_lots6, 50 * LOT);
-    assert_eq!(mint_supply(&env.svm, &s.position_mint), 50 * LOT);
+    assert_eq!(s.total_exercised_lots6, 60 * LOT);
+    assert_eq!(s.unassigned_lots6, 40 * LOT);
+    assert_eq!(mint_supply(&env.svm, &s.position_mint), 40 * LOT);
 }
 
 #[test]

@@ -37,8 +37,8 @@ pub mod roster_finance {
     }
 
     /// Create a series on the grid: pooled vaults and a Token-2022 position mint. Permissionless.
-    pub fn create_series(ctx: Context<CreateSeries>, side: Side, strike_usdc_per_lot: u64, expiry_ts: i64, symbol: String) -> Result<()> {
-        instructions::create_series::handle_create_series(ctx, side, strike_usdc_per_lot, expiry_ts, symbol)
+    pub fn create_series(ctx: Context<CreateSeries>, side: Side, strike_usdc_per_lot: u64, expiry_ts: i64) -> Result<()> {
+        instructions::create_series::handle_create_series(ctx, side, strike_usdc_per_lot, expiry_ts)
     }
 
     /// Deposit collateral (optional) and post an ask from free collateral.

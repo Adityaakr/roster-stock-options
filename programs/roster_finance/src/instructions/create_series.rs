@@ -56,7 +56,7 @@ pub struct CreateSeries<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handle_create_series(ctx: Context<CreateSeries>, side: Side, strike_usdc_per_lot: u64, expiry_ts: i64, symbol: String) -> Result<()> {
+pub fn handle_create_series(ctx: Context<CreateSeries>, side: Side, strike_usdc_per_lot: u64, expiry_ts: i64) -> Result<()> {
     let clock = Clock::get()?;
     let market = &mut ctx.accounts.market;
     require!(market.listed, RosterError::NotListed);
@@ -72,7 +72,9 @@ pub fn handle_create_series(ctx: Context<CreateSeries>, side: Side, strike_usdc_
         Side::Put => (market.quote_mint, market.mint),
     };
     require!(ctx.accounts.collateral_mint.key() == want_collateral && ctx.accounts.settlement_mint.key() == want_settlement, RosterError::WrongVaultMint);
-    require!(symbol.len() <= 16, RosterError::WrongAccount);
+    // Fee-inclusive put settlement lands with First Print (M7); until then transfer-fee mints list calls only.
+    require!(!(market.has_transfer_fee && side == Side::Put), RosterError::WrongVaultMint);
+    let symbol = market.symbol_str();
     market.live_series += 1;
 
     let series_key = ctx.accounts.series.key();
@@ -95,6 +97,7 @@ pub fn handle_create_series(ctx: Context<CreateSeries>, side: Side, strike_usdc_
     s.epoch = 0;
     s.state = SERIES_OPEN;
     s.halted_at = 0;
+    s.resumed_at = 0;
     s.rent_payer = ctx.accounts.payer.key();
     s.seq = 0;
     s.asks_len = 0;

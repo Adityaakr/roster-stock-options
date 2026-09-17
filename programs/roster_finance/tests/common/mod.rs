@@ -224,6 +224,8 @@ impl Env {
             tier: 1,
             max_price_age_secs: 60,
             max_conf_bps: 100,
+            symbol: *b"NVDAx\0\0\0",
+            feed_prices_ui_share: true,
         };
         let ix = Instruction::new_with_bytes(
             self.program_id,
@@ -257,7 +259,7 @@ impl Env {
         };
         let ix = Instruction::new_with_bytes(
             self.program_id,
-            &roster_finance::instruction::CreateSeries { side, strike_usdc_per_lot: strike, expiry_ts: expiry, symbol: "NVDAx".into() }.data(),
+            &roster_finance::instruction::CreateSeries { side, strike_usdc_per_lot: strike, expiry_ts: expiry }.data(),
             roster_finance::accounts::CreateSeries {
                 payer: payer.pubkey(),
                 protocol: self.protocol,
@@ -487,8 +489,8 @@ impl Env {
     pub fn delegate_pda(&self) -> Pubkey {
         Pubkey::find_program_address(&[AutoExercise::AUTHORITY_SEED], &self.program_id).0
     }
-    pub fn autoex_pda(&self, holder: &Pubkey) -> Pubkey {
-        Pubkey::find_program_address(&[AutoExercise::SEED, holder.as_ref()], &self.program_id).0
+    pub fn autoex_pda(&self, holder: &Pubkey, series: &Pubkey) -> Pubkey {
+        Pubkey::find_program_address(&[AutoExercise::SEED, holder.as_ref(), series.as_ref()], &self.program_id).0
     }
 
     fn set_auto_exercise_accounts(&self, holder: &Keypair, series: &Pubkey) -> roster_finance::accounts::SetAutoExercise {
@@ -498,7 +500,7 @@ impl Env {
             holder: holder.pubkey(),
             market: self.market,
             series: *series,
-            auto_exercise: self.autoex_pda(&holder.pubkey()),
+            auto_exercise: self.autoex_pda(&holder.pubkey(), series),
             delegate: self.delegate_pda(),
             position_mint: s.position_mint,
             holder_position_ata: ata(&holder.pubkey(), &s.position_mint, &spl_token_2022::id()),
@@ -545,7 +547,7 @@ impl Env {
                 market: self.market,
                 series: *series,
                 holder: *holder,
-                auto_exercise: self.autoex_pda(holder),
+                auto_exercise: self.autoex_pda(holder, series),
                 delegate: self.delegate_pda(),
                 underlying_mint: self.mint,
                 quote_mint: self.usdc,

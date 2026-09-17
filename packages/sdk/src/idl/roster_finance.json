@@ -76,7 +76,10 @@
         },
         {
           "name": "series",
-          "writable": true
+          "writable": true,
+          "relations": [
+            "auto_exercise"
+          ]
         },
         {
           "name": "holder",
@@ -102,6 +105,10 @@
               {
                 "kind": "account",
                 "path": "holder"
+              },
+              {
+                "kind": "account",
+                "path": "series"
               }
             ]
           }
@@ -1242,10 +1249,6 @@
         {
           "name": "expiry_ts",
           "type": "i64"
-        },
-        {
-          "name": "symbol",
-          "type": "string"
         }
       ]
     },
@@ -1315,6 +1318,10 @@
               {
                 "kind": "account",
                 "path": "holder"
+              },
+              {
+                "kind": "account",
+                "path": "series"
               }
             ]
           }
@@ -1450,6 +1457,10 @@
               {
                 "kind": "account",
                 "path": "holder"
+              },
+              {
+                "kind": "account",
+                "path": "series"
               }
             ]
           }
@@ -3173,6 +3184,10 @@
             "type": "pubkey"
           },
           {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
             "name": "enabled",
             "type": "bool"
           },
@@ -3319,6 +3334,19 @@
           {
             "name": "max_conf_bps",
             "type": "u16"
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          },
+          {
+            "name": "feed_prices_ui_share",
+            "type": "bool"
           }
         ]
       }
@@ -3577,11 +3605,30 @@
             "type": "u16"
           },
           {
+            "name": "symbol",
+            "docs": [
+              "Ticker used in position-token metadata, set at listing; never caller-supplied."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          },
+          {
+            "name": "feed_prices_ui_share",
+            "docs": [
+              "The token feed prices one UI share-equivalent (true) or one raw token (false); decides the multiplier factor in auto-exercise."
+            ],
+            "type": "bool"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                64
+                55
               ]
             }
           }
@@ -3905,6 +3952,13 @@
           },
           {
             "name": "halted_at",
+            "type": "i64"
+          },
+          {
+            "name": "resumed_at",
+            "docs": [
+              "First observation of the mint unpaused after a halt; settlement waits 24 h from here."
+            ],
             "type": "i64"
           },
           {

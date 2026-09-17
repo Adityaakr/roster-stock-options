@@ -56,6 +56,8 @@ export interface MarketState {
   tier: number;
   listed: boolean;
   paused: boolean;
+  symbol: string;
+  feedPricesUiShare: boolean;
 }
 
 export interface AskState {
@@ -111,6 +113,8 @@ export interface CreateMarketInput {
   tier: number;
   maxPriceAgeSecs: number;
   maxConfBps: number;
+  symbol: string;
+  feedPricesUiShare: boolean;
 }
 
 const bn = (v: bigint | number) => new BN(v.toString());
@@ -154,7 +158,7 @@ export class RosterClient {
     const address = this.market(mint);
     const m = await this.program.account.marketConfig.fetchNullable(address);
     if (!m) return null;
-    return { address, mint: m.mint, quoteMint: m.quoteMint, tokenProgram: m.tokenProgram, decimals: m.decimals, hasTransferFee: m.hasTransferFee, hasPermanentDelegate: m.hasPermanentDelegate, pausable: m.pausable, hookProgram: m.hookProgram, tokenFeedId: Uint8Array.from(m.tokenFeedId), equityFeedId: Uint8Array.from(m.equityFeedId), allowedExpiries: m.allowedExpiries.map(big).filter((x: bigint) => x > 0n), strikeStep: big(m.strikeStep), minStrike: big(m.minStrike), maxStrike: big(m.maxStrike), maxLiveSeries: m.maxLiveSeries, liveSeries: m.liveSeries, minLots6: big(m.minLots6), maxLots6: big(m.maxLots6), maxWriterLots6: big(m.maxWriterLots6), tier: m.tier, listed: m.listed, paused: m.paused };
+    return { address, mint: m.mint, quoteMint: m.quoteMint, tokenProgram: m.tokenProgram, decimals: m.decimals, hasTransferFee: m.hasTransferFee, hasPermanentDelegate: m.hasPermanentDelegate, pausable: m.pausable, hookProgram: m.hookProgram, tokenFeedId: Uint8Array.from(m.tokenFeedId), equityFeedId: Uint8Array.from(m.equityFeedId), allowedExpiries: m.allowedExpiries.map(big).filter((x: bigint) => x > 0n), strikeStep: big(m.strikeStep), minStrike: big(m.minStrike), maxStrike: big(m.maxStrike), maxLiveSeries: m.maxLiveSeries, liveSeries: m.liveSeries, minLots6: big(m.minLots6), maxLots6: big(m.maxLots6), maxWriterLots6: big(m.maxWriterLots6), tier: m.tier, listed: m.listed, paused: m.paused, symbol: Buffer.from(m.symbol).toString("utf8").replace(/\0+$/, ""), feedPricesUiShare: m.feedPricesUiShare };
   }
 
   private decodeSeries(address: PublicKey, s: Awaited<ReturnType<typeof this.program.account.series.fetch>>): SeriesState {
@@ -201,7 +205,7 @@ export class RosterClient {
 
   async createMarket(input: CreateMarketInput): Promise<Transaction> {
     return this.program.methods
-      .createMarket({ tokenFeedId: Array.from(input.tokenFeedId), equityFeedId: Array.from(input.equityFeedId), allowedExpiries: pad4(input.allowedExpiries), strikeStep: bn(input.strikeStep), minStrike: bn(input.minStrike), maxStrike: bn(input.maxStrike), maxLiveSeries: input.maxLiveSeries, minLots6: bn(input.minLots6), maxLots6: bn(input.maxLots6), maxWriterLots6: bn(input.maxWriterLots6), tier: input.tier, maxPriceAgeSecs: input.maxPriceAgeSecs, maxConfBps: input.maxConfBps })
+      .createMarket({ tokenFeedId: Array.from(input.tokenFeedId), equityFeedId: Array.from(input.equityFeedId), allowedExpiries: pad4(input.allowedExpiries), strikeStep: bn(input.strikeStep), minStrike: bn(input.minStrike), maxStrike: bn(input.maxStrike), maxLiveSeries: input.maxLiveSeries, minLots6: bn(input.minLots6), maxLots6: bn(input.maxLots6), maxWriterLots6: bn(input.maxWriterLots6), tier: input.tier, maxPriceAgeSecs: input.maxPriceAgeSecs, maxConfBps: input.maxConfBps, symbol: Array.from(Buffer.from(input.symbol.padEnd(8, "\0").slice(0, 8))), feedPricesUiShare: input.feedPricesUiShare })
       .accountsPartial({ authority: this.wallet, protocol: this.protocol, market: this.market(input.mint), mint: input.mint, systemProgram: SystemProgram.programId })
       .transaction();
   }
@@ -221,12 +225,12 @@ export class RosterClient {
       : { collateralMint: m.quoteMint, settlementMint: m.mint, collateralProgram: TOKEN_PROGRAM_ID, settlementProgram: underlyingProgram };
   }
 
-  async createSeries(m: MarketState, side: Side, strikeUsdcPerLot: bigint, expiryTs: bigint, symbol: string): Promise<{ tx: Transaction; series: PublicKey }> {
+  async createSeries(m: MarketState, side: Side, strikeUsdcPerLot: bigint, expiryTs: bigint): Promise<{ tx: Transaction; series: PublicKey }> {
     const series = this.series(m.address, side, strikeUsdcPerLot, expiryTs);
     const v = vaultPdas(this.programId, series);
     const l = this.legs(m, side);
     const tx = await this.program.methods
-      .createSeries(sideArg(side), bn(strikeUsdcPerLot), bn(expiryTs), symbol)
+      .createSeries(sideArg(side), bn(strikeUsdcPerLot), bn(expiryTs))
       .accountsPartial({ payer: this.wallet, protocol: this.protocol, market: m.address, underlyingMint: m.mint, quoteMint: m.quoteMint, collateralMint: l.collateralMint, settlementMint: l.settlementMint, series, positionMint: v.positionMint, collateralVault: v.collateral, settlementVault: v.settlement, quoteVault: v.quote, collateralTokenProgram: l.collateralProgram, settlementTokenProgram: l.settlementProgram, quoteTokenProgram: TOKEN_PROGRAM_ID, token2022Program: TOKEN_2022_PROGRAM_ID, systemProgram: SystemProgram.programId })
       .transaction();
     return { tx, series };
@@ -287,7 +291,7 @@ export class RosterClient {
     const payProgram = s.side === "call" ? TOKEN_PROGRAM_ID : m.tokenProgram;
     return this.program.methods
       .enableAutoExercise(minItmBps)
-      .accountsPartial({ holder: this.wallet, market: m.address, series: s.address, autoExercise: autoExercisePda(this.programId, this.wallet), delegate: autoExerciseAuthority(this.programId), positionMint: s.positionMint, holderPositionAta: getAssociatedTokenAddressSync(s.positionMint, this.wallet, false, TOKEN_2022_PROGRAM_ID), payMint, holderPayAta: getAssociatedTokenAddressSync(payMint, this.wallet, false, payProgram), payTokenProgram: payProgram, token2022Program: TOKEN_2022_PROGRAM_ID, systemProgram: SystemProgram.programId })
+      .accountsPartial({ holder: this.wallet, market: m.address, series: s.address, autoExercise: autoExercisePda(this.programId, this.wallet, s.address), delegate: autoExerciseAuthority(this.programId), positionMint: s.positionMint, holderPositionAta: getAssociatedTokenAddressSync(s.positionMint, this.wallet, false, TOKEN_2022_PROGRAM_ID), payMint, holderPayAta: getAssociatedTokenAddressSync(payMint, this.wallet, false, payProgram), payTokenProgram: payProgram, token2022Program: TOKEN_2022_PROGRAM_ID, systemProgram: SystemProgram.programId })
       .transaction();
   }
 

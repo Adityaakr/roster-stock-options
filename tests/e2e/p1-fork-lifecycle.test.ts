@@ -10,6 +10,7 @@ import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAccount, getAssociatedToken
 import * as anchorNs from "@anchor-lang/core";
 import { RosterClient, ROSTER_PROGRAM_ID, type MarketState, type SeriesState } from "../../packages/sdk/src";
 import { FORK_URL, USDC_MINT, clockUnix, forkReachable, fundSol, fundToken, loadOrCreateKey, resolveXstockMint, timeTravelTo } from "../../scripts/fork-lib";
+import { ensureTier1Market } from "./market";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
 const LOT = 1_000_000n;
@@ -58,22 +59,11 @@ describe.skipIf(!deployed)("P1 lifecycle on the fork with the real NVDAx mint", 
 
   it("initialises the protocol once and lists NVDAx from its real mint", async () => {
     const c = client(deployer);
-    const existing = await connection.getAccountInfo(c.protocol);
-    if (!existing) {
-      await c.send(await c.initProtocol(USDC_MINT, { pauseAuthority: keeper.publicKey, treasury: deployer.publicKey, feeBps: 10, integratorShareBps: 3000, keeperFeeUsdc: 2n * USDC, graceSecs: 3600n }));
-    }
-    const p = await c.fetchProtocol();
-    expect(p.quoteMint.equals(USDC_MINT)).toBe(true);
     const now = BigInt(await clockUnix(connection));
     expiry = now + 86_400n;
-    let m = await c.fetchMarket(mint);
-    if (!m) {
-      await c.send(await c.createMarket({ mint, tokenFeedId: Buffer.from("4244d07890e4610f46bbde67de8f43a4bf8b569eebe904f136b469f148503b7f", "hex"), equityFeedId: Buffer.from("b1073854ed24cbc755dc527418f52b7d271f6cc967bbf8d8129112b18860a593", "hex"), allowedExpiries: [expiry, expiry + 86_400n], strikeStep: USDC, minStrike: 100n * USDC, maxStrike: 300n * USDC, maxLiveSeries: 12, minLots6: LOT / 100n, maxLots6: 10_000n * LOT, maxWriterLots6: 5_000n * LOT, tier: 1, maxPriceAgeSecs: 60, maxConfBps: 100 }));
-    } else {
-      await c.send(await c.updateMarket(mint, { allowedExpiries: [expiry, expiry + 86_400n] }));
-    }
-    m = await c.fetchMarket(mint);
-    market = m!;
+    ({ market } = await ensureTier1Market(connection, [expiry, expiry + 86_400n]));
+    const p = await c.fetchProtocol();
+    expect(p.quoteMint.equals(USDC_MINT)).toBe(true);
     // Extension flags derived from the real mint: no fee, permanent delegate present, pausable, no live hook.
     expect(market.decimals).toBe(8);
     expect(market.tokenProgram.equals(TOKEN_2022_PROGRAM_ID)).toBe(true);
@@ -86,7 +76,7 @@ describe.skipIf(!deployed)("P1 lifecycle on the fork with the real NVDAx mint", 
 
   it("creates a Gap series lazily with a Token-2022 position mint", async () => {
     const c = client(deployer);
-    const { tx, series: addr } = await c.createSeries(market, "call", K180, expiry, "NVDAx");
+    const { tx, series: addr } = await c.createSeries(market, "call", K180, expiry);
     if (!(await connection.getAccountInfo(addr))) await c.send(tx);
     series = (await c.fetchSeries(addr))!;
     expect(series.strikeUsdcPerLot).toBe(K180);

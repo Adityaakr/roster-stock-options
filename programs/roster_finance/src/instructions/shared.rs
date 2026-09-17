@@ -97,10 +97,16 @@ pub fn observe_halt(series: &mut Series, mint_info: &AccountInfo, vault: &Interf
     if paused || frozen {
         series.state = crate::state::SERIES_HALTED;
         series.halted_at = now;
+        series.resumed_at = 0;
         return true;
     }
     if series.state == crate::state::SERIES_HALTED {
-        if now >= series.halted_at.saturating_add(HALT_GRACE_SECS) {
+        // First observation after the issuer resumed: start the 24 h clock here, not at the pause.
+        if series.resumed_at == 0 {
+            series.resumed_at = now;
+            return true;
+        }
+        if now >= series.resumed_at.saturating_add(HALT_GRACE_SECS) {
             series.state = crate::state::SERIES_OPEN;
             return false;
         }

@@ -36,8 +36,8 @@ export function vaultPdas(programId: PublicKey, series: PublicKey): { collateral
   const d = (seed: Buffer) => PublicKey.findProgramAddressSync([seed, series.toBuffer()], programId)[0];
   return { collateral: d(CVAULT), settlement: d(SVAULT), quote: d(QVAULT), positionMint: d(PMINT) };
 }
-export function autoExercisePda(programId: PublicKey, holder: PublicKey): PublicKey {
-  return PublicKey.findProgramAddressSync([AUTOEX, holder.toBuffer()], programId)[0];
+export function autoExercisePda(programId: PublicKey, holder: PublicKey, series: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync([AUTOEX, holder.toBuffer(), series.toBuffer()], programId)[0];
 }
 export function autoExerciseAuthority(programId: PublicKey): PublicKey {
   return PublicKey.findProgramAddressSync([AUTOEX_AUTHORITY], programId)[0];

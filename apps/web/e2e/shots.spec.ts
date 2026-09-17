@@ -7,7 +7,7 @@ import { expect, test } from "@playwright/test";
 const pages = [
   { path: "/", heading: "Stock leverage without margin liquidation.", name: "landing", wait: "#terms table.table"},
   { path: "/trade", heading: "Terms", name: "trade", wait: "table.table"},
-  { path: "/trade/call-180-EXP", heading: /Gap at \$180/, name: "act", wait: ".chart svg"},
+  { path: "/trade/TERM", heading: /Gap at \$/, name: "act", wait: ".chart svg"},
   { path: "/positions", heading: "Positions", name: "positions", wait: ".card"},
   { path: "/underwrite", heading: "Underwrite", name: "underwrite", wait: "table.table"},
   { path: "/roster", heading: "Roster", name: "roster", wait: "table.table"},
@@ -22,9 +22,10 @@ for (const p of pages) {
       if (m.type() === "error" && !/favicon|hydrat|Failed to fetch|net::ERR|404/i.test(m.text())) errors.push(m.text());
     });
     let path: string = p.path;
-    if (path.includes("EXP")) {
-      const d = (await (await request.get("/api/roster")).json()) as { expiries: number[] };
-      path = path.replace("EXP", String(d.expiries[0]));
+    if (path.includes("TERM")) {
+      const d = (await (await request.get("/api/roster")).json()) as { terms: { id: string; side: string; ladder: { ask: number | null }[] }[] };
+      const t = d.terms.find((x) => x.side === "call" && x.ladder[0]?.ask !== null) ?? d.terms[0]!;
+      path = path.replace("TERM", t.id);
     }
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1, name: p.heading })).toBeVisible();

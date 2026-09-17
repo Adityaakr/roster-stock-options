@@ -70,6 +70,7 @@ export function Quadrant() {
 
 const ROWS: [string, string, string, string, string][] = [
   ["Max loss", "Unbounded, liquidation", "Collateral liquidation", "Premium", "Premium"],
+  ["Coverage", "A few dozen synthetic names", "The lending markets' collateral list", "Every listed US name", "COVERAGE"],
   ["Funding or interest", "Yes", "Yes", "No", "No"],
   ["Open on Saturday", "Yes, synthetic mark", "Yes", "No", "Yes"],
   ["Settles into your wallet", "No", "No", "No", "Yes, the token itself"],
@@ -78,7 +79,8 @@ const ROWS: [string, string, string, string, string][] = [
 const HEADS: [string, string][] = [["Perps", "Hyperliquid, CEX stock perps, Wasabi"], ["Loops", "Kamino, Loopscale"], ["Listed options", "CBOE"], ["Roster Finance", "fully collateralized, on Solana"]];
 
 /** The four-column comparison; the Roster column is white on the surface with an ink rule. Stacks at phone width with Roster first. */
-export function FourColumns() {
+export function FourColumns({ coverage = "the listed markets, tiered by depth" }: { coverage?: string }) {
+  const ROWS_LIVE = ROWS.map((r) => r.map((c) => (c === "COVERAGE" ? coverage : c)) as typeof r);
   return (
     <div>
       <div className="fc-table scroll-x">
@@ -90,7 +92,7 @@ export function FourColumns() {
             </tr>
           </thead>
           <tbody>
-            {ROWS.map((r) => (
+            {ROWS_LIVE.map((r) => (
               <tr key={r[0]}>
                 <th scope="row">{r[0]}</th>
                 {r.slice(1).map((c, i) => <td key={i} className={i === 3 ? "us" : ""}>{c}</td>)}
@@ -104,7 +106,7 @@ export function FourColumns() {
           <div key={ci} className={`fcblock ${ci === 3 ? "us" : ""}`}>
             <div className="h-item">{HEADS[ci]?.[0]}</div>
             <div className="small" style={{ margin: "2px 0 8px" }}>{HEADS[ci]?.[1]}</div>
-            {ROWS.map((r) => (
+            {ROWS_LIVE.map((r) => (
               <div key={r[0]} className="fcline"><span className="k">{r[0]}</span><span>{r[ci + 1]}</span></div>
             ))}
           </div>
@@ -114,15 +116,15 @@ export function FourColumns() {
   );
 }
 
-export function Difference() {
+export function Difference({ coverage }: { coverage?: string }) {
   return (
     <Sec id="different" className="automation" ticks={false}>
       <div style={{ padding: "80px 0", display: "flex", flexDirection: "column", gap: 50 }}>
         <div style={{ padding: "0 30px", display: "flex", flexDirection: "column", gap: 20 }}>
           <ScrollColorText as="h2" text="Perps take the position. Roster caps the loss." className="h-section" style={{ maxWidth: 896 }} />
-          <Reveal y={0} delay={0.2}><p className="body" style={{ margin: 0, maxWidth: 796 }}>Perps take your position on the wick. Roster caps your loss at the premium and delivers the stock. Today on Solana the only ways to lever a stock are a perp or a loan loop, and both liquidate; listed options cap the loss but close on Friday. Roster is the fourth column.</p></Reveal>
+          <Reveal y={0} delay={0.2}><p className="body" style={{ margin: 0, maxWidth: 796 }}>Perps take your position on the wick. Roster caps your loss at the premium and settles in the token itself, into your wallet. Today on Solana the only ways to lever a stock are a perp or a loan loop, and both liquidate; listed options cap the loss but close on Friday. Roster is the fourth column.</p></Reveal>
         </div>
-        <Reveal y={48}><div style={{ padding: "0 30px" }}><FourColumns /></div></Reveal>
+        <Reveal y={48}><div style={{ padding: "0 30px" }}><FourColumns coverage={coverage} /></div></Reveal>
         <div className="two" style={{ display: "grid", gridTemplateColumns: "392px minmax(0, 1fr)", gap: 64, alignItems: "center", padding: "0 45px 0 30px" }}>
           <div>
             <div className="h-item" style={{ fontSize: 22, letterSpacing: "-0.03em" }}>The empty corner</div>

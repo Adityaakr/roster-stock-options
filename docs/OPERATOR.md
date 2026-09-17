@@ -35,3 +35,10 @@ The external inputs the build cannot obtain on its own (Part 2 section 1). Secre
 ## Stop rule
 
 The build proceeds on every step that is not blocked. At the first blocked step it stops with a one-line request naming the missing item, per Part 2 section 1.
+
+## The web app
+
+- `SERVICES_URL` (default `http://127.0.0.1:8787`): the services process the app reads. Unreachable means the fixture cluster, and every screen says so.
+- `RPC_URL`: the RPC the app builds and submits transactions through (CLAUDE.md 4.4). The key never reaches the browser.
+- `GEO_BLOCKED_COUNTRIES` (default `US`): ISO codes refused by `apps/web/src/proxy.ts` on the app and transaction routes with a plain page and HTTP 451. The country comes from the edge in front of the app (`x-vercel-ip-country` or `cf-ipcountry`); **with no such header nothing is blocked**, so a deployment without an edge that sets one has no geo gate. The marketing, risk, fees, terms and privacy pages are never blocked.
+- `NEXT_PUBLIC_CLUSTER=fork` adds a throwaway burner wallet to the wallet list so the flow can be driven without an extension. Never set it on a real cluster.

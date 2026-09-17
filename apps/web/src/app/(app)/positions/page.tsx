@@ -5,9 +5,9 @@ import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { TxStatus } from "@/components/tx-status";
-import { Badge, Empty, ErrorState, KV, Loading, Stat } from "@/components/ui";
-import { useCluster } from "@/lib/cluster";
-import { usd, usd0, usdK, usdSmart, dayLabel, countdown } from "@/lib/format";
+import { Address, Badge, Empty, ErrorState, KV, Loading, Stat } from "@/components/ui";
+import { useCluster, explorerUrl } from "@/lib/cluster";
+import { usd, usd0, usdK, usdSmart, dayLabel, countdown, timeLabel } from "@/lib/format";
 import { buyerPnl, exerciseWords, inTheMoney, lots6ForShares, productName, type Market, type Position } from "@/lib/model";
 import { useTransaction } from "@/lib/tx";
 import { usePositions } from "@/lib/use-positions";
@@ -23,7 +23,7 @@ export default function PositionsPage() {
   const cluster = useCluster();
   const { publicKey } = useWallet();
   const { setVisible } = useWalletModal();
-  const { positions, error: perror, reload } = usePositions();
+  const { positions, history, error: perror, reload } = usePositions();
   const list = data?.cluster === "fixture" ? data.positions : positions;
   const markets = new Map((data?.markets ?? []).map((m) => [m.symbol, m]));
 
@@ -39,7 +39,7 @@ export default function PositionsPage() {
       {error || perror ? <ErrorState message={`Could not read positions: ${error ?? perror}`} next="Reload the page." /> : null}
       {!data && !error ? <Loading what="positions" /> : null}
       {data && data.cluster !== "fixture" && !publicKey ? <Empty title="Connect a wallet" action="Positions are read from the wallet's position tokens, so there is nothing to show until one is connected." cta={<button className="btn primary" onClick={() => setVisible(true)}>Connect wallet</button>} /> : null}
-      {data && list && list.length === 0 && (publicKey || data.cluster === "fixture") ? <Empty title="No positions" action="Buy a Gap or a Floor from the terms and it appears here with its countdown and its exercise terms." cta={<Link href="/trade" className="btn primary">See the terms</Link>} /> : null}
+      {data && list && list.length === 0 && history.length === 0 && (publicKey || data.cluster === "fixture") ? <Empty title="No positions" action="Buy a Gap or a Floor from the terms and it appears here with its countdown and its exercise terms." cta={<Link href="/trade" className="btn primary">See the terms</Link>} /> : null}
       {data && list && list.length > 0 ? (
         <>
           <div className="grid-4" style={{ marginBottom: 16 }}>
@@ -51,12 +51,37 @@ export default function PositionsPage() {
           <div className="card">
             {list.map((p) => <PositionRow key={p.id} p={p} market={markets.get(p.market)} nowTs={data.nowTs} keeperFeeUsd={data.keeperFeeUsd} programDeployed={cluster.programDeployed} onChange={reload} />)}
           </div>
-          <p className="small" style={{ marginTop: 14 }}>{data.source}</p>
         </>
       ) : null}
+      {data && publicKey && history.length > 0 ? (
+        <div className="card" style={{ marginTop: 16 }} data-testid="history">
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
+            <div className="h6">History and receipts</div>
+            <div className="small" style={{ marginTop: 4 }}>Every buy, exercise, quote, claim, withdrawal and release for this wallet, from the program's own events, with the signature.</div>
+          </div>
+          <div className="scroll-x">
+            <table className="table">
+              <thead><tr><th>When</th><th>Event</th><th>Detail</th><th>Signature</th></tr></thead>
+              <tbody>
+                {history.map((h) => (
+                  <tr key={h.signature + h.kind} data-kind={h.kind}>
+                    <td className="small mono">{timeLabel(h.ts)}</td>
+                    <td><Badge tone={h.kind === "release" || h.kind === "exercise" || h.kind === "auto_exercise" ? "green" : undefined} dot={h.kind === "release"}>{RECEIPT_LABEL[h.kind]}</Badge> {h.termId ? <Link className="small" href={`/trade/${h.termId}`}>{h.market}</Link> : <span className="small muted">{h.market || "closed series"}</span>}</td>
+                    <td className="small">{h.note}</td>
+                    <td className="small"><Address value={h.signature} n={6} href={explorerUrl(cluster, "tx", h.signature)} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+      {data ? <p className="small" style={{ marginTop: 14 }}>{data.source}</p> : null}
     </div>
   );
 }
+
+const RECEIPT_LABEL: Record<string, string> = { buy: "Bought", exercise: "Exercised", auto_exercise: "Auto-exercised", claim: "Premium claimed", withdraw: "Withdrawn", release: "Released", quote: "Quoted" };
 
 function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, onChange }: { p: Position; market: Market | undefined; nowTs: number; keeperFeeUsd: number; programDeployed: boolean; onChange: () => void }) {
   const tx = useTransaction();

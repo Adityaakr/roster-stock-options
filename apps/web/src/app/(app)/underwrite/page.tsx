@@ -8,7 +8,7 @@ import { TxStatus } from "@/components/tx-status";
 import { Badge, ErrorState, KV, Loading, Tabs } from "@/components/ui";
 import { useCluster } from "@/lib/cluster";
 import { usd, usd0, usdK, usdSmart, dayLabel, countdown } from "@/lib/format";
-import { commitMath, DEFAULT_SIZE, lots6ForShares, type Side, type Term } from "@/lib/model";
+import { commitMath, DEFAULT_SIZE, lots6ForShares, sharesOf, type Side, type Term } from "@/lib/model";
 import { useTransaction } from "@/lib/tx";
 import { useRoster } from "@/lib/use-roster";
 
@@ -53,7 +53,7 @@ function UnderwriteInner() {
   const me = publicKey?.toBase58();
   const mine = me ? t.slots.find((s) => s.account === me) : undefined;
   const myAsks = mine ? t.asks.filter((a) => a.writerSlot === mine.slot) : [];
-  const free = mine ? mine.deposited - mine.withdrawn - mine.open - mine.assigned - myAsks.reduce((a, x) => a + (Number(x.remainingLots6) / 1e6) * u.multiplier, 0) : 0;
+  const free = mine ? Math.round((mine.deposited - mine.withdrawn - mine.open - mine.assigned - myAsks.reduce((a, x) => a + sharesOf(x.remainingLots6, u.multiplier), 0)) * 1e4) / 1e4 : 0;
   const busy = tx.state.status === "building" || tx.state.status === "signing" || tx.state.status === "sending";
   const expired = t.expiryTs <= data.nowTs;
   const putsBlocked = side === "put" && market.hasTransferFee;
@@ -61,7 +61,7 @@ function UnderwriteInner() {
   async function run(kind: "quote" | "cancel_ask" | "withdraw_unsold" | "claim_premium" | "settle_writer", p?: Record<string, string | number | null>) {
     if (!t?.series || !u.mint) return;
     const sig = await tx.run({ kind, mint: u.mint, series: t.series, params: p });
-    if (sig) reload();
+    if (sig) reload(true);
   }
   function quote() {
     const lots6 = lots6ForShares(size, u.multiplier);
@@ -114,7 +114,7 @@ function UnderwriteInner() {
           )}
           {publicKey && !cluster.programDeployed ? <div className="msg red" style={{ marginTop: 10 }} role="alert">Program not deployed on {cluster.label}; nothing to sign yet.</div> : null}
           {putsBlocked ? <div className="msg" style={{ marginTop: 10 }} role="status">This mint charges a transfer fee, so Floors are not listed on it until fee-inclusive settlement ships with First Print. Gaps are open.</div> : null}
-          <TxStatus state={tx.state} onRetry={() => { tx.reset(); reload(); }} doneHref={`/roster?m=${sym}`} doneLabel="See it on the roster" />
+          <TxStatus state={tx.state} onRetry={() => { tx.reset(); reload(true); }} doneHref={`/roster?m=${sym}`} doneLabel="See it on the roster" />
           <p className="note" style={{ marginTop: 12 }}>Capital is locked until expiry or exercise. This is paid risk, not yield: if the price moves through the strike you are assigned at it. Assignment is pooled: every writer on the term is assigned in proportion to what they sold, whoever bought the contract that was exercised.</p>
         </div>
         <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
@@ -165,12 +165,12 @@ function MySlot({ t, sym, multiplier, mine, myAsks, free, expired, nowTs, busy, 
           { k: "Deposited", v: <span className="mono">{mine.deposited} {sym} covered{t.side === "put" ? ` ($${usd0(mine.deposited * t.strike)} USDC locked)` : ""}</span> },
           { k: "Sold, still open", v: <span className="mono">{mine.open} {sym}</span> },
           { k: "Assigned", v: <span className="mono">{mine.assigned} {sym}</span> },
-          { k: "Quoted, unsold", v: <span className="mono">{myAsks.reduce((a, x) => a + (Number(x.remainingLots6) / 1e6) * multiplier, 0)} {sym} in {myAsks.length} ask{myAsks.length === 1 ? "" : "s"}</span> },
+          { k: "Quoted, unsold", v: <span className="mono">{Math.round(myAsks.reduce((a, x) => a + sharesOf(x.remainingLots6, multiplier), 0) * 1e4) / 1e4} {sym} in {myAsks.length} ask{myAsks.length === 1 ? "" : "s"}</span> },
           { k: "Free to withdraw", v: <span className="mono">{Math.max(0, free)} {sym}</span> },
           { k: "Premium claimable", v: <span className="mono up">${usd(mine.premiumClaimable)}</span> }
         ]} />
         <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 12 }}>
-          {myAsks.map((a) => <button key={a.seq} className="btn secondary sm" disabled={busy || mine.settled} onClick={() => onAction("cancel_ask", { seq: a.seq })}>Cancel ask ${usd(Number(a.askPerLot) / 1e6 / multiplier)} × {(Number(a.remainingLots6) / 1e6) * multiplier}</button>)}
+          {myAsks.map((a) => <button key={a.seq} className="btn secondary sm" disabled={busy || mine.settled} onClick={() => onAction("cancel_ask", { seq: a.seq })}>Cancel ask ${usd(Number(a.askPerLot) / 1e6 / multiplier)} × {sharesOf(a.remainingLots6, multiplier)}</button>)}
           <button className="btn secondary sm" disabled={busy || mine.premiumClaimable <= 0} onClick={() => onAction("claim_premium")} data-testid="claim">Claim premium</button>
           <button className="btn secondary sm" disabled={busy || free <= 0 || mine.settled} onClick={() => onAction("withdraw_unsold", { lots6: lots6ForShares(free, multiplier).toString() })}>Withdraw {Math.max(0, free)} unsold</button>
           {expired && !mine.settled ? <button className="btn primary sm" disabled={busy} onClick={() => onAction("settle_writer")} data-testid="settle">Settle</button> : null}

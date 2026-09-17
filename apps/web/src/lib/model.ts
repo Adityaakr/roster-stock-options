@@ -117,6 +117,16 @@ export interface ExerciseEvent {
   note: string;
 }
 
+/** One line of a wallet's history: buys, exercises, claims, withdrawals and releases, each with its signature. */
+export interface Receipt {
+  ts: number;
+  kind: "buy" | "exercise" | "auto_exercise" | "claim" | "withdraw" | "release" | "quote";
+  market: string;
+  termId: string;
+  note: string;
+  signature: string;
+}
+
 export interface Underlying {
   symbol: string;
   name: string;
@@ -304,6 +314,11 @@ export function walkAsks(asks: { askPerLot: bigint | string; remainingLots6: big
 /** Taker fee in USDC micro, rounded up as the program does. */
 export function feeCeil(premiumMicro: bigint, feeBps: number): bigint {
   return (premiumMicro * BigInt(feeBps) + 9_999n) / 10_000n;
+}
+
+/** Lots (1e6 per lot) to shares under the multiplier, to four decimals: a lot count is exact, shares are for reading. */
+export function sharesOf(lots6: string | bigint, multiplier: number): number {
+  return Math.round((Number(lots6) / 1e6) * (multiplier || 1) * 1e4) / 1e4;
 }
 
 /** Lots (1e6 per lot) for a number of shares under the market multiplier: one lot is one underlying token. */

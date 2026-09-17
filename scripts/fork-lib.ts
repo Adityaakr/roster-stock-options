@@ -5,11 +5,24 @@
  * bytes with no extensions; a real NVDAx ATA is 179).
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync, getMint, getScaledUiAmountConfig } from "@solana/spl-token";
 import { effectiveMultiplier } from "../packages/core/src/multiplier";
 
 export const FORK_URL = process.env.FORK_RPC_URL ?? "http://127.0.0.1:8899";
+/** The repo root (the directory holding pnpm-workspace.yaml), so `.keys` resolves the same from a script, vitest or a Playwright spec in apps/web. */
+export const REPO_ROOT = repoRoot();
+function repoRoot(from = process.cwd()): string {
+  let dir = from;
+  for (let i = 0; i < 8; i++) {
+    if (existsSync(resolve(dir, "pnpm-workspace.yaml"))) return dir;
+    const up = dirname(dir);
+    if (up === dir) break;
+    dir = up;
+  }
+  return from;
+}
 /** USDC on Solana mainnet, resolved 2026-09-17 from Jupiter token search (verified, strict) and read on-chain (6 decimals, SPL Token). */
 export const USDC_MINT = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 export const XSTOCKS_API = "https://api.xstocks.fi/api/v2";
@@ -31,7 +44,7 @@ export async function forkReachable(url = FORK_URL): Promise<boolean> {
   }
 }
 
-export function loadOrCreateKey(name: string, dir = ".keys"): Keypair {
+export function loadOrCreateKey(name: string, dir = resolve(REPO_ROOT, ".keys")): Keypair {
   const p = `${dir}/${name}.json`;
   if (existsSync(p)) return Keypair.fromSecretKey(new Uint8Array(JSON.parse(readFileSync(p, "utf8"))));
   const kp = Keypair.generate();
@@ -73,14 +86,19 @@ export async function fundSol(pubkey: PublicKey, lamports: number): Promise<void
  * extensions (probed on surfpool 1.0.0), which loses ImmutableOwner, PausableAccount and TransferHookAccount.
  */
 export async function fundToken(connection: Connection, owner: Keypair, mint: PublicKey, program: PublicKey, raw: bigint): Promise<PublicKey> {
-  const ata = getAssociatedTokenAddressSync(mint, owner.publicKey, false, program);
+  return fundTokenFor(connection, owner.publicKey, mint, program, raw, owner);
+}
+
+/** `fundToken` for a wallet whose key is not ours (a browser wallet): the fork's deployer key pays for the ATA. */
+export async function fundTokenFor(connection: Connection, owner: PublicKey, mint: PublicKey, program: PublicKey, raw: bigint, payer: Keypair = loadOrCreateKey("deployer")): Promise<PublicKey> {
+  const ata = getAssociatedTokenAddressSync(mint, owner, false, program);
   const existing = await connection.getAccountInfo(ata);
   if (existing && program.equals(TOKEN_2022_PROGRAM_ID) && existing.data.length === 165) {
     // A stale cheatcode-written account from an earlier run: revert it to upstream (absent) and recreate properly.
     await cheat("surfnet_resetAccount", [ata.toBase58()]);
   }
   if (!existing || (program.equals(TOKEN_2022_PROGRAM_ID) && existing.data.length === 165)) {
-    await sendAndConfirmTransaction(connection, new Transaction().add(createAssociatedTokenAccountIdempotentInstruction(owner.publicKey, ata, owner.publicKey, mint, program)), [owner]);
+    await sendAndConfirmTransaction(connection, new Transaction().add(createAssociatedTokenAccountIdempotentInstruction(payer.publicKey, ata, owner, mint, program)), [payer]);
   }
   const acc = await connection.getAccountInfo(ata);
   if (!acc) throw new Error(`ATA ${ata.toBase58()} missing after creation`);

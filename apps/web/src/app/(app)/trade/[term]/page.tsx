@@ -50,7 +50,7 @@ export default function ActPage({ params }: { params: Promise<{ term: string }> 
   async function buy() {
     if (!t?.series || !u.mint) return;
     const sig = await tx.run({ kind: "buy", mint: u.mint, series: t.series, params: { lots6: c.lots6.toString(), maxPremiumPerLot: c.maxPremiumPerLot.toString(), referrer: null } });
-    if (sig) reload();
+    if (sig) reload(true);
   }
 
   return (
@@ -126,7 +126,7 @@ export default function ActPage({ params }: { params: Promise<{ term: string }> 
               <div className="msg red" style={{ marginTop: 10 }} role="alert">The program is not deployed on the {cluster.label} cluster, so nothing can be signed yet. The quote above is what the button will send once it is.</div>
             ) : null}
             {publicKey && cluster.programDeployed && !c.fillable ? <div className="msg" style={{ marginTop: 10 }} role="status">Not fillable at {size}. {Math.floor(t.capacity)} {u.symbol} is quoted on this term right now; lower the size or wait for the roster to refresh.</div> : null}
-            <TxStatus state={tx.state} onRetry={() => { tx.reset(); reload(); }} doneHref="/positions" doneLabel="See it under Positions" />
+            <TxStatus state={tx.state} onRetry={() => { tx.reset(); reload(true); }} doneHref="/positions" doneLabel="See it under Positions" />
             <p className="note" style={{ marginTop: 12 }}>Contracts can expire worthless. Maximum loss is the premium plus fees. {t.side === "call" ? "Exercising requires paying the strike in USDC." : "Exercising requires delivering the tokens."} One transaction; the wallet signs, the app submits.</p>
           </div>
           <div className="card pad">

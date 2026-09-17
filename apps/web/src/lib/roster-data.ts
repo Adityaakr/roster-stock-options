@@ -1,6 +1,7 @@
 import "server-only";
-import { DEFAULT_SIZE, lots6ForShares, nextFridays, sessionAt, termId, walkAsks, type ExerciseEvent, type Market, type Position, type RosterData, type Session, type Side, type Term, type Tier, type Underlying, type Underwriter } from "./model";
+import { DEFAULT_SIZE, lots6ForShares, nextFridays, sharesOf, sessionAt, termId, walkAsks, type ExerciseEvent, type Market, type Position, type Receipt, type RosterData, type Session, type Side, type Term, type Tier, type Underlying, type Underwriter } from "./model";
 import { services, servicesReachable, type ServicesMarket, type ServicesRoster, type ServicesSeries } from "./services";
+import { freshSeries } from "./tx-server";
 
 /*
  * The data the app renders, assembled server-side from the services process (indexer, oracle, quoter). When the
@@ -9,6 +10,8 @@ import { services, servicesReachable, type ServicesMarket, type ServicesRoster, 
  */
 
 const LADDER_SIZES = [10, 50, 200];
+
+
 const FIXTURE_MARK = 182.3;
 
 /* ---------- live: services -> model ---------- */
@@ -28,7 +31,7 @@ function liveTerm(m: ServicesMarket, s: ServicesSeries): Term {
   });
   const capacityLots6 = asks.reduce((a, x) => a + x.remainingLots6, 0n);
   const openLots6 = BigInt(s.total_sold_lots6) - BigInt(s.total_exercised_lots6);
-  const writers = s.writers.map((w, slot) => ({ account: w.writer, live: !w.settled && asks.some((a) => a.writerSlot === slot), askLots: Number(asks.filter((a) => a.writerSlot === slot).reduce((a, x) => a + x.remainingLots6, 0n)) / 1e6 }));
+  const writers = s.writers.map((w, slot) => ({ account: w.writer, live: !w.settled && asks.some((a) => a.writerSlot === slot), askLots: sharesOf(asks.filter((a) => a.writerSlot === slot).reduce((a, x) => a + x.remainingLots6, 0n), mult) }));
   return {
     id: termId(m.symbol, s.side, Number(s.strike_usdc_per_lot) / 1e6, s.expiry_ts),
     market: m.symbol,
@@ -39,12 +42,12 @@ function liveTerm(m: ServicesMarket, s: ServicesSeries): Term {
     expiryTs: s.expiry_ts,
     ask: best ? Number(best.askPerLot) / 1e6 / mult : 0,
     ladder,
-    capacity: (Number(capacityLots6) / 1e6) * mult,
-    openInterest: (Number(openLots6) / 1e6) * mult,
+    capacity: sharesOf(capacityLots6, mult),
+    openInterest: sharesOf(openLots6, mult),
     strikePerLot: s.strike_usdc_per_lot,
     bestAskPerLot: best ? best.askPerLot.toString() : null,
     asks: s.asks.map((a) => ({ askPerLot: a.ask_per_lot, remainingLots6: a.remaining_lots6, writerSlot: a.writer_slot, seq: a.seq })),
-    slots: s.writers.map((w, slot) => ({ slot, account: w.writer, deposited: (Number(w.deposited_lots6) / 1e6) * mult, withdrawn: (Number(w.withdrawn_lots6) / 1e6) * mult, sold: (Number(w.sold_lots6) / 1e6) * mult, open: (Number(w.open_lots6) / 1e6) * mult, assigned: (Number(w.assigned_lots6) / 1e6) * mult, premiumClaimable: Number(w.premium_claimable) / 1e6, settled: w.settled })),
+    slots: s.writers.map((w, slot) => ({ slot, account: w.writer, deposited: sharesOf(w.deposited_lots6, mult), withdrawn: sharesOf(w.withdrawn_lots6 ?? "0", mult), sold: sharesOf(w.sold_lots6, mult), open: sharesOf(w.open_lots6, mult), assigned: sharesOf(w.assigned_lots6, mult), premiumClaimable: Number(w.premium_claimable) / 1e6, settled: w.settled })),
     escrow: { collateralVault: s.collateral_vault, settlementVault: s.settlement_vault, quoteVault: s.quote_vault, collateralBalance: s.collateral_balance, settlementBalance: s.settlement_balance },
     writers,
     halted: s.halted !== 0
@@ -122,8 +125,13 @@ async function liveExercises(terms: Term[]): Promise<ExerciseEvent[]> {
   return out.sort((a, b) => b.ts - a.ts).slice(0, 40);
 }
 
-async function fromServices(r: ServicesRoster, selected: string | undefined): Promise<RosterData> {
+async function fromServices(r: ServicesRoster, selected: string | undefined, fresh: boolean): Promise<RosterData> {
   const nowTs = r.nowTs;
+  if (fresh) {
+    // Right after a transaction the indexer's snapshot can be a tick behind; read the chosen market's series from chain.
+    const m = r.markets.find((x) => x.symbol.toLowerCase() === (selected ?? r.markets[0]?.symbol ?? "").toLowerCase());
+    if (m) m.series = await freshSeries(m.market, m.series).catch(() => m.series);
+  }
   const termsByMarket = r.markets.map((m) => ({ m, terms: m.series.map((s) => liveTerm(m, s)) }));
   const markets = termsByMarket.map(({ m, terms }) => liveMarket(m, nowTs, terms)).sort((a, b) => b.depthUsdc - a.depthUsdc || a.tier - b.tier);
   const terms = termsByMarket.flatMap((x) => x.terms).filter((t) => t.expiryTs > nowTs);
@@ -256,10 +264,10 @@ function fixture(): RosterData {
 
 /* ---------- entry points ---------- */
 
-export async function rosterData(selected?: string): Promise<RosterData> {
+export async function rosterData(selected?: string, fresh = false): Promise<RosterData> {
   if (await servicesReachable()) {
     try {
-      return await fromServices(await services.roster(), selected);
+      return await fromServices(await services.roster(), selected, fresh);
     } catch (e) {
       console.warn(`[web] services roster failed, on the fixture cluster: ${(e as Error).message}`);
     }
@@ -268,8 +276,8 @@ export async function rosterData(selected?: string): Promise<RosterData> {
 }
 
 /** A wallet's positions across every market, with premium paid and exercised counts from its own events. */
-export async function walletPositions(wallet: string): Promise<{ positions: Position[]; source: string }> {
-  if (!(await servicesReachable())) return { positions: [], source: "fixture" };
+export async function walletPositions(wallet: string): Promise<{ positions: Position[]; history: Receipt[]; source: string }> {
+  if (!(await servicesReachable())) return { positions: [], history: [], source: "fixture" };
   const [r, p] = await Promise.all([services.roster(), services.positions(wallet)]);
   const markets = new Map(r.markets.map((m) => [m.market, m]));
   const bought = new Map<string, { premium: number; signature: string | null }>();
@@ -288,8 +296,8 @@ export async function walletPositions(wallet: string): Promise<{ positions: Posi
     if (!m) continue;
     const mult = m.multiplier || 1;
     const strike = Number(x.strike_usdc_per_lot) / 1e6 / mult;
-    const held = (Number(x.lots6) / 1e6) * mult;
-    const ex = (exercised.get(x.series) ?? 0) * mult;
+    const held = sharesOf(x.lots6, mult);
+    const ex = Math.round((exercised.get(x.series) ?? 0) * mult * 1e4) / 1e4;
     positions.push({
       id: x.series,
       termId: termId(m.symbol, x.side, Number(x.strike_usdc_per_lot) / 1e6, x.expiry_ts),
@@ -306,7 +314,32 @@ export async function walletPositions(wallet: string): Promise<{ positions: Posi
       expired: x.expiry_ts <= r.nowTs
     });
   }
-  return { positions: positions.sort((a, b) => a.expiryTs - b.expiryTs), source: "indexer" };
+  return { positions: positions.sort((a, b) => a.expiryTs - b.expiryTs), history: receipts(wallet, p.events, r), source: "indexer" };
+}
+
+/** Every event that names the wallet, as a receipt line. Names and fields are the program's own (programs/roster_finance/src/events.rs). */
+function receipts(wallet: string, events: { signature: string; block_time: number; name: string; data_json: string }[], r: ServicesRoster): Receipt[] {
+  const series = new Map<string, { m: ServicesMarket; s: ServicesSeries }>();
+  for (const m of r.markets) for (const s of m.series) series.set(s.address, { m, s });
+  const out: Receipt[] = [];
+  const shares = (lots6: string, mult: number) => sharesOf(lots6, mult);
+  const usdcOf = (micro: string) => (Number(micro) / 1e6).toFixed(2);
+  for (const e of events) {
+    const d = JSON.parse(e.data_json) as Record<string, string>;
+    const hit = d.series ? series.get(d.series) : undefined;
+    // A closed series is gone from the indexer's live view; keep the line with what the event itself says.
+    const sym = hit?.m.symbol ?? "";
+    const mult = hit?.m.multiplier || 1;
+    const id = hit ? termId(hit.m.symbol, hit.s.side, Number(hit.s.strike_usdc_per_lot) / 1e6, hit.s.expiry_ts) : "";
+    const line = (kind: Receipt["kind"], note: string) => out.push({ ts: e.block_time, kind, market: sym, termId: id, note, signature: e.signature });
+    if (e.name === "Bought" && d.buyer === wallet) line("buy", `bought ${shares(d.lots6Filled ?? "0", mult)} ${sym} for ${usdcOf(d.premiumPaid ?? "0")} USDC plus ${usdcOf(d.fee ?? "0")} fee${Number(d.lots6Filled) < Number(d.lots6Requested) ? ` (partial: ${shares(d.lots6Requested ?? "0", mult)} requested)` : ""}`);
+    if (e.name === "Exercised" && d.holder === wallet) line(d.auto === "true" || (d.auto as unknown) === true ? "auto_exercise" : "exercise", hit?.s.side === "put" ? `delivered ${shares(d.lots6 ?? "0", mult)} ${sym}, received ${usdcOf(d.usdc ?? "0")} USDC` : `paid ${usdcOf(d.usdc ?? "0")} USDC, received ${shares(d.lots6 ?? "0", mult)} ${sym}`);
+    if (e.name === "AskPosted" && d.writer === wallet) line("quote", `quoted ${shares(d.lots6 ?? "0", mult)} ${sym} at ${usdcOf(d.askPerLot ?? "0")} USDC per lot`);
+    if (e.name === "PremiumClaimed" && d.writer === wallet) line("claim", `claimed ${usdcOf(d.amount ?? "0")} USDC premium`);
+    if (e.name === "CollateralWithdrawn" && d.writer === wallet) line("withdraw", `withdrew ${shares(d.lots6 ?? "0", mult)} ${sym} of unsold collateral`);
+    if (e.name === "WriterSettled" && d.writer === wallet) line("release", `released: ${shares(d.unassignedLots6 ?? "0", mult)} ${sym} not assigned, ${shares(d.assignedLots6 ?? "0", mult)} assigned; ${usdcOf(d.settlementOut ?? "0")} USDC settlement, ${usdcOf(d.premiumOut ?? "0")} USDC premium`);
+  }
+  return out.sort((a, b) => b.ts - a.ts);
 }
 
 export { DEFAULT_SIZE };

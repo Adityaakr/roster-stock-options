@@ -101,6 +101,29 @@ export async function buildTransaction(req: BuildRequest): Promise<BuildResponse
   return { transaction: prepared.tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64"), lastValidBlockHeight: prepared.lastValidBlockHeight, summary };
 }
 
+/**
+ * The series of a market read from chain right now, merged over the indexer's rows (which keep the vault balances the
+ * program accounts do not carry). Used when a screen needs the state a transaction just changed.
+ */
+export async function freshSeries<T extends { address: string; asks: unknown[]; writers: unknown[]; total_sold_lots6: string; total_exercised_lots6: string; unassigned_lots6: string; halted: number }>(market: string, rows: T[]): Promise<T[]> {
+  const client = new RosterClient(connection(), readOnlyWallet(PublicKey.default));
+  const live = await client.fetchSeriesForMarket(new PublicKey(market));
+  const byAddr = new Map(live.map((s) => [s.address.toBase58(), s]));
+  return rows.map((row) => {
+    const s = byAddr.get(row.address);
+    if (!s) return row;
+    return {
+      ...row,
+      total_sold_lots6: s.totalSoldLots6.toString(),
+      total_exercised_lots6: s.totalExercisedLots6.toString(),
+      unassigned_lots6: s.unassignedLots6.toString(),
+      halted: s.halted ? 1 : 0,
+      asks: s.asks.map((a) => ({ remaining_lots6: a.remainingLots6.toString(), ask_per_lot: a.askPerLot.toString(), seq: a.seq.toString(), writer_slot: a.writerSlot })),
+      writers: s.writers.map((w) => ({ writer: w.writer.toBase58(), deposited_lots6: w.depositedLots6.toString(), withdrawn_lots6: w.withdrawnLots6.toString(), sold_lots6: w.soldLots6.toString(), open_lots6: w.openLots6.toString(), assigned_lots6: w.assignedLots6.toString(), premium_claimable: w.premiumClaimable.toString(), settled: w.settled }))
+    };
+  });
+}
+
 export async function sendSigned(signedBase64: string, lastValidBlockHeight: number): Promise<string> {
   return sendRawAndConfirm(connection(), Buffer.from(signedBase64, "base64"), lastValidBlockHeight);
 }

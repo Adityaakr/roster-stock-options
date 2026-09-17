@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2">
             <Badge tone={cluster.programDeployed ? "green" : "amber"} dot>{cluster.label}</Badge>
           </div>
-          <p className="mt-3" style={{ margin: "12px 0 0" }}>{cluster.programDeployed ? "Fully collateralized contracts on NVDAx. Contracts can expire worthless." : "Program not deployed on this cluster. Premiums, reserves and positions are fixtures; expiries follow the clock."}</p>
+          <p className="mt-3" style={{ margin: "12px 0 0" }}>{cluster.programDeployed ? "Fully collateralized contracts on tokenized stocks. Contracts can expire worthless." : "Program not deployed on this cluster. Premiums, reserves and positions are fixtures; expiries follow the clock."}</p>
         </div>
       </aside>
       <div className="min-w-0">

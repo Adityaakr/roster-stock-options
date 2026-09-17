@@ -6,8 +6,9 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CountUp, MountReveal, PixelMask, Reveal, Roll, ScrollColorText, SlideIn, Ticker, WordReveal } from "@/components/motion";
 import { DiscoverTable } from "@/components/discover-table";
+import { MarketList } from "@/components/market-list";
 import { usd, usd0, dayLabel } from "@/lib/format";
-import type { RosterData } from "@/lib/model";
+import { TIER_RULE, type RosterData, type Tier } from "@/lib/model";
 import { SOURCES } from "./sources";
 import { Sketch } from "./sketches";
 import { Sec } from "./sec";
@@ -35,7 +36,7 @@ const IMG = {
   cta: "/aoutive/6qUQoa6uH77wIPi00YA7UqCKdA.png"
 };
 
-/* 1. Hero: the headline, then the live Discover table for the nearest expiry as the primary element. */
+/* 1. Hero: the headline, then the market list by executable depth (addendum H) and the deepest market's nearest expiry. */
 export function Hero({ data }: { data: RosterData }) {
   return (
     <Sec id="hero" className="hero">
@@ -43,7 +44,7 @@ export function Hero({ data }: { data: RosterData }) {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 40, overflow: "clip" }}>
           <div style={{ maxWidth: 673, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
             <WordReveal as="h1" text="Stock leverage without margin liquidation." className="display" delay={0.6} stagger={0.05} style={{ textAlign: "center" }} />
-            <WordReveal as="p" text="Trade Nvidia's upside on Solana with a fully paid contract. Choose your expiry, see your premium and break-even, and know your maximum loss before you buy. No borrowing, no funding payments, no margin calls." className="body" delay={1} stagger={0.03} style={{ textAlign: "center", maxWidth: 635 }} />
+            <WordReveal as="p" text="Trade the upside of tokenized stocks on Solana with a fully paid contract. Choose your expiry, see your premium and break-even, and know your maximum loss before you buy. No borrowing, no funding payments, no margin calls." className="body" delay={1} stagger={0.03} style={{ textAlign: "center", maxWidth: 635 }} />
           </div>
           <div className="btnrow" style={{ justifyContent: "center", gap: 10 }}>
             <MountReveal delay={2} y={20}><a href="#terms" className="btn primary"><Roll>See the terms</Roll></a></MountReveal>
@@ -55,10 +56,18 @@ export function Hero({ data }: { data: RosterData }) {
             <div id="terms" className="wc" style={{ border: "1px solid var(--line)", borderRadius: 4, textAlign: "left" }}>
               <div className="flex items-center justify-between gap-3 flex-wrap" style={{ marginBottom: 14 }}>
                 <div>
+                  <div className="h6">Listed markets by executable depth</div>
+                  <div className="small" style={{ marginTop: 4 }}>{data.markets.length} listed · best ask, recent volatility and basis per name · pick a name to see its terms</div>
+                </div>
+                <Link href="/trade" className="btn secondary"><Roll>All markets</Roll></Link>
+              </div>
+              <MarketList markets={data.markets} compact />
+              <div className="flex items-center justify-between gap-3 flex-wrap" style={{ margin: "24px 0 14px" }}>
+                <div>
                   <div className="h6">Live terms on {data.underlying.symbol}, nearest expiry</div>
                   <div className="small" style={{ marginTop: 4 }}>{data.underlying.name} · wrapper tier <span className="mono">{data.underlying.wrapperTier}</span> · pick a row to see the payoff and buy</div>
                 </div>
-                <Link href="/trade" className="btn secondary"><Roll>All expiries</Roll></Link>
+                <Link href={`/trade?m=${data.underlying.symbol}`} className="btn secondary"><Roll>All expiries</Roll></Link>
               </div>
               <DiscoverTable data={data} compact />
             </div>
@@ -138,11 +147,11 @@ export function Workflow({ data }: { data: RosterData }) {
 /* 4. Products: what we sell, by product. Two large cards slide in from the centre, three below fade up. */
 export function Products() {
   const cards = [
-    { t: "Gap", d: "Leveraged upside with the loss capped at the premium. Buy the right to buy NVDAx at a strike through an expiry. If it does not get there, you lost the premium and nothing else.", kind: "gap" as const, big: true },
-    { t: "Floor", d: "A funded exit at a price you choose, exercisable any time until expiry. The USDC is locked before you buy. Nothing else on earth sells a Saturday exit on Nvidia.", kind: "floor" as const, big: true },
-    { t: "Commit", d: "Get paid to buy Nvidia cheaper or to sell it higher. Capital is locked until expiry or exercise. Paid risk, disclosed as such, never yield.", kind: "commit" as const, big: false },
-    { t: "Protected Buy", d: "Buy NVDAx, or buy NVDAx with a floor through a date, in one transaction. Purchase cost, premium and protected proceeds shown together.", kind: "protected" as const, big: false },
-    { t: "First Print", d: "Funded exits on Tessera and PreStocks tokens, the assets with no exit at all. Transfer-fee aware, redemption cliff explained on every ticket.", kind: "firstprint" as const, big: false }
+    { t: "Gap", d: "Leveraged upside with the loss capped at the premium. The right to buy a tokenized stock at a strike through an expiry. If it does not get there, you lost the premium and nothing else.", kind: "gap" as const, big: true },
+    { t: "Floor", d: "A funded exit at a price you choose, exercisable any time until expiry. The USDC is locked before you buy. No equity venue sells a Saturday exit on Nvidia; this one does.", kind: "floor" as const, big: true },
+    { t: "Commit", d: "Get paid to buy a stock cheaper or to sell it higher. Capital is locked until expiry or exercise. Paid risk, disclosed as such, never yield.", kind: "commit" as const, big: false },
+    { t: "Protected Buy", d: "Buy the token, or buy it with a floor through a date, in one transaction. Purchase cost, premium and protected proceeds shown together. Ships after Gap and Floor.", kind: "protected" as const, big: false },
+    { t: "First Print", d: "Funded exits on Tessera and PreStocks tokens, the assets with no exit at all. Transfer-fee aware, redemption cliff explained on every ticket. Ships last.", kind: "firstprint" as const, big: false }
   ];
   return (
     <Sec id="products" className="usecases-sec">
@@ -200,6 +209,35 @@ export function Counters() {
             <Reveal key={t} y={26} delay={j * 0.1} className="counter">
               <div className="v"><CountUp value={v} /></div>
               <div className="t">{t}</div>
+              <span className="tick bl" aria-hidden /><span className="tick br" aria-hidden />
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </Sec>
+  );
+}
+
+/* 5b. Every stock, honestly tiered (addendum H): the three liquidity tiers, the live count in each, and the promotion rule. */
+export function Tiers({ data }: { data: RosterData }) {
+  const count = (t: Tier) => data.markets.filter((m) => m.tier === t).length;
+  const items: { tier: Tier; title: string }[] = [
+    { tier: 1, title: "Tier 1 · the launch set" },
+    { tier: 2, title: "Tier 2 · nearest expiry" },
+    { tier: 3, title: "Tier 3 · listed, unquoted by us" }
+  ];
+  return (
+    <Sec id="tiers" className="integration" ticks={false}>
+      <div className="ibox">
+        <div style={{ padding: "80px 0 40px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+          <ScrollColorText as="h2" text="Every stock, honestly tiered." className="h-section" style={{ textAlign: "center" }} />
+          <Reveal y={18} delay={0.1}><p className="body" style={{ margin: 0, maxWidth: 640, textAlign: "center" }}>Every tokenized stock that can be escrowed safely is listed. Where our capital quotes is a published rule, not a promise, and a market moves up a tier by filling, not by asking.</p></Reveal>
+        </div>
+        <div className="counters">
+          {items.map((it, j) => (
+            <Reveal key={it.tier} y={26} delay={j * 0.1} className="counter">
+              <div className="v"><CountUp value={String(count(it.tier))} /></div>
+              <div className="t"><b style={{ color: "var(--ink)", fontWeight: 500 }}>{it.title}.</b> {TIER_RULE[it.tier]}</div>
               <span className="tick bl" aria-hidden /><span className="tick br" aria-hidden />
             </Reveal>
           ))}
@@ -314,10 +352,10 @@ export function FirstPrint() {
 /* 8. What this is not. */
 const QA: [string, string][] = [
   ["This is an options protocol.", "Mechanically these are fully collateralized American options, and the docs say so. What we sell is one benefit: leverage or an exit with a known worst case, priced and funded before you click. No chain of strikes, no greeks, one underlying."],
-  ["Options venues on Solana die of fragmentation.", "They listed dozens of assets across dozens of strikes and expiries and split every maker across hundreds of thin books. We run one name, two expiries, three strikes a side, and several underwriters compete for the same term."],
+  ["Options venues on Solana die of fragmentation.", "They listed dozens of assets across dozens of strikes and expiries and split every maker across hundreds of thin books. We list every eligible market and concentrate capital on a launch set, publish the depth of each name, and cap live series per market so the book cannot sprawl. Several underwriters compete for the same term."],
   ["Why not a perp?", "A perp is the right tool for funding-rate exposure. It is the wrong tool for a position you want to leave on over a weekend on an asset whose market is closed. We point at perps for the first case."],
   ["Why not a limit order?", "A limit order controls the price of a fill but can sit unfilled through the exact hours you needed it. A funded exit is a counterparty who has already locked the cash."],
-  ["Nothing will fill.", "The sell side is seeded by our own capital and a maker bot from day one, and the roster page shows exactly what is fillable at what size."]
+  ["Nothing will fill.", "The sell side is seeded by the treasury's own capital and a maker bot from day one, and the roster page shows exactly what is fillable at what size. The treasury is a market maker, not a yield product: it can lose money in a week where the market gaps through its strikes, and its results are published, losing weeks included."]
 ];
 
 export function WhatThisIsNot() {

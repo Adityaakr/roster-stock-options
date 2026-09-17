@@ -20,7 +20,9 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: new URL("../../", import.meta.url).pathname,
   images: { remotePatterns: [{ protocol: "https", hostname: "**" }] },
   // Workspace packages ship TypeScript source; Next compiles them in place.
-  transpilePackages: ["@roster/sdk", "@roster/core"]
+  transpilePackages: ["@roster/sdk", "@roster/core"],
+  // Anchor's ESM build references `exports`; let Node load it as CommonJS on the server instead of bundling it.
+  serverExternalPackages: ["@anchor-lang/core"]
 };
 
 export default nextConfig;

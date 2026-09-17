@@ -4,6 +4,20 @@
  * Import `./env-load` as the first import of a script so this runs before other modules read process.env.
  */
 import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+
+// The repo root is the directory holding pnpm-workspace.yaml, whatever the current directory is.
+function repoRoot(from = process.cwd()): string {
+  let dir = from;
+  for (let i = 0; i < 8; i++) {
+    if (existsSync(resolve(dir, "pnpm-workspace.yaml"))) return dir;
+    const up = dirname(dir);
+    if (up === dir) break;
+    dir = up;
+  }
+  return from;
+}
+const ROOT = repoRoot();
 
 function parse(file: string): Record<string, string> {
   const out: Record<string, string> = {};
@@ -16,10 +30,10 @@ function parse(file: string): Record<string, string> {
 }
 
 export function loadEnvFile(env: NodeJS.ProcessEnv = process.env): void {
-  const base = parse(".env");
+  const base = parse(resolve(ROOT, ".env"));
   // An empty value in the file is "not set": every default in the code keeps working with the example file copied as-is.
   for (const [k, v] of Object.entries(base)) if (env[k] === undefined && v !== "") env[k] = v;
   if (!env.ROSTER_ENV) return;
-  const profile = parse(`.env.${env.ROSTER_ENV}`);
+  const profile = parse(resolve(ROOT, `.env.${env.ROSTER_ENV}`));
   for (const [k, v] of Object.entries(profile)) if (v !== "" && (env[k] === undefined || env[k] === base[k])) env[k] = v;
 }

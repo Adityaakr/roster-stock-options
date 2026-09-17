@@ -62,7 +62,7 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
               const q = { ask: c.fillable ? c.premium / size : null, underwriters: c.writers };
               if (q.ask === null) {
                 return (
-                  <tr key={t.id} className="row-link" onClick={() => router.push(`/trade/${t.id}`)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/trade/${t.id}`); }}>
+                  <tr key={t.id} className="row-link" data-testid="term-row" onClick={() => router.push(`/trade/${t.id}`)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/trade/${t.id}`); }}>
                     <td>
                       <div style={{ fontWeight: 500, whiteSpace: "nowrap" }}>${usd(t.strike)} <span className="muted">per share</span></div>
                       <div className="small mono" style={{ whiteSpace: "nowrap" }}>{t.side === "call" ? "right to buy" : "right to sell"} through {dayLabel(t.expiryTs)}</div>
@@ -76,7 +76,7 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
               const mv = moveNeeded(t.side, t.strike, q.ask, u.mark);
               const ml = maxLoss(q.ask, size, data.feeBps);
               return (
-                <tr key={t.id} className="row-link" onClick={() => router.push(`/trade/${t.id}`)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/trade/${t.id}`); }}>
+                <tr key={t.id} className="row-link" data-testid="term-row" onClick={() => router.push(`/trade/${t.id}`)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/trade/${t.id}`); }}>
                   <td>
                     <div style={{ fontWeight: 500, whiteSpace: "nowrap" }}>${usd(t.strike)} <span className="muted">per share</span></div>
                     <div className="small mono" style={{ whiteSpace: "nowrap" }}>{t.side === "call" ? "right to buy" : "right to sell"} through {dayLabel(t.expiryTs)}{q.underwriters > 1 ? ` · ${q.underwriters} underwriters` : ""}</div>

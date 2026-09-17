@@ -45,7 +45,7 @@ export function Examples({ data }: { data: RosterData }) {
               ) : null}
               {tab === "floor" && put ? (
                 <Example key="floor" title="Buy an exit." lead={`Pay $${usdSmart(put.ask * 20)} for the right to sell 20 ${sym} at $${usd0(put.strike)} any time through Friday, backed by $${usd0(put.strike * 20)} already locked.`}
-                  verdict={<>Nothing else on earth sells a Saturday exit on Nvidia. At <b>${usd0(expected)}</b> the floor is worth <b>${usdSmart(Math.max(0, put.strike - expected) * 20)}</b>; the most it can cost you is <b>${usdSmart(put.ask * 20)}</b>.</>}
+                  verdict={<>No equity venue sells a Saturday exit on Nvidia. At <b>${usd0(expected)}</b> the floor is worth <b>${usdSmart(Math.max(0, put.strike - expected) * 20)}</b>; the most it can cost you is <b>${usdSmart(put.ask * 20)}</b>.</>}
                   rows={[["Premium", `$${usd(put.ask)} per share`], ["Cost", `$${usdSmart(put.ask * 20)}`], ["Exit price", `$${usd0(put.strike)} per share, ${20} ${sym}`], ["Locked behind it", `$${usd0(put.strike * 20)} USDC in escrow`]]}>
                   <PayoffChart side="put" strike={put.strike} premium={put.ask} shares={20} mark={mark} expected={expected} />
                   <Slider value={expected} min={Math.round(mark * 0.8)} max={Math.round(mark * 1.2)} onChange={setExpected} label="Expected price on Friday" />

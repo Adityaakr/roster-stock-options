@@ -37,7 +37,7 @@ export function WalletMenu() {
 
   return (
     <div ref={ref} className="relative">
-      <button className="btn secondary sm" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <button className="btn secondary sm" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} data-testid="wallet" data-wallet={active}>
         <span className="inline-block w-2 h-2 rounded-full" style={{ background: "var(--green)" }} />
         {short(active, 4)}
         <Icon.Chevron width={14} height={14} />

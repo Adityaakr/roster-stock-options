@@ -66,7 +66,8 @@ async function main() {
   const launch = await launchSet();
   const meta = new Map<string, MarketMeta>(launch.map((l) => [l.mint.toBase58(), { mint: l.mint.toBase58(), symbol: l.symbol, name: l.name }]));
   const indexer = new Indexer(connection, reader, store, meta);
-  const quoter = new Quoter(quoterClient, DEFAULT_QUOTER);
+  // QUOTER_LOTS_PER_SERIES caps the treasury's ask per series (docs/SEEDING.md sets it for the first mainnet week).
+  const quoter = new Quoter(quoterClient, { ...DEFAULT_QUOTER, lotsPerSeries: BigInt(Math.round(Number(process.env.QUOTER_LOTS_PER_SERIES ?? 50) * 1e6)) });
   const keeper = new Keeper(keeperClient, deployer.publicKey, DEFAULT_KEEPER);
   const live = new Map<string, MarketLive>();
   let lastTick = 0;

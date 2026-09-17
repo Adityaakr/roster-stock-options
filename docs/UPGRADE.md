@@ -17,7 +17,7 @@ The program's upgrade authority is the multisig from the moment of the first mai
 
 ## Pausing instead of upgrading
 
-The pause authority (`KEEPER_KEYPAIR`) can `pause_market` or `pause_all` at any time and cannot do anything else; only the authority can unpause. A pause stops `create_series`, `quote` and `buy`; `exercise` and `settle_writer` keep working, so holders are never locked out by the protocol's own pause (an issuer pause of the mint is the halt rule instead).
+The pause authority (`KEEPER_KEYPAIR`) can set `paused_all = true` through `update_protocol` or `paused = true` on one market through `update_market`, and nothing else (`programs/roster_finance/src/instructions/admin.rs`, `update_market.rs`); only the authority can unpause. A pause stops the instructions that check `Paused` (`create_series`, `quote`, `buy`, `auto_exercise`); `exercise` and `settle_writer` do not check it, so holders are never locked out by the protocol's own pause (an issuer pause of the mint is the halt rule instead).
 
 ## Rolling back
 

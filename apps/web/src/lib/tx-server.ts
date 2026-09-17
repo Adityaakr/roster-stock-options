@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { AddressLookupTableAccount, ComputeBudgetProgram, Connection, PublicKey, Transaction, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import { RosterClient, ROSTER_PROGRAM_ID, readOnlyWallet, sendRawAndConfirm } from "@roster/sdk";
 import { jupiterQuote, jupiterSwapInstructions, type JupiterQuote } from "./jupiter";
@@ -15,6 +16,23 @@ const JUPITER_PROGRAM = new PublicKey("JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTa
 /** Every RPC read is bounded: a hung RPC must not hold a route open. */
 export function connection(): Connection {
   return new Connection(RPC_URL, { commitment: "confirmed", fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(10_000) }) });
+}
+
+/**
+ * The relay accepts only messages this server built: the wallet signs the exact bytes, so the signed transaction's
+ * message hashes to one issued here within the last ten minutes. In-memory, per instance; a multi-instance
+ * deployment needs this map in a shared store (docs/OPERATOR.md).
+ */
+const ISSUED_TTL_MS = 10 * 60_000;
+const issued = new Map<string, number>();
+function remember(messageBytes: Uint8Array): void {
+  const now = Date.now();
+  for (const [k, at] of issued) if (now - at > ISSUED_TTL_MS) issued.delete(k);
+  issued.set(createHash("sha256").update(messageBytes).digest("hex"), now);
+}
+function wasIssued(messageBytes: Uint8Array): boolean {
+  const at = issued.get(createHash("sha256").update(messageBytes).digest("hex"));
+  return at !== undefined && Date.now() - at <= ISSUED_TTL_MS;
 }
 
 /** A u64 for the program: an integer string in range, or a plain error rather than a silently wrapped value. */
@@ -130,6 +148,7 @@ export async function buildTransaction(body: unknown): Promise<BuildResponse> {
       throw new Error(`unknown transaction kind ${String(req.kind)}`);
   }
   const prepared = await client.prepare(tx);
+  remember(prepared.tx.serializeMessage());
   return { transaction: prepared.tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64"), lastValidBlockHeight: prepared.lastValidBlockHeight, summary };
 }
 
@@ -205,7 +224,10 @@ async function buildProtectedBuy(client: RosterClient, wallet: PublicKey, req: B
     const message = new TransactionMessage({ payerKey: wallet, recentBlockhash: latest.blockhash, instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: Math.min(1_400_000, swap.computeUnitLimit + 200_000) }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: client.priorityMicroLamports }), ...ixs] }).compileToV0Message(tables);
     const tx = new VersionedTransaction(message);
     const sim = await conn.simulateTransaction(tx, { sigVerify: false, replaceRecentBlockhash: true });
-    if (!sim.value.err) return { transaction: Buffer.from(tx.serialize()).toString("base64"), lastValidBlockHeight: latest.lastValidBlockHeight, summary };
+    if (!sim.value.err) {
+      remember(tx.message.serialize());
+      return { transaction: Buffer.from(tx.serialize()).toString("base64"), lastValidBlockHeight: latest.lastValidBlockHeight, summary };
+    }
     const logs = sim.value.logs ?? [];
     const swapFailed = logs.some((l) => l.includes("JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4 failed"));
     const anchorLine = logs.find((l) => l.includes("AnchorError")) ?? logs.filter((l) => l.startsWith("Program log:")).slice(-1)[0] ?? JSON.stringify(sim.value.err);
@@ -224,7 +246,8 @@ async function buildProtectedBuy(client: RosterClient, wallet: PublicKey, req: B
 export async function sendSigned(signedBase64: string, lastValidBlockHeight: unknown): Promise<string> {
   if (typeof signedBase64 !== "string" || signedBase64.length > 2_000) throw new Error("signed must be a base64 transaction");
   const raw = Buffer.from(signedBase64, "base64");
-  const programs = programsOf(raw);
+  const { programs, message } = programsOf(raw);
+  if (!wasIssued(message)) throw new Error("only transactions this app built are relayed (build it with /api/tx/build first; a built transaction is valid for ten minutes)");
   if (!programs.some((p) => p.equals(ROSTER_PROGRAM_ID))) throw new Error("only transactions for the Roster program are relayed");
   const foreign = programs.filter((p) => !ALLOWED_PROGRAMS.some((a) => a.equals(p)));
   if (foreign.length) throw new Error(`transaction calls a program the app does not relay: ${foreign[0]!.toBase58()}`);
@@ -237,15 +260,17 @@ export async function sendSigned(signedBase64: string, lastValidBlockHeight: unk
 
 const ALLOWED_PROGRAMS = [ROSTER_PROGRAM_ID, JUPITER_PROGRAM, ComputeBudgetProgram.programId, new PublicKey("11111111111111111111111111111111"), new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"), new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")];
 
-/** Program ids a serialized (legacy or v0) transaction invokes at the top level. Program ids are always static keys. */
-function programsOf(raw: Buffer): PublicKey[] {
+/** Program ids a serialized (legacy or v0) transaction invokes at the top level, and its message bytes. Program ids are always static keys. */
+function programsOf(raw: Buffer): { programs: PublicKey[]; message: Uint8Array } {
   const sigs = raw[0] ?? 0;
   const versioned = ((raw[1 + 64 * sigs] ?? 0) & 0x80) !== 0;
   if (versioned) {
     const tx = VersionedTransaction.deserialize(raw);
     const keys = tx.message.staticAccountKeys;
-    return tx.message.compiledInstructions.map((ix) => keys[ix.programIdIndex]!).filter(Boolean);
+    const programs = tx.message.compiledInstructions.map((ix) => keys[ix.programIdIndex]);
+    if (programs.some((p) => !p)) throw new Error("a program id outside the static keys is not accepted");
+    return { programs: programs as PublicKey[], message: tx.message.serialize() };
   }
   const tx = Transaction.from(raw);
-  return tx.instructions.map((ix) => ix.programId);
+  return { programs: tx.instructions.map((ix) => ix.programId), message: tx.serializeMessage() };
 }

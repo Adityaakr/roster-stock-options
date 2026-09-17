@@ -57,3 +57,15 @@ One entry per phase (CLAUDE.md 0): what was built, what was verified against whi
 **Cut.** Nothing. Hermes price assertions run only when `PYTH_CORE_API_KEY` exists.
 
 **Open risks.** The Pyth key blocks P2 pricing (`docs/OPERATOR.md`). Public mainnet RPC as the fork datasource rate-limits `getProgramAccounts`; nothing here uses it.
+
+## 2026-09-17 · M1 · P1a program core
+
+**Built.** `programs/roster_finance`: `Protocol`, `MarketConfig`, zero-copy `Series` (bounded 32-ask list, 32 in-account writer slots, stability-pool assignment product `P` with scale and epoch), instructions `init_protocol` (with the fee vault), `create_market` (extension flags derived from the mint), `update_market` (pause key can only pause), `create_series` (Token-2022 position mint with MetadataPointer + on-mint TokenMetadata + MintCloseAuthority, three pooled vaults, permissionless on the grid), `quote`, `cancel_ask`, `withdraw_unsold`, `claim_premium`, `buy` (8-ask walk, fee once, premiums accrued, fixed account set), `exercise` (burn, no oracle, never pausable), `settle_writer` (permissionless, derived destinations), `close_series` (dust swept, rent reclaimed, mint closed only at supply zero). `math.rs` holds the assignment arithmetic with 7 host unit tests replaying every skeptic counterexample.
+
+**Verified.** `anchor build --arch v0` clean (no stack-frame warnings after moving `Series` to `AccountLoader`); `cargo test --lib` 7 passed; litesvm suite `tests/program.rs` **13 passed**: position mint with metadata; off-grid strike and expiry rejected; three-ask walk with fee accounting, partial fill and `QuoteMoved`; exercise on day one, mid-window, one second before expiry, after expiry rejected, oversize rejected; pro-rata settlement of three writers after a partial exercise with vaults at zero, close after grace reclaims rent and leaves the mint with 90 lots outstanding; late writer gets none of earlier proceeds (adversary 1, epoch roll); equal writers equal payouts (addendum F); prime-sized writers with an awkward partial exercise leave only dust (addendum E); five griefing rounds then a new writer (skeptic A(c)); multiplier change mid-life leaves the contract untouched; ask-list eviction, rejection and the per-writer cap; put round-trip; issuer pause fails escrow transfers cleanly and resumes.
+
+**Lessons banked.** Anchor 1.x `CpiContext::new` takes the program `Pubkey`; a zero-copy borrow must be dropped before any CPI that passes the series as signer (`AccountBorrowFailed` otherwise); litesvm `warp_to_slot` leaves `unix_timestamp` untouched, so `set_sysvar::<Clock>` is the clock.
+
+**Cut.** Nothing from the M1 list. Fees, auto-exercise, halt rule, property test and the fork lifecycle are M2.
+
+**Open risks.** CU per instruction not yet measured (`docs/COMPUTE.md` in M2). The `Fill` events use `emit!`; an 8-fill buy is within the log budget on litesvm but `#[event_cpi]` is the fallback if the indexer ever sees truncation.

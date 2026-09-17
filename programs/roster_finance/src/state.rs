@@ -1,5 +1,19 @@
 use anchor_lang::prelude::*;
 
+/// Fixed capacity of the on-chain ask list per series (addendum D).
+pub const MAX_ASKS: usize = 32;
+/// Writer slots per series; every writer's accounting lives inside the series so `buy` touches a fixed account set.
+pub const MAX_WRITERS: usize = 32;
+/// Asks walked by one `buy` (addendum D).
+pub const MAX_WALK: usize = 8;
+/// One position token (6 decimals) is one lot; amounts of lots carry six decimals.
+pub const LOT6: u64 = 1_000_000;
+/// The assignment product `P` is a fixed-point number with this many units per 1.0.
+pub const P_ONE: u128 = 1_000_000_000_000_000_000;
+/// When `P` drops below this after an exercise it is rescaled up by `P_SCALE` and `scale` increments (Liquity pattern).
+pub const P_FLOOR: u128 = 1_000_000_000;
+pub const P_SCALE: u128 = 1_000_000_000;
+
 /// Protocol-wide configuration. `authority` is the Squads vault; `pause_authority` can pause and nothing else.
 #[account]
 #[derive(InitSpace)]
@@ -19,4 +33,203 @@ pub struct Protocol {
 
 impl Protocol {
     pub const SEED: &'static [u8] = b"protocol";
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, InitSpace)]
+pub enum Side {
+    Call,
+    Put,
+}
+
+/// One listed underlying. Created from a registry entry; token program, decimals and extension flags are derived from
+/// the mint account on-chain, never taken from the entry.
+#[account]
+#[derive(InitSpace)]
+pub struct MarketConfig {
+    pub bump: u8,
+    pub mint: Pubkey,
+    pub quote_mint: Pubkey,
+    pub token_program: Pubkey,
+    pub decimals: u8,
+    pub has_transfer_fee: bool,
+    pub has_permanent_delegate: bool,
+    pub pausable: bool,
+    /// Pubkey::default when the hook slot is empty; a non-default value means every vault transfer needs extra accounts.
+    pub hook_program: Pubkey,
+    pub token_feed_id: [u8; 32],
+    pub equity_feed_id: [u8; 32],
+    /// Expiries the keeper keeps rolled (16:00 New York); zero means unused.
+    pub allowed_expiries: [i64; 4],
+    /// Strikes are micro-USDC per lot and must be multiples of this inside [min_strike, max_strike].
+    pub strike_step: u64,
+    pub min_strike: u64,
+    pub max_strike: u64,
+    pub max_live_series: u16,
+    pub live_series: u16,
+    pub min_lots6: u64,
+    pub max_lots6: u64,
+    pub max_writer_lots6: u64,
+    pub tier: u8,
+    pub listed: bool,
+    pub paused: bool,
+    pub issuer_paused_at: i64,
+    pub max_price_age_secs: u32,
+    pub max_conf_bps: u16,
+    pub _reserved: [u8; 64],
+}
+
+impl MarketConfig {
+    pub const SEED: &'static [u8] = b"market";
+
+    /// Raw units in one six-decimal lot unit: 10^(decimals - 6).
+    pub fn raw_per_lot6(&self) -> u64 {
+        10u64.pow(u32::from(self.decimals) - 6)
+    }
+}
+
+pub const SERIES_OPEN: u8 = 0;
+pub const SERIES_HALTED: u8 = 1;
+pub const SIDE_CALL: u8 = 0;
+pub const SIDE_PUT: u8 = 1;
+
+impl Side {
+    pub fn from_u8(v: u8) -> Side {
+        if v == SIDE_PUT { Side::Put } else { Side::Call }
+    }
+    pub fn as_u8(self) -> u8 {
+        match self { Side::Call => SIDE_CALL, Side::Put => SIDE_PUT }
+    }
+}
+
+/// A resident ask: `writer_slot` indexes `Series::writers`. Plain-old-data, 32 bytes.
+#[zero_copy]
+#[repr(C)]
+#[derive(Default, Debug)]
+pub struct Ask {
+    pub remaining_lots6: u64,
+    pub ask_per_lot: u64,
+    pub seq: u64,
+    pub writer_slot: u8,
+    pub _pad: [u8; 7],
+}
+
+/// A writer's accounting inside the series. Lots are six-decimal. `open` is the writer's unassigned sold lots at the
+/// last fold; the fold brings it to the present through `P`, `scale` and `epoch` (see `math`). 112 bytes.
+#[zero_copy]
+#[repr(C)]
+#[derive(Default, Debug)]
+pub struct WriterSlot {
+    pub writer: Pubkey,
+    pub p_snap: [u64; 2],
+    pub deposited_lots6: u64,
+    pub withdrawn_lots6: u64,
+    pub sold_lots6: u64,
+    pub open_lots6: u64,
+    pub assigned_lots6: u64,
+    pub premium_claimable: u64,
+    pub epoch_snap: u32,
+    pub scale_snap: u8,
+    pub settled: u8,
+    pub _pad: [u8; 10],
+}
+
+impl WriterSlot {
+    pub fn is_empty(&self) -> bool {
+        self.writer == Pubkey::default()
+    }
+    /// A slot that can be handed to a new writer: nothing deposited that is not withdrawn, nothing sold, nothing owed.
+    pub fn is_recyclable(&self) -> bool {
+        self.is_empty() || (self.deposited_lots6 == self.withdrawn_lots6 && self.sold_lots6 == 0 && self.premium_claimable == 0)
+    }
+    pub fn p_snap(&self) -> u128 {
+        ((self.p_snap[1] as u128) << 64) | self.p_snap[0] as u128
+    }
+    pub fn set_p_snap(&mut self, v: u128) {
+        self.p_snap = [v as u64, (v >> 64) as u64];
+    }
+    pub fn is_settled(&self) -> bool {
+        self.settled != 0
+    }
+}
+
+/// One term: pooled collateral, pooled settlement, a bounded ask list and every writer's slot. Zero-copy: the
+/// account is about 4.9 KB and is read in place, never deserialized onto the stack.
+#[account(zero_copy)]
+#[repr(C)]
+pub struct Series {
+    pub market: Pubkey,
+    pub collateral_vault: Pubkey,
+    pub settlement_vault: Pubkey,
+    pub quote_vault: Pubkey,
+    pub position_mint: Pubkey,
+    pub rent_payer: Pubkey,
+    /// Micro-USDC exchanged per lot at exercise. Stored as given; the program never derives it from a multiplier.
+    pub strike_usdc_per_lot: u64,
+    pub expiry_ts: i64,
+    pub total_sold_lots6: u64,
+    pub total_exercised_lots6: u64,
+    pub unassigned_lots6: u64,
+    pub p: [u64; 2],
+    pub halted_at: i64,
+    pub seq: u64,
+    pub epoch: u32,
+    pub scale: u8,
+    pub state: u8,
+    pub side: u8,
+    pub bump: u8,
+    pub asks_len: u8,
+    pub _pad: [u8; 7],
+    pub asks: [Ask; MAX_ASKS],
+    pub writers: [WriterSlot; MAX_WRITERS],
+    pub _reserved: [u8; 64],
+}
+
+impl Series {
+    pub const SEED: &'static [u8] = b"series";
+    pub const CVAULT: &'static [u8] = b"cvault";
+    pub const SVAULT: &'static [u8] = b"svault";
+    pub const QVAULT: &'static [u8] = b"qvault";
+    pub const PMINT: &'static [u8] = b"pmint";
+    pub const LEN: usize = 8 + core::mem::size_of::<Series>();
+
+    pub fn side(&self) -> Side {
+        Side::from_u8(self.side)
+    }
+    pub fn side_byte(&self) -> [u8; 1] {
+        [self.side]
+    }
+    pub fn p(&self) -> u128 {
+        ((self.p[1] as u128) << 64) | self.p[0] as u128
+    }
+    pub fn set_p(&mut self, v: u128) {
+        self.p = [v as u64, (v >> 64) as u64];
+    }
+    pub fn is_open(&self) -> bool {
+        self.state == SERIES_OPEN
+    }
+
+    pub fn writer_slot(&self, writer: &Pubkey) -> Option<usize> {
+        self.writers.iter().position(|w| w.writer == *writer)
+    }
+
+    /// Lots a writer has resident in the ask list right now, summed from the array (never stored, so it cannot drift).
+    pub fn resident_lots6(&self, slot: usize) -> u64 {
+        self.asks[..self.asks_len as usize].iter().filter(|a| a.writer_slot as usize == slot).map(|a| a.remaining_lots6).sum()
+    }
+}
+
+/// Per-holder opt-in for the keeper's auto-exercise crank; the delegate is a program PDA, never the keeper key.
+#[account]
+#[derive(InitSpace)]
+pub struct AutoExercise {
+    pub bump: u8,
+    pub holder: Pubkey,
+    pub enabled: bool,
+    pub min_itm_bps: u16,
+    pub _reserved: [u8; 16],
+}
+
+impl AutoExercise {
+    pub const SEED: &'static [u8] = b"autoex";
+    pub const AUTHORITY_SEED: &'static [u8] = b"autoex_authority";
 }

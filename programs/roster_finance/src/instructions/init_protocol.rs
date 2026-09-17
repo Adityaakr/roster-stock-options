@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::Mint;
+use anchor_spl::{associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface}};
 
 use crate::{error::RosterError, state::Protocol};
 
@@ -20,10 +20,15 @@ pub struct InitProtocol<'info> {
     #[account(init, payer = authority, space = 8 + Protocol::INIT_SPACE, seeds = [Protocol::SEED], bump)]
     pub protocol: Account<'info, Protocol>,
     pub quote_mint: InterfaceAccount<'info, Mint>,
+    /// The fee vault: the protocol PDA's associated token account for the quote mint.
+    #[account(init, payer = authority, associated_token::mint = quote_mint, associated_token::authority = protocol, associated_token::token_program = quote_token_program)]
+    pub fee_vault: InterfaceAccount<'info, TokenAccount>,
+    pub quote_token_program: Interface<'info, TokenInterface>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
 
-pub fn handle(ctx: Context<InitProtocol>, params: InitProtocolParams) -> Result<()> {
+pub fn handle_init_protocol(ctx: Context<InitProtocol>, params: InitProtocolParams) -> Result<()> {
     require!(params.fee_bps <= 1_000 && params.integrator_share_bps <= 10_000, RosterError::FeeOutOfRange);
     let p = &mut ctx.accounts.protocol;
     p.bump = ctx.bumps.protocol;

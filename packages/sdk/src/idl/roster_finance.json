@@ -1,0 +1,3191 @@
+{
+  "address": "FJUdsdmxAp3zAwZBg3ai34xzeCBDobnH1XDarvVa7uFV",
+  "metadata": {
+    "name": "roster_finance",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Roster Finance: fully collateralized, American-exercise, physically settled contracts on tokenized stocks, pooled per series"
+  },
+  "instructions": [
+    {
+      "name": "buy",
+      "docs": [
+        "Fill from the best asks at or below the limit; partial fills return the filled amount; zero fill fails."
+      ],
+      "discriminator": [
+        102,
+        6,
+        61,
+        18,
+        1,
+        218,
+        235,
+        234
+      ],
+      "accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "MarketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "quote_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "fee_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "protocol"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "buyer_quote_ata",
+          "writable": true
+        },
+        {
+          "name": "position_mint",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "buyer_position_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "buyer"
+              },
+              {
+                "kind": "account",
+                "path": "token_2022_program"
+              },
+              {
+                "kind": "account",
+                "path": "position_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "token_2022_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "lots6",
+          "type": "u64"
+        },
+        {
+          "name": "max_premium_per_lot",
+          "type": "u64"
+        },
+        {
+          "name": "referrer",
+          "type": {
+            "option": "pubkey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "cancel_ask",
+      "discriminator": [
+        223,
+        192,
+        40,
+        224,
+        144,
+        138,
+        62,
+        13
+      ],
+      "accounts": [
+        {
+          "name": "writer",
+          "signer": true
+        },
+        {
+          "name": "series",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "seq",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "claim_premium",
+      "discriminator": [
+        225,
+        124,
+        12,
+        107,
+        24,
+        154,
+        37,
+        100
+      ],
+      "accounts": [
+        {
+          "name": "writer",
+          "signer": true
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "MarketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "quote_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "writer_quote_ata",
+          "writable": true
+        },
+        {
+          "name": "quote_token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_series",
+      "docs": [
+        "After expiry plus grace and every writer settled: sweep dust, close vaults and the series, reclaim rent."
+      ],
+      "discriminator": [
+        141,
+        153,
+        5,
+        139,
+        18,
+        10,
+        236,
+        13
+      ],
+      "accounts": [
+        {
+          "name": "cranker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "market",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "MarketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "rent_receiver",
+          "writable": true
+        },
+        {
+          "name": "underlying_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "position_mint",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "collateral_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "settlement_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "quote_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "fee_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "protocol"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "treasury"
+        },
+        {
+          "name": "treasury_underlying_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "treasury"
+              },
+              {
+                "kind": "account",
+                "path": "underlying_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "underlying_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "underlying_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "token_2022_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_market",
+      "docs": [
+        "List an underlying from a registry entry. Token program, decimals and extension flags come from the mint."
+      ],
+      "discriminator": [
+        103,
+        226,
+        97,
+        235,
+        200,
+        188,
+        251,
+        254
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "market",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "CreateMarketParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_series",
+      "docs": [
+        "Create a series on the grid: pooled vaults and a Token-2022 position mint. Permissionless."
+      ],
+      "discriminator": [
+        181,
+        9,
+        52,
+        120,
+        197,
+        221,
+        42,
+        142
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "market",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "MarketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "underlying_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "collateral_mint",
+          "docs": [
+            "Underlying for a call, USDC for a put; checked in the handler against `side`."
+          ]
+        },
+        {
+          "name": "settlement_mint",
+          "docs": [
+            "The other leg."
+          ]
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "position_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "series"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "series"
+              }
+            ]
+          }
+        },
+        {
+          "name": "settlement_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "series"
+              }
+            ]
+          }
+        },
+        {
+          "name": "quote_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  113,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "series"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_token_program"
+        },
+        {
+          "name": "settlement_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "token_2022_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "side",
+          "type": {
+            "defined": {
+              "name": "Side"
+            }
+          }
+        },
+        {
+          "name": "strike_usdc_per_lot",
+          "type": "u64"
+        },
+        {
+          "name": "expiry_ts",
+          "type": "i64"
+        },
+        {
+          "name": "symbol",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "exercise",
+      "docs": [
+        "Exercise any time before expiry. No oracle, never pausable."
+      ],
+      "discriminator": [
+        144,
+        79,
+        103,
+        64,
+        241,
+        78,
+        80,
+        174
+      ],
+      "accounts": [
+        {
+          "name": "holder",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "MarketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "underlying_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "position_mint",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "holder_position_ata",
+          "writable": true
+        },
+        {
+          "name": "collateral_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "settlement_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "holder_underlying_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "holder"
+              },
+              {
+                "kind": "account",
+                "path": "underlying_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "underlying_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "holder_quote_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "holder"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "underlying_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "token_2022_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "lots6",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "init_protocol",
+      "docs": [
+        "One-time protocol account: authorities, fee schedule, the canonical quote mint, the fee vault."
+      ],
+      "discriminator": [
+        3,
+        188,
+        141,
+        237,
+        225,
+        226,
+        232,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "fee_vault",
+          "docs": [
+            "The fee vault: the protocol PDA's associated token account for the quote mint."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "protocol"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "InitProtocolParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "quote",
+      "docs": [
+        "Deposit collateral (optional) and post an ask from free collateral."
+      ],
+      "discriminator": [
+        149,
+        42,
+        109,
+        247,
+        134,
+        146,
+        213,
+        123
+      ],
+      "accounts": [
+        {
+          "name": "writer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "MarketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "collateral_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "writer_collateral_ata",
+          "writable": true
+        },
+        {
+          "name": "collateral_token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "deposit_lots6",
+          "type": "u64"
+        },
+        {
+          "name": "ask_lots6",
+          "type": "u64"
+        },
+        {
+          "name": "ask_per_lot",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "settle_writer",
+      "docs": [
+        "After expiry: pay a writer everything it is owed. Permissionless; destinations are derived."
+      ],
+      "discriminator": [
+        254,
+        7,
+        49,
+        225,
+        73,
+        124,
+        46,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "cranker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "MarketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "writer"
+        },
+        {
+          "name": "underlying_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "collateral_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "settlement_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "quote_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "writer_underlying_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "writer"
+              },
+              {
+                "kind": "account",
+                "path": "underlying_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "underlying_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "writer_quote_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "writer"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "underlying_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_market",
+      "docs": [
+        "Roll the grid, change caps, list or pause. The pause key may only pause."
+      ],
+      "discriminator": [
+        153,
+        39,
+        2,
+        197,
+        179,
+        50,
+        199,
+        217
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "market",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "MarketConfig"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "UpdateMarketParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "withdraw_unsold",
+      "docs": [
+        "Withdraw never-sold collateral, any time."
+      ],
+      "discriminator": [
+        6,
+        159,
+        31,
+        233,
+        165,
+        117,
+        226,
+        159
+      ],
+      "accounts": [
+        {
+          "name": "writer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "MarketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "collateral_vault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "writer_collateral_ata",
+          "writable": true
+        },
+        {
+          "name": "collateral_token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "lots6",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "MarketConfig",
+      "discriminator": [
+        119,
+        255,
+        200,
+        88,
+        252,
+        82,
+        128,
+        24
+      ]
+    },
+    {
+      "name": "Protocol",
+      "discriminator": [
+        45,
+        39,
+        101,
+        43,
+        115,
+        72,
+        131,
+        40
+      ]
+    },
+    {
+      "name": "Series",
+      "discriminator": [
+        240,
+        97,
+        8,
+        183,
+        139,
+        77,
+        250,
+        162
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AskCancelled",
+      "discriminator": [
+        115,
+        173,
+        229,
+        248,
+        105,
+        252,
+        126,
+        155
+      ]
+    },
+    {
+      "name": "AskPosted",
+      "discriminator": [
+        41,
+        181,
+        65,
+        73,
+        229,
+        245,
+        240,
+        2
+      ]
+    },
+    {
+      "name": "Bought",
+      "discriminator": [
+        193,
+        56,
+        215,
+        24,
+        156,
+        76,
+        42,
+        104
+      ]
+    },
+    {
+      "name": "CollateralWithdrawn",
+      "discriminator": [
+        51,
+        224,
+        133,
+        106,
+        74,
+        173,
+        72,
+        82
+      ]
+    },
+    {
+      "name": "Exercised",
+      "discriminator": [
+        199,
+        234,
+        66,
+        198,
+        152,
+        62,
+        234,
+        154
+      ]
+    },
+    {
+      "name": "FeesWithdrawn",
+      "discriminator": [
+        234,
+        15,
+        0,
+        119,
+        148,
+        241,
+        40,
+        21
+      ]
+    },
+    {
+      "name": "Fill",
+      "discriminator": [
+        78,
+        225,
+        199,
+        154,
+        86,
+        219,
+        224,
+        169
+      ]
+    },
+    {
+      "name": "MarketCreated",
+      "discriminator": [
+        88,
+        184,
+        130,
+        231,
+        226,
+        84,
+        6,
+        58
+      ]
+    },
+    {
+      "name": "MarketUpdated",
+      "discriminator": [
+        170,
+        51,
+        74,
+        147,
+        116,
+        168,
+        217,
+        251
+      ]
+    },
+    {
+      "name": "PauseToggled",
+      "discriminator": [
+        105,
+        215,
+        89,
+        53,
+        198,
+        232,
+        136,
+        161
+      ]
+    },
+    {
+      "name": "PremiumClaimed",
+      "discriminator": [
+        60,
+        221,
+        78,
+        168,
+        150,
+        45,
+        78,
+        169
+      ]
+    },
+    {
+      "name": "SeriesClosed",
+      "discriminator": [
+        97,
+        146,
+        166,
+        119,
+        177,
+        104,
+        132,
+        53
+      ]
+    },
+    {
+      "name": "SeriesCreated",
+      "discriminator": [
+        2,
+        164,
+        54,
+        38,
+        24,
+        181,
+        233,
+        180
+      ]
+    },
+    {
+      "name": "WriterSettled",
+      "discriminator": [
+        221,
+        5,
+        98,
+        158,
+        18,
+        100,
+        21,
+        226
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "FeeOutOfRange",
+      "msg": "fee bps out of range"
+    },
+    {
+      "code": 6001,
+      "name": "Overflow",
+      "msg": "arithmetic overflow"
+    },
+    {
+      "code": 6002,
+      "name": "Unauthorized",
+      "msg": "unauthorized"
+    },
+    {
+      "code": 6003,
+      "name": "WrongQuoteMint",
+      "msg": "quote mint must be the protocol quote mint"
+    },
+    {
+      "code": 6004,
+      "name": "TooFewDecimals",
+      "msg": "mint has fewer than six decimals"
+    },
+    {
+      "code": 6005,
+      "name": "NotListed",
+      "msg": "market is not listed"
+    },
+    {
+      "code": 6006,
+      "name": "Paused",
+      "msg": "market or protocol is paused"
+    },
+    {
+      "code": 6007,
+      "name": "ExpiryOffGrid",
+      "msg": "expiry is not on the market grid"
+    },
+    {
+      "code": 6008,
+      "name": "StrikeOffGrid",
+      "msg": "strike is not on the market grid"
+    },
+    {
+      "code": 6009,
+      "name": "SeriesCapReached",
+      "msg": "live series cap reached for this market"
+    },
+    {
+      "code": 6010,
+      "name": "WrongVaultMint",
+      "msg": "side and vault mints do not agree"
+    },
+    {
+      "code": 6011,
+      "name": "Expired",
+      "msg": "series has expired"
+    },
+    {
+      "code": 6012,
+      "name": "NotExpired",
+      "msg": "series has not expired"
+    },
+    {
+      "code": 6013,
+      "name": "Halted",
+      "msg": "series is halted by an issuer pause or freeze"
+    },
+    {
+      "code": 6014,
+      "name": "SizeOutOfRange",
+      "msg": "size is outside the market limits"
+    },
+    {
+      "code": 6015,
+      "name": "NoWriterSlot",
+      "msg": "writer has no slot in this series"
+    },
+    {
+      "code": 6016,
+      "name": "WriterSlotsFull",
+      "msg": "no free writer slot in this series"
+    },
+    {
+      "code": 6017,
+      "name": "WriterCapReached",
+      "msg": "writer cap reached"
+    },
+    {
+      "code": 6018,
+      "name": "InsufficientFreeCollateral",
+      "msg": "not enough free collateral"
+    },
+    {
+      "code": 6019,
+      "name": "AskRejected",
+      "msg": "ask is worse than every resident ask and the list is full"
+    },
+    {
+      "code": 6020,
+      "name": "AskNotFound",
+      "msg": "ask not found"
+    },
+    {
+      "code": 6021,
+      "name": "QuoteMoved",
+      "msg": "nothing could be filled at or below the limit"
+    },
+    {
+      "code": 6022,
+      "name": "IntegratorNotRegistered",
+      "msg": "referrer is not a registered integrator"
+    },
+    {
+      "code": 6023,
+      "name": "InsufficientPosition",
+      "msg": "holder does not hold enough position tokens"
+    },
+    {
+      "code": 6024,
+      "name": "AlreadySettled",
+      "msg": "writer already settled"
+    },
+    {
+      "code": 6025,
+      "name": "VaultsNotEmpty",
+      "msg": "vaults are not empty"
+    },
+    {
+      "code": 6026,
+      "name": "WritersUnsettled",
+      "msg": "not every writer has settled"
+    },
+    {
+      "code": 6027,
+      "name": "GraceNotElapsed",
+      "msg": "grace period has not elapsed"
+    },
+    {
+      "code": 6028,
+      "name": "WrongRentReceiver",
+      "msg": "rent receiver must be the rent payer"
+    },
+    {
+      "code": 6029,
+      "name": "WrongAccount",
+      "msg": "account does not match the series"
+    },
+    {
+      "code": 6030,
+      "name": "WrongTokenProgram",
+      "msg": "wrong token program for this mint"
+    },
+    {
+      "code": 6031,
+      "name": "BadPriceUpdate",
+      "msg": "price update is stale, unverified, or for the wrong feed"
+    },
+    {
+      "code": 6032,
+      "name": "NotInTheMoney",
+      "msg": "position is not in the money by more than the keeper fee"
+    },
+    {
+      "code": 6033,
+      "name": "AutoExerciseDisabled",
+      "msg": "auto-exercise is not enabled for this holder"
+    },
+    {
+      "code": 6034,
+      "name": "OutsideWindow",
+      "msg": "outside the auto-exercise window"
+    }
+  ],
+  "types": [
+    {
+      "name": "Ask",
+      "docs": [
+        "A resident ask: `writer_slot` indexes `Series::writers`. Plain-old-data, 32 bytes."
+      ],
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "remaining_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "ask_per_lot",
+            "type": "u64"
+          },
+          {
+            "name": "seq",
+            "type": "u64"
+          },
+          {
+            "name": "writer_slot",
+            "type": "u8"
+          },
+          {
+            "name": "_pad",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "AskCancelled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "writer",
+            "type": "pubkey"
+          },
+          {
+            "name": "seq",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AskPosted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "writer",
+            "type": "pubkey"
+          },
+          {
+            "name": "lots6",
+            "type": "u64"
+          },
+          {
+            "name": "ask_per_lot",
+            "type": "u64"
+          },
+          {
+            "name": "seq",
+            "type": "u64"
+          },
+          {
+            "name": "evicted_seq",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Bought",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "buyer",
+            "type": "pubkey"
+          },
+          {
+            "name": "lots6_filled",
+            "type": "u64"
+          },
+          {
+            "name": "lots6_requested",
+            "type": "u64"
+          },
+          {
+            "name": "premium_paid",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "asks_walked",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollateralWithdrawn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "writer",
+            "type": "pubkey"
+          },
+          {
+            "name": "lots6",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateMarketParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "token_feed_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "equity_feed_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "allowed_expiries",
+            "type": {
+              "array": [
+                "i64",
+                4
+              ]
+            }
+          },
+          {
+            "name": "strike_step",
+            "type": "u64"
+          },
+          {
+            "name": "min_strike",
+            "type": "u64"
+          },
+          {
+            "name": "max_strike",
+            "type": "u64"
+          },
+          {
+            "name": "max_live_series",
+            "type": "u16"
+          },
+          {
+            "name": "min_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "max_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "max_writer_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "tier",
+            "type": "u8"
+          },
+          {
+            "name": "max_price_age_secs",
+            "type": "u32"
+          },
+          {
+            "name": "max_conf_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Exercised",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "holder",
+            "type": "pubkey"
+          },
+          {
+            "name": "lots6",
+            "type": "u64"
+          },
+          {
+            "name": "usdc",
+            "type": "u64"
+          },
+          {
+            "name": "raw",
+            "type": "u64"
+          },
+          {
+            "name": "auto",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeesWithdrawn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "to",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Fill",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "buyer",
+            "type": "pubkey"
+          },
+          {
+            "name": "writer",
+            "type": "pubkey"
+          },
+          {
+            "name": "lots6",
+            "type": "u64"
+          },
+          {
+            "name": "ask_per_lot",
+            "type": "u64"
+          },
+          {
+            "name": "premium",
+            "type": "u64"
+          },
+          {
+            "name": "seq",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitProtocolParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pause_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "integrator_share_bps",
+            "type": "u16"
+          },
+          {
+            "name": "keeper_fee_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "grace_secs",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarketConfig",
+      "docs": [
+        "One listed underlying. Created from a registry entry; token program, decimals and extension flags are derived from",
+        "the mint account on-chain, never taken from the entry."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "decimals",
+            "type": "u8"
+          },
+          {
+            "name": "has_transfer_fee",
+            "type": "bool"
+          },
+          {
+            "name": "has_permanent_delegate",
+            "type": "bool"
+          },
+          {
+            "name": "pausable",
+            "type": "bool"
+          },
+          {
+            "name": "hook_program",
+            "docs": [
+              "Pubkey::default when the hook slot is empty; a non-default value means every vault transfer needs extra accounts."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "token_feed_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "equity_feed_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "allowed_expiries",
+            "docs": [
+              "Expiries the keeper keeps rolled (16:00 New York); zero means unused."
+            ],
+            "type": {
+              "array": [
+                "i64",
+                4
+              ]
+            }
+          },
+          {
+            "name": "strike_step",
+            "docs": [
+              "Strikes are micro-USDC per lot and must be multiples of this inside [min_strike, max_strike]."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "min_strike",
+            "type": "u64"
+          },
+          {
+            "name": "max_strike",
+            "type": "u64"
+          },
+          {
+            "name": "max_live_series",
+            "type": "u16"
+          },
+          {
+            "name": "live_series",
+            "type": "u16"
+          },
+          {
+            "name": "min_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "max_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "max_writer_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "tier",
+            "type": "u8"
+          },
+          {
+            "name": "listed",
+            "type": "bool"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "issuer_paused_at",
+            "type": "i64"
+          },
+          {
+            "name": "max_price_age_secs",
+            "type": "u32"
+          },
+          {
+            "name": "max_conf_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarketCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "tier",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarketUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "listed",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PauseToggled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PremiumClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "writer",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Protocol",
+      "docs": [
+        "Protocol-wide configuration. `authority` is the Squads vault; `pause_authority` can pause and nothing else."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "pause_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "integrator_share_bps",
+            "type": "u16"
+          },
+          {
+            "name": "keeper_fee_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "grace_secs",
+            "type": "i64"
+          },
+          {
+            "name": "paused_all",
+            "type": "bool"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Series",
+      "docs": [
+        "One term: pooled collateral, pooled settlement, a bounded ask list and every writer's slot. Zero-copy: the",
+        "account is about 4.9 KB and is read in place, never deserialized onto the stack."
+      ],
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "collateral_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "settlement_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "position_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "rent_payer",
+            "type": "pubkey"
+          },
+          {
+            "name": "strike_usdc_per_lot",
+            "docs": [
+              "Micro-USDC exchanged per lot at exercise. Stored as given; the program never derives it from a multiplier."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "expiry_ts",
+            "type": "i64"
+          },
+          {
+            "name": "total_sold_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "total_exercised_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "unassigned_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "p",
+            "type": {
+              "array": [
+                "u64",
+                2
+              ]
+            }
+          },
+          {
+            "name": "halted_at",
+            "type": "i64"
+          },
+          {
+            "name": "seq",
+            "type": "u64"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "scale",
+            "type": "u8"
+          },
+          {
+            "name": "state",
+            "type": "u8"
+          },
+          {
+            "name": "side",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "asks_len",
+            "type": "u8"
+          },
+          {
+            "name": "_pad",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "asks",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "Ask"
+                  }
+                },
+                32
+              ]
+            }
+          },
+          {
+            "name": "writers",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "WriterSlot"
+                  }
+                },
+                32
+              ]
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SeriesClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "dust_collateral",
+            "type": "u64"
+          },
+          {
+            "name": "dust_settlement",
+            "type": "u64"
+          },
+          {
+            "name": "mint_closed",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SeriesCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "side",
+            "type": {
+              "defined": {
+                "name": "Side"
+              }
+            }
+          },
+          {
+            "name": "strike_usdc_per_lot",
+            "type": "u64"
+          },
+          {
+            "name": "expiry_ts",
+            "type": "i64"
+          },
+          {
+            "name": "position_mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Side",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Call"
+          },
+          {
+            "name": "Put"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateMarketParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "allowed_expiries",
+            "type": {
+              "option": {
+                "array": [
+                  "i64",
+                  4
+                ]
+              }
+            }
+          },
+          {
+            "name": "strike_step",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "min_strike",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "max_strike",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "max_live_series",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "min_lots6",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "max_lots6",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "max_writer_lots6",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "tier",
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "listed",
+            "type": {
+              "option": "bool"
+            }
+          },
+          {
+            "name": "paused",
+            "type": {
+              "option": "bool"
+            }
+          },
+          {
+            "name": "max_price_age_secs",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "max_conf_bps",
+            "type": {
+              "option": "u16"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "WriterSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "writer",
+            "type": "pubkey"
+          },
+          {
+            "name": "free_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "unassigned_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "assigned_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_out",
+            "type": "u64"
+          },
+          {
+            "name": "settlement_out",
+            "type": "u64"
+          },
+          {
+            "name": "premium_out",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WriterSlot",
+      "docs": [
+        "A writer's accounting inside the series. Lots are six-decimal. `open` is the writer's unassigned sold lots at the",
+        "last fold; the fold brings it to the present through `P`, `scale` and `epoch` (see `math`). 112 bytes."
+      ],
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "writer",
+            "type": "pubkey"
+          },
+          {
+            "name": "p_snap",
+            "type": {
+              "array": [
+                "u64",
+                2
+              ]
+            }
+          },
+          {
+            "name": "deposited_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "withdrawn_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "sold_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "open_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "assigned_lots6",
+            "type": "u64"
+          },
+          {
+            "name": "premium_claimable",
+            "type": "u64"
+          },
+          {
+            "name": "epoch_snap",
+            "type": "u32"
+          },
+          {
+            "name": "scale_snap",
+            "type": "u8"
+          },
+          {
+            "name": "settled",
+            "type": "u8"
+          },
+          {
+            "name": "_pad",
+            "type": {
+              "array": [
+                "u8",
+                10
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

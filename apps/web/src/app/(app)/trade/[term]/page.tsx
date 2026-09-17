@@ -101,9 +101,10 @@ export default function ActPage({ params }: { params: Promise<{ term: string }> 
                 { k: `Fee, ${data.feeBps} bps`, v: <span className="mono">{c.fillable ? `$${usd(c.fee)}` : "n/a"}</span> },
                 { k: "Total", v: <span className="mono ink" style={{ fontWeight: 500 }} data-testid="total">{c.fillable ? `$${usdSmart(c.total)}` : "n/a"}</span> },
                 { k: "Split across", v: c.fillable ? `${c.writers} underwriter${c.writers > 1 ? "s" : ""}` : `${Math.floor(t.capacity)} ${u.symbol} available` },
-                { k: "Referrer", v: "none; the integrator share of the fee stays with the protocol" }
+                { k: "Referrer", v: "none" }
               ]} />
             </div>
+            <p className="note" style={{ marginTop: 8 }}>No referrer on this buy: the integrator share of the fee stays with the protocol.</p>
             <div className="divider" style={{ margin: "16px 0" }} />
             <div className="small">Escrow backing this fill</div>
             <div style={{ marginTop: 8, display: "grid", gap: 6 }}>

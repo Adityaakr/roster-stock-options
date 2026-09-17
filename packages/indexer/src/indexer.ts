@@ -93,7 +93,7 @@ export class Indexer {
         address: s.address.toBase58(), market: s.market.toBase58(), side: s.side, strike_usdc_per_lot: s.strikeUsdcPerLot.toString(), expiry_ts: Number(s.expiryTs), position_mint: s.positionMint.toBase58(),
         collateral_vault: s.collateralVault.toBase58(), settlement_vault: s.settlementVault.toBase58(), quote_vault: s.quoteVault.toBase58(), total_sold_lots6: s.totalSoldLots6.toString(), total_exercised_lots6: s.totalExercisedLots6.toString(),
         unassigned_lots6: s.unassignedLots6.toString(), halted: s.halted ? 1 : 0,
-        asks_json: JSON.stringify(s.asks.map((a) => ({ remaining_lots6: a.remainingLots6.toString(), ask_per_lot: a.askPerLot.toString(), seq: a.seq.toString(), writer: s.writers[a.writerSlot]?.writer.toBase58() ?? null }))),
+        asks_json: JSON.stringify(s.asks.map((a) => ({ remaining_lots6: a.remainingLots6.toString(), ask_per_lot: a.askPerLot.toString(), seq: a.seq.toString(), writer_slot: a.writerSlot, writer: s.writers[a.writerSlot]?.writer.toBase58() ?? null }))),
         writers_json: JSON.stringify(s.writers.map((w) => ({ writer: w.writer.toBase58(), deposited_lots6: w.depositedLots6.toString(), withdrawn_lots6: w.withdrawnLots6.toString(), sold_lots6: w.soldLots6.toString(), open_lots6: w.openLots6.toString(), assigned_lots6: w.assignedLots6.toString(), premium_claimable: w.premiumClaimable.toString(), settled: w.settled }))),
         collateral_balance: cb.toString(), settlement_balance: sb.toString(), updated_at: Math.floor(Date.now() / 1000)
       };
@@ -133,17 +133,20 @@ export class Indexer {
     for (const s of sigs.reverse()) {
       const tx = await this.connection.getTransaction(s.signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
       const logs = tx?.meta?.logMessages ?? [];
+      // surfpool reports block times that are not unix seconds; fall back to the transaction's, then to now.
+      const plausible = (t: number | null | undefined) => (t && t > 1_000_000_000 ? t : null);
+      const blockTime = plausible(s.blockTime) ?? plausible(tx?.blockTime) ?? Math.floor(Date.now() / 1000);
       let i = 0;
       for (const ev of this.parser.parseLogs(logs, false)) {
         const data = plain(ev.data);
         // The parser hands back camelCase names; store the IDL's PascalCase so the API matches the program's event names.
         const name = ev.name.charAt(0).toUpperCase() + ev.name.slice(1);
-        if (this.store.insertEvent({ signature: s.signature, ix_index: i, slot: s.slot, block_time: s.blockTime ?? tx?.blockTime ?? 0, name, data_json: JSON.stringify(data) })) added += 1;
+        if (this.store.insertEvent({ signature: s.signature, ix_index: i, slot: s.slot, block_time: blockTime, name, data_json: JSON.stringify(data) })) added += 1;
         i += 1;
       }
       if (tx?.meta?.err) {
         // Failed transactions are part of the roster's honesty: record them so a declined exercise shows up.
-        if (this.store.insertEvent({ signature: s.signature, ix_index: 999, slot: s.slot, block_time: s.blockTime ?? 0, name: "Failed", data_json: JSON.stringify({ err: tx.meta.err, logs: logs.slice(-3) }) })) added += 1;
+        if (this.store.insertEvent({ signature: s.signature, ix_index: 999, slot: s.slot, block_time: blockTime, name: "Failed", data_json: JSON.stringify({ err: tx.meta.err, logs: logs.slice(-3) }) })) added += 1;
       }
       this.store.markSignature(s.signature, s.slot);
     }

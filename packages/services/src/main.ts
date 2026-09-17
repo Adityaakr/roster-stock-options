@@ -70,6 +70,21 @@ async function main() {
   let blocked: string | null = null;
   console.log(`[services] cluster=${cluster} genesis=${genesis.slice(0, 8)} program=${ROSTER_PROGRAM_ID.toBase58()} hermes=${hermes.keyed ? "keyed" : "NO KEY"} markets=${launch.map((l) => l.symbol).join(",")}`);
 
+  // Events are pulled on their own short loop as well as at the end of each tick: a tick that reprices every series
+  // can take a minute, and a receipt should not wait for it.
+  let pulling = false;
+  async function pullEvents(): Promise<void> {
+    if (pulling) return;
+    pulling = true;
+    try {
+      await indexer.pullEvents();
+    } catch (e) {
+      console.warn(`[indexer] events: ${(e as Error).message}`);
+    } finally {
+      pulling = false;
+    }
+  }
+
   async function tick(): Promise<void> {
     const nowTs = await clockUnix(connection);
     for (const l of launch) {
@@ -118,7 +133,7 @@ async function main() {
       }
       await indexer.snapshotMarket((await reader.fetchMarket(l.mint)) ?? market);
     }
-    await indexer.pullEvents().catch((e) => console.warn(`[indexer] events: ${(e as Error).message}`));
+    await pullEvents();
     lastTick = Date.now();
     if (blocked) console.warn(`[services] blocked on ${blocked}: the quoter cannot price (docs/OPERATOR.md)`);
   }
@@ -132,7 +147,7 @@ async function main() {
         const nowTs = await clockUnix(connection);
         const markets = [...live.values()].map((m) => ({ symbol: m.meta.symbol, name: m.meta.name, mint: m.market.mint.toBase58(), market: m.market.address.toBase58(), decimals: m.market.decimals, tier: m.market.tier, listed: m.market.listed, paused: m.market.paused || m.paused, hasTransferFee: m.market.hasTransferFee, hasPermanentDelegate: m.market.hasPermanentDelegate, pausable: m.market.pausable, hookProgram: m.market.hookProgram.toBase58(), allowedExpiries: m.market.allowedExpiries.map(String), strikeStep: m.market.strikeStep.toString(), minLots6: m.market.minLots6.toString(), maxLots6: m.market.maxLots6.toString(), maxLiveSeries: m.market.maxLiveSeries, liveSeries: m.market.liveSeries, price: m.price, priceAt: m.priceAt, priceSource: m.priceSource, equityPrice: m.equityPrice, basisBps: m.basisBps, multiplier: m.multiplier, pendingActivationTs: m.pendingActivationTs, inActivationWindow: m.inActivationWindow, vol: m.vol, volSource: m.volSource, series: store.series(m.market.address.toBase58()).map((s) => ({ ...s, asks: JSON.parse(s.asks_json), writers: JSON.parse(s.writers_json), asks_json: undefined, writers_json: undefined })) }));
         const protocol = await reader.fetchProtocol().catch(() => null);
-        return json(200, { cluster, programDeployed: true, program: ROSTER_PROGRAM_ID.toBase58(), nowTs, session: sessionAt(nowTs), feeBps: protocol?.feeBps ?? null, keeperFeeUsdc: protocol?.keeperFeeUsdc.toString() ?? null, graceSecs: protocol?.graceSecs.toString() ?? null, blocked, markets, quoterLog: quoter.log.slice(-40), keeperLog: keeper.log.slice(-40) });
+        return json(200, { cluster, programDeployed: true, program: ROSTER_PROGRAM_ID.toBase58(), nowTs, session: sessionAt(nowTs), feeBps: protocol?.feeBps ?? null, keeperFeeUsdc: protocol?.keeperFeeUsdc.toString() ?? null, graceSecs: protocol?.graceSecs.toString() ?? null, treasury: protocol?.treasury.toBase58() ?? null, quoter: quoterKey.publicKey.toBase58(), blocked, markets, quoterLog: quoter.log.slice(-40), keeperLog: keeper.log.slice(-40) });
       }
       const prot = url.pathname.match(/^\/v1\/protection\/([1-9A-HJ-NP-Za-km-z]+)$/);
       if (prot) {
@@ -144,15 +159,15 @@ async function main() {
       const pos = url.pathname.match(/^\/v1\/positions\/([1-9A-HJ-NP-Za-km-z]+)$/);
       if (pos) {
         const wallet = new PublicKey(pos[1]!);
-        const out = [];
-        for (const row of store.series()) {
-          const ata = (await import("@solana/spl-token")).getAssociatedTokenAddressSync(new PublicKey(row.position_mint), wallet, false, (await import("@solana/spl-token")).TOKEN_2022_PROGRAM_ID);
-          const info = await connection.getAccountInfo(ata);
-          if (!info) continue;
-          const amount = info.data.readBigUInt64LE(64);
-          if (amount === 0n) continue;
-          out.push({ series: row.address, market: row.market, side: row.side, strike_usdc_per_lot: row.strike_usdc_per_lot, expiry_ts: row.expiry_ts, position_mint: row.position_mint, lots6: amount.toString(), autoExercise: !!(await connection.getAccountInfo((await import("@roster/sdk")).autoExercisePda(ROSTER_PROGRAM_ID, wallet, new PublicKey(row.address)))) });
-        }
+        const { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } = await import("@solana/spl-token");
+        const { autoExercisePda } = await import("@roster/sdk");
+        const rows = store.series();
+        // One RPC round trip for every position ATA, then one for the opt-ins of the positions that exist.
+        const atas = rows.map((row) => getAssociatedTokenAddressSync(new PublicKey(row.position_mint), wallet, false, TOKEN_2022_PROGRAM_ID));
+        const infos = atas.length ? await connection.getMultipleAccountsInfo(atas) : [];
+        const held = rows.map((row, i) => ({ row, amount: infos[i] ? infos[i]!.data.readBigUInt64LE(64) : 0n })).filter((x) => x.amount > 0n);
+        const optIns = held.length ? await connection.getMultipleAccountsInfo(held.map((x) => autoExercisePda(ROSTER_PROGRAM_ID, wallet, new PublicKey(x.row.address)))) : [];
+        const out = held.map((x, i) => ({ series: x.row.address, market: x.row.market, side: x.row.side, strike_usdc_per_lot: x.row.strike_usdc_per_lot, expiry_ts: x.row.expiry_ts, position_mint: x.row.position_mint, lots6: x.amount.toString(), autoExercise: !!optIns[i] }));
         return json(200, { wallet: wallet.toBase58(), positions: out, events: store.events({ wallet: wallet.toBase58(), limit: 100 }) });
       }
       if (url.pathname === "/v1/events") return json(200, store.events({ name: url.searchParams.get("name") ?? undefined, series: url.searchParams.get("series") ?? undefined, limit: Number(url.searchParams.get("limit") ?? 100) }));
@@ -170,6 +185,7 @@ async function main() {
     server.close();
     return;
   }
+  setInterval(() => void pullEvents(), Number(process.env.EVENTS_PULL_MS ?? 3_000));
   // One tick at a time: a slow tick (many sends) must not overlap the next, or the keeper and quoter race themselves.
   let inFlight = false;
   setInterval(() => {

@@ -89,9 +89,10 @@ test("buy a Gap, buy a Floor, write a Floor, exercise, see the release", async (
   await gap.getByTestId("exercise-size").fill("1");
   await gap.getByTestId("exercise-confirm").click();
   await waitDone(page);
+  // The burner wallet lives in the page, so never reload: refresh in place until the indexer has the event.
   await expect.poll(async () => {
-    await page.reload();
-    await page.getByTestId("wallet").waitFor({ timeout: 20_000 }).catch(() => undefined);
+    await page.getByTestId("refresh").click();
+    await page.waitForTimeout(1500);
     return (await page.getByTestId("history").textContent().catch(() => "")) ?? "";
   }, { timeout: 120_000, intervals: [5_000] }).toContain("Exercised");
 
@@ -99,10 +100,10 @@ test("buy a Gap, buy a Floor, write a Floor, exercise, see the release", async (
   const expiry = Number(written.split("-").pop());
   await timeTravelTo(Math.max(await clockUnix(connection), expiry) + 5);
   await expect.poll(async () => {
-    await page.reload();
-    await page.getByTestId("wallet").waitFor({ timeout: 20_000 }).catch(() => undefined);
+    await page.getByTestId("refresh").click();
+    await page.waitForTimeout(1500);
     return (await page.getByTestId("history").textContent().catch(() => "")) ?? "";
-  }, { timeout: 180_000, intervals: [5_000] }).toContain("Released");
+  }, { timeout: 240_000, intervals: [5_000] }).toContain("Released");
   const released = page.getByTestId("history").locator("tr[data-kind=release]").first();
   await expect(released).toContainText("not assigned");
   expect(errors, errors.join("\n")).toEqual([]);

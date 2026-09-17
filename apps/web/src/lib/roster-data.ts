@@ -92,11 +92,12 @@ function underlyingOf(m: Market): Underlying {
   return { symbol: m.symbol, name: m.name, mint: m.mint, mark: m.mark ?? 0, equityMark: m.equityMark, basisBps: m.basisBps, multiplier: m.multiplier, pendingActivationTs: m.pendingActivationTs, wrapperTier: m.wrapperTier };
 }
 
-function underwritersOf(terms: Term[], treasury: string | null): Underwriter[] {
+function underwritersOf(terms: Term[], treasury: string | null, quoter: string | null): Underwriter[] {
   const by = new Map<string, Underwriter>();
   for (const t of terms) {
     for (const w of t.writers) {
-      const u = by.get(w.account) ?? { name: w.account === treasury ? "Roster treasury" : `Underwriter ${w.account.slice(0, 4)}…${w.account.slice(-4)}`, kind: w.account === treasury ? "treasury" : "external", account: w.account, usdcReserved: 0, underlyingReserved: 0, live: false };
+      const kind: Underwriter["kind"] = w.account === treasury ? "treasury" : w.account === quoter ? "maker" : "external";
+      const u = by.get(w.account) ?? { name: kind === "treasury" ? "Roster treasury" : kind === "maker" ? "Roster quoter" : `${w.account.slice(0, 4)}…${w.account.slice(-4)}`, kind, account: w.account, usdcReserved: 0, underlyingReserved: 0, live: false };
       if (t.side === "put") u.usdcReserved += w.askLots * t.strike * 1; else u.underlyingReserved += w.askLots;
       u.live = u.live || w.live;
       by.set(w.account, u);
@@ -137,10 +138,11 @@ async function fromServices(r: ServicesRoster, selected: string | undefined, fre
   const terms = termsByMarket.flatMap((x) => x.terms).filter((t) => t.expiryTs > nowTs);
   const pick = markets.find((m) => m.symbol.toLowerCase() === selected?.toLowerCase()) ?? markets[0];
   const mine = pick ? terms.filter((t) => t.market === pick.symbol) : [];
+  // History covers the market's expired series too: an exercise on a term that has since expired still happened.
+  const allOfMarket = pick ? termsByMarket.find((x) => x.m.symbol === pick.symbol)?.terms ?? [] : [];
   const cluster = r.cluster === "fork" ? "fork" : r.cluster === "devnet" ? "devnet" : "mainnet";
   const label = cluster === "fork" ? "Mainnet fork" : cluster === "devnet" ? "Devnet" : "Mainnet";
-  const treasury = process.env.NEXT_PUBLIC_TREASURY ?? null;
-  const exercises = pick ? await liveExercises(mine).catch(() => []) : [];
+  const exercises = pick ? await liveExercises(allOfMarket).catch(() => []) : [];
   return {
     cluster,
     clusterLabel: label,
@@ -152,7 +154,7 @@ async function fromServices(r: ServicesRoster, selected: string | undefined, fre
     underlying: pick ? underlyingOf(pick) : { symbol: "NVDAx", name: "Nvidia xStock", mint: null, mark: 0, equityMark: null, basisBps: null, multiplier: 1, pendingActivationTs: null, wrapperTier: "xStock" },
     expiries: pick ? pick.expiries : [],
     terms: mine,
-    underwriters: underwritersOf(mine, treasury),
+    underwriters: underwritersOf(mine, r.treasury, r.quoter),
     positions: [],
     exercises,
     feeBps: r.feeBps ?? 0,

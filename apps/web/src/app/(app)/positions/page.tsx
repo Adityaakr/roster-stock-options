@@ -34,7 +34,10 @@ export default function PositionsPage() {
           <h1 className="h3">Positions</h1>
           <p className="body-sm">What you own across every market, what it is worth now, how long until expiry, and exactly what exercising requires.</p>
         </div>
-        <Link href="/trade" className="btn primary sm">Buy another</Link>
+        <div className="flex items-center gap-2">
+          <button className="btn secondary sm" onClick={reload} data-testid="refresh">Refresh</button>
+          <Link href="/trade" className="btn primary sm">Buy another</Link>
+        </div>
       </div>
       {error || perror ? <ErrorState message={`Could not read positions: ${error ?? perror}`} next="Reload the page." /> : null}
       {!data && !error ? <Loading what="positions" /> : null}

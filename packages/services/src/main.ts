@@ -4,8 +4,9 @@ import "../../../scripts/env-load";
  * quoter, keeper and the REST the app reads. Each module keeps its own loop and keypair so splitting into per-tier
  * processes later is moving files. Flags: --no-quoter --no-keeper --once --port N.
  *
- * Fork-only: REFERENCE_PRICE_<SYMBOL> in .env lets the quoter run without a Pyth key on the fork, and is refused on
- * any cluster whose genesis is not the surfpool fork. Real data only outside test fixtures (CLAUDE.md 0).
+ * Fork-only: without a Pyth key the quoter prices off the issuer's quote (or REFERENCE_PRICE_<SYMBOL> in tests) only
+ * when the RPC is loopback, which is where surfpool runs; a fork shares mainnet's genesis hash, so the RPC host is the
+ * test. On any other cluster the quoter stays blocked on the key. Real data only outside test fixtures (CLAUDE.md 0).
  */
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
@@ -16,7 +17,7 @@ import { Hermes, HermesError, estimateVol, readMultiplier, sessionAt } from "@ro
 import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
 import { Quoter, DEFAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
-import { LAUNCH_SET, resolveLaunchSet } from "./registry";
+import { launchSet, xstocksQuote } from "./registry";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
 const args = new Set(process.argv.slice(2));
@@ -34,7 +35,7 @@ interface MarketLive {
   meta: MarketMeta;
   price: number | null;
   priceAt: number;
-  priceSource: "hermes" | "reference" | "none";
+  priceSource: "hermes" | "reference" | "xstocks" | "none";
   equityPrice: number | null;
   basisBps: number | null;
   multiplier: number;
@@ -60,7 +61,7 @@ async function main() {
   const keeperClient = new RosterClient(connection, new anchor.Wallet(isFork ? deployer : keeperKey));
   const hermes = new Hermes(process.env.PYTH_CORE_API_KEY);
   const store = new SqliteStore(process.env.INDEXER_DB ?? (isFork ? ".keys/indexer-fork.sqlite" : ".keys/indexer.sqlite"));
-  const launch = await resolveLaunchSet(process.env.LAUNCH_SYMBOLS?.split(",") ?? LAUNCH_SET);
+  const launch = await launchSet();
   const meta = new Map<string, MarketMeta>(launch.map((l) => [l.mint.toBase58(), { mint: l.mint.toBase58(), symbol: l.symbol, name: l.name }]));
   const indexer = new Indexer(connection, reader, store, meta);
   const quoter = new Quoter(quoterClient, DEFAULT_QUOTER);
@@ -104,16 +105,17 @@ async function main() {
         if (e) { equityPrice = e.price; store.recordPrice({ feed_id: equityFeed, price: e.price, conf: e.conf, publish_time: e.publishTime }); }
         blocked = null;
       } catch (err) {
+        // Without a Pyth key the issuer's own quote stands in: on the fork the quoter may price off it (a test device,
+        // refused elsewhere by genesis); on a real cluster it is a display mark only and the quoter stays blocked.
         const ref = process.env[`REFERENCE_PRICE_${l.symbol.toUpperCase()}`];
-        if (isFork && ref) {
-          price = Number(ref);
+        const issuer = ref ? Number(ref) : await xstocksQuote(l.symbol).catch(() => null);
+        if (issuer) {
+          price = issuer;
           priceAt = nowTs;
-          priceSource = "reference";
-        } else if (err instanceof HermesError && err.status === 401) {
-          blocked = "PYTH_CORE_API_KEY";
-        } else {
-          console.warn(`[oracle] ${l.symbol}: ${(err as Error).message}`);
+          priceSource = ref ? "reference" : "xstocks";
         }
+        if (err instanceof HermesError && err.status === 401) blocked = "PYTH_CORE_API_KEY";
+        else console.warn(`[oracle] ${l.symbol}: ${(err as Error).message}`);
       }
       const mult = await readMultiplier(connection, l.symbol, l.mint, nowTs);
       const vol = await estimateVol(`Crypto.${l.symbol.toUpperCase()}/USD`, Number(process.env.VOL_FLOOR ?? 0.35), process.env.PYTH_CORE_API_KEY);
@@ -127,9 +129,11 @@ async function main() {
         await keeper.rollGrid(market, nowTs, (process.env.EXTRA_EXPIRIES ?? "").split(",").filter(Boolean).map(BigInt));
         await keeper.cycle(await reader.fetchMarket(l.mint) ?? market, nowTs, paused);
       }
-      if (!flag("--no-quoter") && price !== null) {
+      // The quoter prices only off Hermes, or off the issuer quote on the fork; a real cluster without a key does not quote.
+      const canQuote = priceSource === "hermes" || (isFork && priceSource !== "none");
+      if (!flag("--no-quoter") && price !== null && canQuote) {
         const fresh = (await reader.fetchMarket(l.mint)) ?? market;
-        await quoter.cycle({ market: fresh, symbol: l.symbol, price, priceAgeSecs: Math.max(0, nowTs - priceAt), equityPrice, multiplier: mult.onChain, pendingDividendMultiplier: state.pendingDividendMultiplier, inActivationWindow: mult.inWindow, vol: vol.blended, nowTs });
+        await quoter.cycle({ market: fresh, symbol: l.symbol, tier: l.tier, price, priceAgeSecs: Math.max(0, nowTs - priceAt), equityPrice, multiplier: mult.onChain, pendingDividendMultiplier: state.pendingDividendMultiplier, inActivationWindow: mult.inWindow, vol: vol.blended, nowTs });
       }
       await indexer.snapshotMarket((await reader.fetchMarket(l.mint)) ?? market);
     }

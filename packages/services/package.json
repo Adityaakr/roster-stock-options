@@ -18,6 +18,7 @@
     "@solana/web3.js": "1.99.0",
     "zod": "^4.6.5",
     "@roster/oracle": "workspace:*",
+    "@roster/registry": "workspace:*",
     "@roster/indexer": "workspace:*",
     "@roster/quoter": "workspace:*",
     "@roster/keeper": "workspace:*",

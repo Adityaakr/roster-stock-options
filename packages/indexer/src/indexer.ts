@@ -114,7 +114,7 @@ export class Indexer {
   }
 
   /** Pull the program signatures not yet read and store their events. Returns how many events were new. */
-  async pullEvents(limit = 200): Promise<number> {
+  async pullEvents(limit = 1000): Promise<number> {
     // Newest first, paging back until a whole page is already known. No `until` cursor: surfpool answers it with an
     // internal error, and after a time travel the fork can list a newer transaction under a lower slot than an
     // older one, so "everything above the last signature" would skip it. Dedupe by signature instead; in steady
@@ -122,7 +122,14 @@ export class Indexer {
     const sigs: ConfirmedSignatureInfo[] = [];
     let before: string | undefined;
     for (let pages = 0; pages < 10; pages++) {
-      const page = await this.connection.getSignaturesForAddress(this.client.programId, before ? { limit, before } : { limit }, "confirmed");
+      let page: ConfirmedSignatureInfo[];
+      try {
+        page = await this.connection.getSignaturesForAddress(this.client.programId, before ? { limit, before } : { limit }, "confirmed");
+      } catch (e) {
+        // surfpool cannot page with `before` past what it has; keep what the first page gave rather than lose it.
+        if (before) break;
+        throw e;
+      }
       const fresh = page.filter((s) => !this.store.hasSignature(s.signature));
       sigs.push(...fresh);
       if (fresh.length === 0 || page.length < limit) break;

@@ -112,3 +112,15 @@ One entry per phase (CLAUDE.md 0): what was built, what was verified against whi
 **Cut.** Watchlists, CSV and PDF export, the pooled vault option, Blinks and the widget (Part 2 section 6, after the cut line). Treasury P&L on the roster waits for the accounting rows in M5.
 
 **Open risks.** With no country header from an edge, nothing is geo-blocked (docs/OPERATOR.md). The reference price on the fork prices every ask off the volatility floor.
+
+## 2026-09-17 · M5 · P7-lite: registry and launch set on the fork
+
+**Built.** `packages/registry`: xStocks Assets API (assets, Solana mint, issuer quote), Hermes feed listing (exact-symbol matches only), on-chain mint inspection (token program, every extension, delegate, hook and whether it is live, fee, pausable, scaled UI amount, decimals) and the verdict rule. `scripts/eligibility.ts` writes `fixtures/registry/registry.json` and `docs/ELIGIBILITY.md`; `scripts/list-markets.ts` creates each eligible market on the fork with its tier's grid and caps and proves the escrow (a series, one lot quoted into the vault, withdrawn) before the registry counts it. The services run every proven market; the quoter applies the tier rule (Tier 1 both expiries, Tier 2 the nearest, Tier 3 no treasury quotes); without a Pyth key the issuer quote stands in on the fork and is a display mark elsewhere. `pnpm seed` funds every registry mint.
+
+**Verified.** 11 of 11 candidates (Tier 1 NVDAx, TSLAx, SPYx; Tier 2 AAPLx, MSFTx, GOOGLx, AMZNx, METAx, CRCLx, MSTRx, QQQx) read as plain Token-2022 mints with a permanent delegate, pausable config, freeze authority and a transfer-hook slot with no program; all have a `Crypto.<SYMBOL>/USD` and an `Equity.US.<UNDERLYING>/USD` feed (the three Tier 1 ids equal the P0 probe); all 11 escrow proofs landed. Services: 11 markets quoted from the right tier (Tier 1: 12 series, Tier 2: 6). Browser flow on the fork with 11 markets: 1 passed. Backpack entitlements held: no issuer source for a Solana mint.
+
+**Lessons banked.** A fork shares mainnet's genesis hash; "fork-only" behaviour is keyed on a loopback RPC. surfpool cannot page `getSignaturesForAddress` with `before`; the indexer asks for 1,000 at once and keeps the first page if paging fails. The app's nav carries `?m=` so a screen change keeps the market.
+
+**Cut.** tokens.xyz tiers and the full 400-name walk (`--all` exists; verdicts for the long tail wait for `TOKENS_XYZ_API_KEY` and a session with the public RPC's rate limits). Treasury P&L rows.
+
+**Open risks.** The NVDAx market carries series from the earlier runs at its cap until they expire and close. Tier 2 caps are the roadmap's defaults, not sized to the treasury.

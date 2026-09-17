@@ -1,0 +1,677 @@
+{
+  "generatedAt": "2026-09-17T16:03:14.133Z",
+  "cluster": "http://127.0.0.1:8899",
+  "entries": [
+    {
+      "symbol": "NVDAx",
+      "name": "NVIDIA xStock",
+      "underlyingSymbol": "NVDA",
+      "isin": "CH1436219195",
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/NVDAx.png",
+      "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+      "tier": 1,
+      "wrapper": "xStock",
+      "inspection": {
+        "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "32127749936330",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1.0009180758490996,
+          "newMultiplier": 1.001701196801074,
+          "newMultiplierEffectiveTimestamp": 1789000200
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "4244d07890e4610f46bbde67de8f43a4bf8b569eebe904f136b469f148503b7f",
+          "symbol": "Crypto.NVDAX/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "b1073854ed24cbc755dc527418f52b7d271f6cc967bbf8d8129112b18860a593",
+          "symbol": "Equity.US.NVDA/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "Hz2L2pKTqsDmxbUZHr6ccAXmvf92mkvehHMx636X2bSh",
+        "quote": "2ABUPZPEH71X6eQrCoWtr8DWMGEqAxiscTbTRpa5ngJLBQrG2SgGELi4UagTZGaP7tYFFA2pS5SSeCW48aKpAtsr",
+        "withdraw": "5LtcJ74LZvRZ9wLCFL4Ucj8SuEYdfEm8ius4fej1pTgkKhutGqj3f6iqcMwxGqv7H8srfzvUG3LzduJR5K72WY4c",
+        "provenAt": "2026-09-17T15:56:40.117Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "TSLAx",
+      "name": "Tesla xStock",
+      "underlyingSymbol": "TSLA",
+      "isin": "CH1436219252",
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/TSLAx.png",
+      "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+      "tier": 1,
+      "wrapper": "xStock",
+      "inspection": {
+        "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "22963696203639",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "47a156470288850a440df3a6ce85a55917b813a19bb5b31128a33a986566a362",
+          "symbol": "Crypto.TSLAX/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "16dad506d7db8da01c87581c87ca897a012a153557d4d578c3b9c9e1bc0632f1",
+          "symbol": "Equity.US.TSLA/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "4Q9XuaFULuoYJ7TwATrRJaeagEEM9f4iFYQgdF3KPoQC",
+        "quote": "2YgHFdcoCczMyNt6LNE9eYxbxAyia86ZJKr8eVG28vhkDRcrL9VqtmgzJB6pPX8MKK1QnwfVYYpHrCsUAqX4iCjS",
+        "withdraw": "55stSkHCJA7piSyuZXkWs6e72HGvwQ4Uuj3crSboSyddjhPdwkUzrSFsEfE9CyqYva9BmsjTHD8fAafFSa2YVGKZ",
+        "provenAt": "2026-09-17T15:55:45.394Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "SPYx",
+      "name": "SP500 xStock",
+      "underlyingSymbol": "SPY",
+      "isin": "CH1436219716",
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/SPYx.png",
+      "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "tier": 1,
+      "wrapper": "xStock",
+      "inspection": {
+        "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "9523182362997",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1.003909240011759,
+          "newMultiplier": 1.005714560286254,
+          "newMultiplierEffectiveTimestamp": 1781755200
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "2817b78438c769357182c04346fddaad1178c82f4048828fe0997c3c64624e14",
+          "symbol": "Crypto.SPYX/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "19e09bb805456ada3979a7d1cbb4b6d63babc3a0f8e8a9509f68afa5c4c11cd5",
+          "symbol": "Equity.US.SPY/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "Ey3tgW5vUVZuUQUW8xVoyNuzTExWNS5QrAgNbWbBfcYD",
+        "quote": "2AXSt6J6RCtLtACdfF5JSemLCdKEFDh3gkUsNECHpyV89U1noo8pbsnvGpUBF5hYz36VB6R7PAq2eMwLZAjvwVP",
+        "withdraw": "4AU7mUd4kKdgYE8u1NARkE78gFnmhaDU9yCJgRrj3Zg4v2i5roGrF3EBoc2fJzA8cqbGBy2DW9ZcLivd5vXfxhVU",
+        "provenAt": "2026-09-17T15:55:49.554Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "AAPLx",
+      "name": "Apple xStock",
+      "underlyingSymbol": "AAPL",
+      "isin": "CH1436219187",
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/AAPLx.png",
+      "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+      "tier": 2,
+      "wrapper": "xStock",
+      "inspection": {
+        "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "15376341294752",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1.0026642075893797,
+          "newMultiplier": 1.0032690125398187,
+          "newMultiplierEffectiveTimestamp": 1786149000
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "978e6cc68a119ce066aa830017318563a9ed04ec3a0a6439010fc11296a58675",
+          "symbol": "Crypto.AAPLX/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "49f6b65cb1de6b10eaf75e7c03ca029c306d0357e91b5311b175084a5ad55688",
+          "symbol": "Equity.US.AAPL/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "337TWpq9m6MLEbSo17XVfQrXwRCCRCY2x5G6cToVSVso",
+        "quote": "3fEmU7y8NdPviUFsZdkEFs9XbDRv1Tip7xFLfgGrzccskjkVZ5qgdXfh7279atMrcDkeLDcJxtThQp56qyTHkDwg",
+        "withdraw": "2qf8FewrCctJfGTb1vwka7Y7NgvEvNP6aF7ybnCV22Fj2259k5n5Ps4ScAxS2679LJxehV289G5EGYDq5TS6zUkb",
+        "provenAt": "2026-09-17T15:55:53.596Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "MSFTx",
+      "name": "Microsoft xStock",
+      "underlyingSymbol": "MSFT",
+      "isin": "CH1436219203",
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/MSFTx.png",
+      "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
+      "tier": 2,
+      "wrapper": "xStock",
+      "inspection": {
+        "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "10497090241047",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1.0045820905025638,
+          "newMultiplier": 1.0059033904787456,
+          "newMultiplierEffectiveTimestamp": 1787185800
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "bb723a70af731ab56b9a650eb7e8ac22b7bc07ea77f8670bd1fa9a37bf6df3f5",
+          "symbol": "Crypto.MSFTX/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "d0ca23c1cc005e004ccf1db5bf76aeb6a49218f43dac3d4b275e92de12ded4d1",
+          "symbol": "Equity.US.MSFT/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "F54fhxafR5cxPkkfDzWcz5YExgP5aNRKTNo2h1eQxfva",
+        "quote": "2NjPr8f29xJbWKy4rmBLddC1rj4YE7cNZvQMCAMf6GreAeWUs27j3oKhAKMdLxETFckCtUjzHudoQswNasq3JKb9",
+        "withdraw": "2eg3w2wyazGQM8he1UJeQUKRNGh9GPX6mGZ4MxvCpZM55fewHSGrFxkipMN62pJyLatTdCxzZEC78DhPgN2NSLty",
+        "provenAt": "2026-09-17T15:55:58.132Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "GOOGLx",
+      "name": "Alphabet xStock",
+      "underlyingSymbol": "GOOGL",
+      "isin": "CH1436219237",
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/GOOGLx.png",
+      "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+      "tier": 2,
+      "wrapper": "xStock",
+      "inspection": {
+        "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "16040666170467",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1.001926722393864,
+          "newMultiplier": 1.0023772500603487,
+          "newMultiplierEffectiveTimestamp": 1788481800
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "b911b0329028cd0283e4259c33809d62942bd2716a58084e5f31d64c00b5424e",
+          "symbol": "Crypto.GOOGLX/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "5a48c03e9b9cb337801073ed9d166817473697efff0d138874e0f6a33d6d5aa6",
+          "symbol": "Equity.US.GOOGL/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "6rLsH1MFaJrALSZSrn78crhjz8BKf1mz8TfHGMSqYo47",
+        "quote": "5Qg94zZj9Q2zT4UFGuCvFc87cyHGQ8HBjwugPo1qCN7gDyhMxdtWARNZQKhhSkpEbvBXHQ4VyeJeUUVHMLq5ZsJh",
+        "withdraw": "5ePhAQQAfYxAjenCUfh84FH7it5Ys867FvE7XeVqFoQ7ygAe2YT9bo9jb3AUrChnJskiC6P9LUNWum9MG6mvsv6D",
+        "provenAt": "2026-09-17T15:56:01.750Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "AMZNx",
+      "name": "Amazon.com xStock",
+      "underlyingSymbol": "AMZN",
+      "isin": "CH1436219211",
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/AMZNx.png",
+      "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
+      "tier": 2,
+      "wrapper": "xStock",
+      "inspection": {
+        "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "17229522269539",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "7148fbe6e493ff2580305c92a8d7f8628c9943b11b9b253aebc24863fec290e8",
+          "symbol": "Crypto.AMZNX/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "b5d0e0fa58a1f8b81498ae670ce93c872d14434b72c364885d4fa1b257cbb07a",
+          "symbol": "Equity.US.AMZN/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "gM3QT4ebGJrmXesGiTFMq3FpF72LxwJj16APPnvRn1g",
+        "quote": "3DpCh3httCrbaEi2i6eKTAkL5b2i883HvccbTUDNBxgoEtWu58VbzrHivBR4KSfUfJDUqyDC8TXURaaQ5v1x57XH",
+        "withdraw": "2zrvBWre34XsuKQtL2mtA34SnyAHubByv24uwRcE8tzeqvM63Qc1VjS61WAwvJQ2z1861FLp3YbFH4BYyZUdc7es",
+        "provenAt": "2026-09-17T15:56:06.566Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "METAx",
+      "name": "Meta xStock",
+      "underlyingSymbol": "META",
+      "isin": "CH1436219229",
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/METAx.png",
+      "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
+      "tier": 2,
+      "wrapper": "xStock",
+      "inspection": {
+        "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "7237782391172",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1.0016490257902244,
+          "newMultiplier": 1.002298265651938,
+          "newMultiplierEffectiveTimestamp": 1781481300
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "bf3e5871be3f80ab7a4d1f1fd039145179fb58569e159aee1ccd472868ea5900",
+          "symbol": "Crypto.METAX/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "78a3e3b8e676a8f73c439f5d749737034b139bbbe899ba5775216fba596607fe",
+          "symbol": "Equity.US.META/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "36SjycHX1MsZagUj4Y667k48ckihHnAv5stKE3yuMBrZ",
+        "quote": "4Szw9HitdZCT5gnDQicFysj5dSLo1gLJaKxkaqZaotVrstXSDAKKJCQTeRg4n4k7Kj7ZN3zYXvG9bqJrQQqvCxv8",
+        "withdraw": "PicLqe7DnMUe9rtmmo5f5tXK8zcF3VLpLmzL6bysVpCs37RiNxUP2PQ1zADSm7m74urHDxQVP6L2s2Um71LWAMB",
+        "provenAt": "2026-09-17T15:56:11.047Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "CRCLx",
+      "name": "Circle xStock",
+      "underlyingSymbol": "CRCL",
+      "isin": "CH1436219773",
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/CRCLx.png",
+      "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+      "tier": 2,
+      "wrapper": "xStock",
+      "inspection": {
+        "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "82107815119114",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "c13184461c0c80d98ffcd89be627c2220b94a96c7c67f0c4b16bc12fd3b17758",
+          "symbol": "Crypto.CRCLX/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "92b8527aabe59ea2b12230f7b532769b133ffb118dfbd48ff676f14b273f1365",
+          "symbol": "Equity.US.CRCL/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "ALkJ6SzrUDDaUmZ8LfviMNWPSaocsRH8whqGdDgYNjMt",
+        "quote": "3x4nbWooTRmWtDGZV5ohwy86MmzjeqDFnKCKSDAkTmEPhDX5hAup9Jw2T2at7gNvAb9DYFnk4kzDVuoFwRgyaZ39",
+        "withdraw": "5m62geXhCvdJ3u42GVkP9MwCaxCyGnj2NJzLQbAemqdoBR6u3dSu1eCBG1jBwX1FnZtzi7kJtz74Px3BWqeMaUPt",
+        "provenAt": "2026-09-17T15:56:15.849Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "MSTRx",
+      "name": "MicroStrategy xStock",
+      "underlyingSymbol": "MSTR",
+      "isin": "CH1436219633",
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/MSTRx.png",
+      "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+      "tier": 2,
+      "wrapper": "xStock",
+      "inspection": {
+        "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "48631617041966",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "53f95ba4e23ed15ea56083e2ee9a5eec48055d6f59033d4bb95f1ca2a2349c28",
+          "symbol": "Crypto.MSTRX/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "e1e80251e5f5184f2195008382538e847fafc36f751896889dd3d1b1f6111f09",
+          "symbol": "Equity.US.MSTR/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "7mnrTtZ5E5pL39oVGmJhYQBxZw42KEBLt1dpW9Xpqyd9",
+        "quote": "4EvmccHrrb52G1BybZFujMebotkfTaTZR5aE4vLmd6pysbXrt2aAQnpLhspCBPcRXqzEohpCbdWx2hCW5uB5kww2",
+        "withdraw": "43zG9EET8je9LAymDz74tHC2ERhceYFsKrVqwHzHgPwNYYbs2Soa76P5RevkxkCBH1pn7BeVG8TxcsVDiwVf2veg",
+        "provenAt": "2026-09-17T15:56:19.087Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "QQQx",
+      "name": "Nasdaq xStock",
+      "underlyingSymbol": "QQQ",
+      "isin": "CH1436219724",
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/QQQx.png",
+      "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+      "tier": 2,
+      "wrapper": "xStock",
+      "inspection": {
+        "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "8436077860123",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "mintAuthority": "7pt9tkctJPK7PPNQJ77GKg8ZffSF6QxoMiCFYHxrtaCj",
+        "permanentDelegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1.0019546533977475,
+          "newMultiplier": 1.0027250296551051,
+          "newMultiplierEffectiveTimestamp": 1782086100
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "178a6f73a5aede9d0d682e86b0047c9f333ed0efe5c6537ca937565219c4054d",
+          "symbol": "Crypto.QQQX/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "9695e2b96ea7b3859da9ed25b7a46a920a776e2fdae19a7bcfdf2b219230452d",
+          "symbol": "Equity.US.QQQ/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "9Xw19TQb7CdTJdhvsmhHvDB7QXmMCgiokpnppVfTgFUw",
+        "quote": "2e2Teixu7ZCFzmkB4FYJEm743j3CvFf7sNsPKJTbX3RSUB52tJUhXrtfjHXXY3ofWH3meFExr2zUS4DgVjLjosSg",
+        "withdraw": "2ppDVqBS2VTLAiSkeEk2wgoYasQAwgqLjeNZL5aD4uWnuVzVGPB3EnS5N9NdQJ7PW2iAqjhtAwUm7AyYvpHYVouv",
+        "provenAt": "2026-09-17T15:56:22.384Z"
+      },
+      "issuerHalted": false
+    }
+  ]
+}

@@ -128,15 +128,19 @@ async function liveExercises(terms: Term[]): Promise<ExerciseEvent[]> {
 
 async function fromServices(r: ServicesRoster, selected: string | undefined, fresh: boolean): Promise<RosterData> {
   const nowTs = r.nowTs;
-  if (fresh) {
-    // Right after a transaction the indexer's snapshot can be a tick behind; read the chosen market's series from chain.
-    const m = r.markets.find((x) => x.symbol.toLowerCase() === (selected ?? r.markets[0]?.symbol ?? "").toLowerCase());
-    if (m) m.series = await freshSeries(m.market, m.series).catch(() => m.series);
-  }
-  const termsByMarket = r.markets.map((m) => ({ m, terms: m.series.map((s) => liveTerm(m, s)) }));
-  const markets = termsByMarket.map(({ m, terms }) => liveMarket(m, nowTs, terms)).sort((a, b) => b.depthUsdc - a.depthUsdc || a.tier - b.tier);
-  const terms = termsByMarket.flatMap((x) => x.terms).filter((t) => t.expiryTs > nowTs);
+  let termsByMarket = r.markets.map((m) => ({ m, terms: m.series.map((s) => liveTerm(m, s)) }));
+  let markets = termsByMarket.map(({ m, terms }) => liveMarket(m, nowTs, terms)).sort((a, b) => b.depthUsdc - a.depthUsdc || a.tier - b.tier);
   const pick = markets.find((m) => m.symbol.toLowerCase() === selected?.toLowerCase()) ?? markets[0];
+  if (fresh && pick) {
+    // Right after a transaction the indexer's snapshot can be a tick behind; read the chosen market's series from chain.
+    const m = r.markets.find((x) => x.symbol === pick.symbol);
+    if (m) {
+      m.series = await freshSeries(m.market, m.series).catch(() => m.series);
+      termsByMarket = r.markets.map((x) => ({ m: x, terms: x.series.map((s) => liveTerm(x, s)) }));
+      markets = termsByMarket.map(({ m: x, terms }) => liveMarket(x, nowTs, terms)).sort((a, b) => b.depthUsdc - a.depthUsdc || a.tier - b.tier);
+    }
+  }
+  const terms = termsByMarket.flatMap((x) => x.terms).filter((t) => t.expiryTs > nowTs);
   const mine = pick ? terms.filter((t) => t.market === pick.symbol) : [];
   // History covers the market's expired series too: an exercise on a term that has since expired still happened.
   const allOfMarket = pick ? termsByMarket.find((x) => x.m.symbol === pick.symbol)?.terms ?? [] : [];

@@ -12,6 +12,8 @@
     "anchor:deploy": "bash scripts/anchor-deploy.sh",
     "idl:sync": "bash scripts/idl-sync.sh",
     "seed": "tsx scripts/seed-fork.ts",
+    "registry": "tsx scripts/eligibility.ts",
+    "list-markets": "tsx scripts/list-markets.ts",
     "probe:mint": "tsx scripts/probe-mint.ts",
     "services": "tsx packages/services/src/main.ts",
     "dev": "pnpm --filter @roster/web dev",

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, type ReactNode } from "react";
 import { Icon } from "@/components/icons";
 import { WalletMenu } from "@/components/wallet-menu";
 import { useCluster } from "@/lib/cluster";
@@ -25,10 +25,29 @@ const NAV = [
 
 const CRUMB: Record<string, string> = { trade: "Terms", positions: "Positions", underwrite: "Underwrite", roster: "Roster", buy: "Protected Buy", "pre-ipo": "First Print" };
 
+/** The market the screen is on, from `?m=` or the term id, so the nav keeps it when moving between screens. */
+function useMarketParam(pathname: string): string | null {
+  const params = useSearchParams();
+  const m = params.get("m");
+  if (m) return m;
+  const term = pathname.match(/^\/trade\/([a-z0-9]+)-(?:call|put)-/);
+  return term ? term[1]!.toUpperCase().replace(/X$/, "x") : null;
+}
+
 /** The product shell: sidebar with grouped nav, sticky topbar with crumbs, the cluster on every screen (CLAUDE.md 4.4). */
 export function AppShell({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={null}>
+      <Shell>{children}</Shell>
+    </Suspense>
+  );
+}
+
+function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const cluster = useCluster();
+  const market = useMarketParam(pathname);
+  const withMarket = (href: string) => (market && ["/trade", "/underwrite", "/roster"].includes(href) ? `${href}?m=${encodeURIComponent(market)}` : href);
   const first = pathname.split("/")[1] ?? "";
   return (
     <div className="shell">
@@ -39,7 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div key={g.group} className="contents">
               <div className="group">{g.group}</div>
               {g.items.map((it) => (
-                <Link key={it.href} href={it.href} aria-current={it.match(pathname) ? "page" : undefined}>
+                <Link key={it.href} href={withMarket(it.href)} aria-current={it.match(pathname) ? "page" : undefined}>
                   <it.icon />
                   {it.label}
                 </Link>

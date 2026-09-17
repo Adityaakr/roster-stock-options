@@ -13,6 +13,8 @@ import { decideAsk, gridStrikes } from "./model";
 export interface MarketQuoteContext {
   market: MarketState;
   symbol: string;
+  /** Liquidity tier (Part 2 section 2): 1 quotes every expiry both sides, 2 the nearest expiry, 3 nothing from the treasury. */
+  tier: number;
   /** Token feed price per share-equivalent, USD, and its age in seconds. */
   price: number;
   priceAgeSecs: number;
@@ -77,21 +79,27 @@ export class Quoter {
         return 0;
       }
     }
+    if (ctx.tier >= 3) {
+      this.say({ at, market: mk, action: "skip", detail: "tier 3: listed, no treasury quotes" });
+      return 0;
+    }
     let sent = 0;
     const forwardPerLot = ctx.price * (ctx.pendingDividendMultiplier ?? ctx.multiplier);
     const existing = await this.client.fetchSeriesForMarket(m.address);
     const byKey = new Map(existing.map((s) => [`${s.side}-${s.strikeUsdcPerLot}-${s.expiryTs}`, s]));
     // 1. Keep the grid populated: three strikes a side per allowed expiry, within the live cap.
     let live = m.liveSeries;
-    for (const expiry of m.allowedExpiries) {
-      if (expiry <= BigInt(ctx.nowTs)) continue;
+    let capSaid = false;
+    const quotable = m.allowedExpiries.filter((e) => e > BigInt(ctx.nowTs)).sort((a, b) => (a < b ? -1 : 1)).slice(0, ctx.tier === 2 ? 1 : undefined);
+    for (const expiry of quotable) {
       for (const side of ["call", "put"] as const) {
         for (const strike of gridStrikes(side, forwardPerLot, m.strikeStep).slice(0, this.cfg.strikesPerSide)) {
           if (strike < m.minStrike || strike > m.maxStrike) continue;
           const key = `${side}-${strike}-${expiry}`;
           if (byKey.has(key)) continue;
           if (live >= m.maxLiveSeries) {
-            this.say({ at, market: mk, action: "skip", detail: `live series cap ${m.maxLiveSeries} reached` });
+            if (!capSaid) this.say({ at, market: mk, action: "skip", detail: `live series cap ${m.maxLiveSeries} reached; grid strikes wait for a series to close` });
+            capSaid = true;
             continue;
           }
           try {
@@ -111,7 +119,7 @@ export class Quoter {
     // 2. Price and refresh asks on every live series.
     const me = this.client.wallet;
     for (const s of byKey.values()) {
-      if (s.expiryTs <= BigInt(ctx.nowTs) || s.halted) continue;
+      if (s.expiryTs <= BigInt(ctx.nowTs) || s.halted || !quotable.includes(s.expiryTs)) continue;
       const mySlot = s.writers.find((w) => w.writer.equals(me));
       const sold = mySlot ? Number(mySlot.soldLots6) / 1e6 : 0;
       const d = decideAsk({ side: s.side, price: ctx.price, multiplier: ctx.multiplier, pendingDividendMultiplier: ctx.pendingDividendMultiplier, strikeUsdcPerLot: s.strikeUsdcPerLot, expiryTs: Number(s.expiryTs), nowTs: ctx.nowTs, vol: ctx.vol, session, inActivationWindow: ctx.inActivationWindow, inventoryLots: sold, baseSpread: this.cfg.baseSpread, minAskPerLot: this.cfg.minAskPerLot });

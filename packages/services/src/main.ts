@@ -10,7 +10,7 @@ import "../../../scripts/env-load";
  */
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, type AccountInfo } from "@solana/web3.js";
 import * as anchorNs from "@anchor-lang/core";
 import { RosterClient, ROSTER_PROGRAM_ID, type MarketState } from "@roster/sdk";
 import { Hermes, HermesError, estimateVol, readMultiplier, sessionAt } from "@roster/oracle";
@@ -72,6 +72,15 @@ async function main() {
   const live = new Map<string, MarketLive>();
   let lastTick = 0;
   let blocked: string | null = null;
+  // Realised vol per symbol, refreshed hourly: Benchmarks is a slow, keyed endpoint and vol does not move per tick.
+  const volCache = new Map<string, { at: number; v: Awaited<ReturnType<typeof estimateVol>> }>();
+  async function volFor(symbol: string) {
+    const hit = volCache.get(symbol);
+    if (hit && Date.now() - hit.at < 3_600_000) return hit.v;
+    const v = await estimateVol(`Crypto.${symbol.toUpperCase()}/USD`, Number(process.env.VOL_FLOOR ?? 0.35), process.env.PYTH_CORE_API_KEY);
+    volCache.set(symbol, { at: Date.now(), v });
+    return v;
+  }
   console.log(`[services] cluster=${cluster} genesis=${genesis.slice(0, 8)} program=${ROSTER_PROGRAM_ID.toBase58()} hermes=${hermes.keyed ? "keyed" : "NO KEY"} markets=${launch.map((l) => l.symbol).join(",")}`);
 
   // Events are pulled on their own short loop as well as at the end of each tick: a tick that reprices every series
@@ -124,7 +133,7 @@ async function main() {
         }
       }
       const mult = await readMultiplier(connection, l.symbol, l.mint, nowTs);
-      const vol = await estimateVol(`Crypto.${l.symbol.toUpperCase()}/USD`, Number(process.env.VOL_FLOOR ?? 0.35), process.env.PYTH_CORE_API_KEY);
+      const vol = await volFor(l.symbol);
       const session = sessionAt(nowTs);
       const basisBps = price !== null && equityPrice !== null && session === "regular" ? ((price - equityPrice) / equityPrice) * 10_000 : null;
       if (basisBps !== null) store.recordBasis(l.mint.toBase58(), basisBps, nowTs);
@@ -135,11 +144,19 @@ async function main() {
         await keeper.rollGrid(market, nowTs, (process.env.EXTRA_EXPIRIES ?? "").split(",").filter(Boolean).map(BigInt));
         await keeper.cycle(await reader.fetchMarket(l.mint) ?? market, nowTs, paused);
       }
-      // The quoter prices only off Hermes, or off the issuer quote on the fork; a real cluster without a key does not quote.
+      // The quoter prices only off Hermes, or off the issuer quote on the fork; a real cluster without a key does not
+      // quote. A vol that fell back to the floor is a breaker off the fork unless the operator accepts it in writing.
       const canQuote = priceSource === "hermes" || priceSource === "tessera" || priceSource === "prestocks" || (isFork && priceSource !== "none");
-      if (!flag("--no-quoter") && price !== null && canQuote) {
+      const volOk = vol.source !== "floor" || isFork || process.env.VOL_FLOOR_OK === "1";
+      if (!flag("--no-quoter")) {
+        if (price === null || !canQuote || !volOk) {
+          await quoter.pullQuotes(market, l.symbol, nowTs, price === null ? "no price" : !canQuote ? "no priced source off the fork" : "volatility fell back to the floor");
+        } else {
         const fresh = (await reader.fetchMarket(l.mint)) ?? market;
-        await quoter.cycle({ market: fresh, symbol: l.symbol, tier: l.tier, feeBps: l.feeBps, price, priceAgeSecs: Math.max(0, nowTs - priceAt), equityPrice, multiplier: mult.onChain, pendingDividendMultiplier: state.pendingDividendMultiplier, inActivationWindow: mult.inWindow, vol: vol.blended, nowTs });
+        // Price age against the wall clock: the chain clock can be time-travelled on a fork, publish times cannot.
+        const ageSecs = priceSource === "hermes" ? Math.max(0, Math.floor(Date.now() / 1000) - priceAt) : 0;
+        await quoter.cycle({ market: fresh, symbol: l.symbol, tier: l.tier, feeBps: l.feeBps, graceSecs: Number((await reader.fetchProtocol()).graceSecs), price, priceAgeSecs: ageSecs, equityPrice, multiplier: mult.onChain, pendingDividendMultiplier: state.pendingDividendMultiplier, inActivationWindow: mult.inWindow, vol: vol.blended, nowTs });
+        }
       }
       await indexer.snapshotMarket((await reader.fetchMarket(l.mint)) ?? market);
     }
@@ -157,7 +174,7 @@ async function main() {
         const nowTs = await clockUnix(connection);
         const markets = [...live.values()].map((m) => ({ symbol: m.meta.symbol, name: m.meta.name, wrapper: m.wrapper, feeBps: m.feeBps, mint: m.market.mint.toBase58(), market: m.market.address.toBase58(), decimals: m.market.decimals, tier: m.market.tier, listed: m.market.listed, paused: m.market.paused || m.paused, hasTransferFee: m.market.hasTransferFee, hasPermanentDelegate: m.market.hasPermanentDelegate, pausable: m.market.pausable, hookProgram: m.market.hookProgram.toBase58(), allowedExpiries: m.market.allowedExpiries.map(String), strikeStep: m.market.strikeStep.toString(), minLots6: m.market.minLots6.toString(), maxLots6: m.market.maxLots6.toString(), maxLiveSeries: m.market.maxLiveSeries, liveSeries: m.market.liveSeries, price: m.price, priceAt: m.priceAt, priceSource: m.priceSource, equityPrice: m.equityPrice, basisBps: m.basisBps, multiplier: m.multiplier, pendingActivationTs: m.pendingActivationTs, inActivationWindow: m.inActivationWindow, vol: m.vol, volSource: m.volSource, series: store.series(m.market.address.toBase58()).map((s) => ({ ...s, asks: JSON.parse(s.asks_json), writers: JSON.parse(s.writers_json), asks_json: undefined, writers_json: undefined })) }));
         const protocol = await reader.fetchProtocol().catch(() => null);
-        return json(200, { cluster, programDeployed: true, program: ROSTER_PROGRAM_ID.toBase58(), nowTs, session: sessionAt(nowTs), feeBps: protocol?.feeBps ?? null, keeperFeeUsdc: protocol?.keeperFeeUsdc.toString() ?? null, graceSecs: protocol?.graceSecs.toString() ?? null, treasury: protocol?.treasury.toBase58() ?? null, quoter: quoterKey.publicKey.toBase58(), blocked, markets, quoterLog: quoter.log.slice(-40), keeperLog: keeper.log.slice(-40) });
+        return json(200, { cluster, programDeployed: true, program: ROSTER_PROGRAM_ID.toBase58(), nowTs, session: sessionAt(nowTs), feeBps: protocol?.feeBps ?? null, keeperFeeUsdc: protocol?.keeperFeeUsdc.toString() ?? null, graceSecs: protocol?.graceSecs.toString() ?? null, treasury: protocol?.treasury.toBase58() ?? null, quoter: quoterKey.publicKey.toBase58(), blocked, hermesKeyed: hermes.keyed, markets, quoterLog: quoter.log.slice(-40), keeperLog: keeper.log.slice(-40) });
       }
       const prot = url.pathname.match(/^\/v1\/protection\/([1-9A-HJ-NP-Za-km-z]+)$/);
       if (prot) {
@@ -174,9 +191,9 @@ async function main() {
         const rows = store.series();
         // One RPC round trip for every position ATA, then one for the opt-ins of the positions that exist.
         const atas = rows.map((row) => getAssociatedTokenAddressSync(new PublicKey(row.position_mint), wallet, false, TOKEN_2022_PROGRAM_ID));
-        const infos = atas.length ? await connection.getMultipleAccountsInfo(atas) : [];
+        const infos = await inChunks(connection, atas);
         const held = rows.map((row, i) => ({ row, amount: infos[i] ? infos[i]!.data.readBigUInt64LE(64) : 0n })).filter((x) => x.amount > 0n);
-        const optIns = held.length ? await connection.getMultipleAccountsInfo(held.map((x) => autoExercisePda(ROSTER_PROGRAM_ID, wallet, new PublicKey(x.row.address)))) : [];
+        const optIns = await inChunks(connection, held.map((x) => autoExercisePda(ROSTER_PROGRAM_ID, wallet, new PublicKey(x.row.address))));
         const out = held.map((x, i) => ({ series: x.row.address, market: x.row.market, side: x.row.side, strike_usdc_per_lot: x.row.strike_usdc_per_lot, expiry_ts: x.row.expiry_ts, position_mint: x.row.position_mint, lots6: x.amount.toString(), autoExercise: !!optIns[i] }));
         return json(200, { wallet: wallet.toBase58(), positions: out, events: store.events({ wallet: wallet.toBase58(), limit: 100 }) });
       }
@@ -203,6 +220,13 @@ async function main() {
     inFlight = true;
     tick().catch((e) => console.error(`[services] tick failed: ${(e as Error).message}`)).finally(() => { inFlight = false; });
   }, TICK_MS);
+}
+
+/** getMultipleAccountsInfo takes at most 100 keys per call. */
+async function inChunks(connection: Connection, keys: PublicKey[]): Promise<(AccountInfo<Buffer> | null)[]> {
+  const out: (AccountInfo<Buffer> | null)[] = [];
+  for (let i = 0; i < keys.length; i += 100) out.push(...(await connection.getMultipleAccountsInfo(keys.slice(i, i + 100))));
+  return out;
 }
 
 async function clockUnix(connection: Connection): Promise<number> {

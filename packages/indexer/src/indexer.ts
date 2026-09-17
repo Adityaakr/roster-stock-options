@@ -115,6 +115,12 @@ export class Indexer {
     }
   }
 
+  /** The chain clock, the fork's when time-travelled, for block times the RPC does not give. */
+  private async chainNow(): Promise<number> {
+    const info = await this.connection.getAccountInfo(new PublicKey("SysvarC1ock11111111111111111111111111111111"));
+    return info ? Number(info.data.readBigInt64LE(32)) : Math.floor(Date.now() / 1000);
+  }
+
   /** Pull the program signatures not yet read and store their events. Returns how many events were new. */
   async pullEvents(limit = 1000): Promise<number> {
     // Newest first, paging back until a whole page is already known. No `until` cursor: surfpool answers it with an
@@ -141,19 +147,22 @@ export class Indexer {
     // Oldest first so events land in the order they happened.
     for (const s of sigs.reverse()) {
       const tx = await this.connection.getTransaction(s.signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
-      const logs = tx?.meta?.logMessages ?? [];
+      // Not served yet (RPC lag): leave it unread so the next pull tries again.
+      if (!tx) continue;
+      const logs = tx.meta?.logMessages ?? [];
       // surfpool reports block times that are not unix seconds; fall back to the transaction's, then to now.
       const plausible = (t: number | null | undefined) => (t && t > 1_000_000_000 ? t : null);
-      const blockTime = plausible(s.blockTime) ?? plausible(tx?.blockTime) ?? Math.floor(Date.now() / 1000);
+      const blockTime = plausible(s.blockTime) ?? plausible(tx.blockTime) ?? (await this.chainNow());
       let i = 0;
-      for (const ev of this.parser.parseLogs(logs, false)) {
+      // A reverted transaction emitted nothing that happened; only its failure is recorded.
+      for (const ev of tx.meta?.err ? [] : this.parser.parseLogs(logs, false)) {
         const data = plain(ev.data);
         // The parser hands back camelCase names; store the IDL's PascalCase so the API matches the program's event names.
         const name = ev.name.charAt(0).toUpperCase() + ev.name.slice(1);
         if (this.store.insertEvent({ signature: s.signature, ix_index: i, slot: s.slot, block_time: blockTime, name, data_json: JSON.stringify(data) })) added += 1;
         i += 1;
       }
-      if (tx?.meta?.err) {
+      if (tx.meta?.err) {
         // Failed transactions are part of the roster's honesty: record them so a declined exercise shows up.
         if (this.store.insertEvent({ signature: s.signature, ix_index: 999, slot: s.slot, block_time: blockTime, name: "Failed", data_json: JSON.stringify({ err: tx.meta.err, logs: logs.slice(-3) }) })) added += 1;
       }

@@ -29,7 +29,9 @@ function marketParams(tier: number, quote: number) {
     strikeStep: step * USDC,
     minStrike: lo * USDC,
     maxStrike: hi * USDC,
-    maxLiveSeries: tier === 1 ? 12 : tier === 2 ? 6 : 2,
+    // (expiries quoted + 1) x 3 strikes x 2 sides: an expired grid keeps its slots until close, one grace after expiry,
+    // so the next expiry needs room while the old one waits (feedback finding, docs/BUILD_LOG.md M8.1).
+    maxLiveSeries: tier === 1 ? 18 : tier === 2 ? 12 : 6,
     minLots6: LOT / 100n,
     maxLots6: (tier === 1 ? 10_000n : 2_000n) * LOT,
     maxWriterLots6: (tier === 1 ? 5_000n : 1_000n) * LOT
@@ -52,6 +54,10 @@ async function main() {
   }
   const now = await clockUnix(connection);
   const expiries = nextExpiries(now, 2).map(BigInt);
+  // The quoter wallet creates series on Tier 1 and 2 markets (the program limits creation there to the authority and
+  // the series creator; Tier 3 is open).
+  const protocol = await c.fetchProtocol();
+  if (!protocol.seriesCreator.equals(quoter.publicKey)) await c.send(await c.updateProtocol({ seriesCreator: quoter.publicKey }));
   const only = [...args].filter((a) => !a.startsWith("--"));
   for (const e of registry.entries) {
     if (only.length && !only.includes(e.symbol)) continue;
@@ -87,8 +93,8 @@ async function listOne(connection: Connection, c: RosterClient, e: RegistryEntry
     console.log(`${e.symbol}: market created (tier ${e.tier}, step ${Number(p.strikeStep) / 1e6}, ${Number(p.minStrike) / 1e6}..${Number(p.maxStrike) / 1e6})`);
   } else {
     // Keep the grid where the price is: expiries roll, and the strike bounds follow the per-lot forward.
-    const gridMoved = m.strikeStep !== p.strikeStep || m.minStrike !== p.minStrike || m.maxStrike !== p.maxStrike;
-    await c.send(await c.updateMarket(mint, { allowedExpiries: expiries, ...(gridMoved ? { strikeStep: p.strikeStep, minStrike: p.minStrike, maxStrike: p.maxStrike } : {}) }));
+    const gridMoved = m.strikeStep !== p.strikeStep || m.minStrike !== p.minStrike || m.maxStrike !== p.maxStrike || m.maxLiveSeries !== p.maxLiveSeries;
+    await c.send(await c.updateMarket(mint, { allowedExpiries: expiries, ...(gridMoved ? { strikeStep: p.strikeStep, minStrike: p.minStrike, maxStrike: p.maxStrike, maxLiveSeries: p.maxLiveSeries } : {}) }));
     if (gridMoved) console.log(`${e.symbol}: grid moved to step ${Number(p.strikeStep) / 1e6}, ${Number(p.minStrike) / 1e6}..${Number(p.maxStrike) / 1e6} (per lot, multiplier ${mult.toFixed(4)})`);
   }
   if (e.escrowProof) {

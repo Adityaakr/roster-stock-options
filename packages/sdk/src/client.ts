@@ -46,6 +46,7 @@ export interface ProtocolState {
   keeperFeeUsdc: bigint;
   graceSecs: bigint;
   pausedAll: boolean;
+  seriesCreator: PublicKey;
 }
 
 export interface MarketState {
@@ -167,7 +168,7 @@ export class RosterClient {
 
   async fetchProtocol(): Promise<ProtocolState> {
     const p = await this.program.account.protocol.fetch(this.protocol);
-    return { address: this.protocol, authority: p.authority, pauseAuthority: p.pauseAuthority, treasury: p.treasury, quoteMint: p.quoteMint, feeBps: p.feeBps, integratorShareBps: p.integratorShareBps, keeperFeeUsdc: big(p.keeperFeeUsdc), graceSecs: big(p.graceSecs), pausedAll: p.pausedAll };
+    return { address: this.protocol, authority: p.authority, pauseAuthority: p.pauseAuthority, treasury: p.treasury, quoteMint: p.quoteMint, feeBps: p.feeBps, integratorShareBps: p.integratorShareBps, keeperFeeUsdc: big(p.keeperFeeUsdc), graceSecs: big(p.graceSecs), pausedAll: p.pausedAll, seriesCreator: p.seriesCreator };
   }
 
   async fetchMarket(mint: PublicKey): Promise<MarketState | null> {
@@ -216,6 +217,14 @@ export class RosterClient {
     return this.program.methods
       .initProtocol({ pauseAuthority: params.pauseAuthority, treasury: params.treasury, feeBps: params.feeBps, integratorShareBps: params.integratorShareBps, keeperFeeUsdc: bn(params.keeperFeeUsdc), graceSecs: bn(params.graceSecs) })
       .accountsPartial({ authority: this.wallet, protocol: this.protocol, quoteMint, feeVault: getAssociatedTokenAddressSync(quoteMint, this.protocol, true, TOKEN_PROGRAM_ID), quoteTokenProgram: TOKEN_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
+      .transaction();
+  }
+
+  async updateProtocol(params: Partial<{ authority: PublicKey; pauseAuthority: PublicKey; treasury: PublicKey; feeBps: number; integratorShareBps: number; keeperFeeUsdc: bigint; graceSecs: bigint; pausedAll: boolean; seriesCreator: PublicKey }>): Promise<Transaction> {
+    const p = params;
+    return this.program.methods
+      .updateProtocol({ authority: p.authority ?? null, pauseAuthority: p.pauseAuthority ?? null, treasury: p.treasury ?? null, feeBps: p.feeBps ?? null, integratorShareBps: p.integratorShareBps ?? null, keeperFeeUsdc: p.keeperFeeUsdc !== undefined ? bn(p.keeperFeeUsdc) : null, graceSecs: p.graceSecs !== undefined ? bn(p.graceSecs) : null, pausedAll: p.pausedAll ?? null, seriesCreator: p.seriesCreator ?? null })
+      .accountsPartial({ signer: this.wallet, protocol: this.protocol })
       .transaction();
   }
 
@@ -352,12 +361,14 @@ export class RosterClient {
 }
 
 /** Send a signed transaction and poll until it is confirmed, the blockhash expires, or it fails. */
-export async function sendRawAndConfirm(connection: Connection, raw: Buffer | Uint8Array, lastValidBlockHeight: number, commitment: Commitment = "confirmed"): Promise<string> {
+export async function sendRawAndConfirm(connection: Connection, raw: Buffer | Uint8Array, lastValidBlockHeight: number, commitment: Commitment = "confirmed", deadlineMs = 180_000): Promise<string> {
   const signature = await connection.sendRawTransaction(raw, { skipPreflight: false, preflightCommitment: commitment, maxRetries: 0 });
   const wanted = commitment === "finalized" ? ["finalized"] : ["confirmed", "finalized"];
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   let lastResend = Date.now();
+  const started = Date.now();
   for (;;) {
+    if (Date.now() - started > deadlineMs) throw new Error(`transaction ${signature} not confirmed within ${Math.round(deadlineMs / 1000)} s`);
     const st = (await connection.getSignatureStatuses([signature])).value[0];
     if (st) {
       if (st.err) throw new Error(`transaction ${signature} failed: ${JSON.stringify(st.err)}`);

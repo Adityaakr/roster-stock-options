@@ -73,17 +73,19 @@ pub fn handle_settle_writer(ctx: Context<SettleWriter>) -> Result<()> {
     let seeds = SeriesSeeds::of(&series);
     let side = series.side();
     drop(series);
+    // Each leg pays what the counters say, capped at what the vault holds: the assignment product rounds toward the
+    // vault, so the cap only ever trims rounding dust, and the last writer can always settle (feedback finding F1).
     let (collateral_out, settlement_out) = match side {
         Side::Call => {
-            let raw = raw_for_lots6(free + unassigned, raw_per_lot6).ok_or(RosterError::Overflow)?;
-            let usdc = usdc_paid_floor(assigned, strike).ok_or(RosterError::Overflow)?;
+            let raw = raw_for_lots6(free + unassigned, raw_per_lot6).ok_or(RosterError::Overflow)?.min(ctx.accounts.collateral_vault.amount);
+            let usdc = usdc_paid_floor(assigned, strike).ok_or(RosterError::Overflow)?.min(ctx.accounts.settlement_vault.amount);
             vault_out(&series_info, &seeds, &ctx.accounts.underlying_token_program, &ctx.accounts.collateral_vault, &ctx.accounts.underlying_mint, &ctx.accounts.writer_underlying_ata, raw)?;
             vault_out(&series_info, &seeds, &ctx.accounts.quote_token_program, &ctx.accounts.settlement_vault, &ctx.accounts.quote_mint, &ctx.accounts.writer_quote_ata, usdc)?;
             (raw, usdc)
         }
         Side::Put => {
-            let usdc = usdc_paid_floor(free + unassigned, strike).ok_or(RosterError::Overflow)?;
-            let raw = raw_for_lots6(assigned, raw_per_lot6).ok_or(RosterError::Overflow)?;
+            let usdc = usdc_paid_floor(free + unassigned, strike).ok_or(RosterError::Overflow)?.min(ctx.accounts.collateral_vault.amount);
+            let raw = raw_for_lots6(assigned, raw_per_lot6).ok_or(RosterError::Overflow)?.min(ctx.accounts.settlement_vault.amount);
             vault_out(&series_info, &seeds, &ctx.accounts.quote_token_program, &ctx.accounts.collateral_vault, &ctx.accounts.quote_mint, &ctx.accounts.writer_quote_ata, usdc)?;
             vault_out(&series_info, &seeds, &ctx.accounts.underlying_token_program, &ctx.accounts.settlement_vault, &ctx.accounts.underlying_mint, &ctx.accounts.writer_underlying_ata, raw)?;
             (usdc, raw)

@@ -67,6 +67,10 @@ pub fn handle_create_series(ctx: Context<CreateSeries>, side: Side, strike_usdc_
         RosterError::StrikeOffGrid
     );
     require!(market.live_series < market.max_live_series, RosterError::SeriesCapReached);
+    // Creation is free of any deposit and rent comes back only after expiry plus grace, so on the tiers where the
+    // treasury keeps a grid it is limited to the authority and the series creator; a stranger could otherwise fill
+    // the cap with empty terms for the price of rent. Tier 3 markets are permissionless.
+    require!(ctx.accounts.protocol.may_create_series(&ctx.accounts.payer.key(), market.tier), RosterError::Unauthorized);
     let (want_collateral, want_settlement) = match side {
         Side::Call => (market.mint, market.quote_mint),
         Side::Put => (market.quote_mint, market.mint),

@@ -38,7 +38,8 @@ pub struct CreateMarket<'info> {
 pub fn handle_create_market(ctx: Context<CreateMarket>, params: CreateMarketParams) -> Result<()> {
     let mint_info = ctx.accounts.mint.to_account_info();
     let decimals = ctx.accounts.mint.decimals;
-    require!(decimals >= 6, RosterError::TooFewDecimals);
+    // Six decimals make a lot; nineteen keep 10^(decimals-6) inside u64.
+    require!(decimals >= 6 && decimals <= 19, RosterError::TooFewDecimals);
     require!(params.strike_step > 0 && params.min_strike <= params.max_strike, RosterError::StrikeOffGrid);
     require!(params.min_lots6 > 0 && params.min_lots6 <= params.max_lots6, RosterError::SizeOutOfRange);
 

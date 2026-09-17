@@ -3876,11 +3876,19 @@ export type RosterFinance = {
             "type": "bool"
           },
           {
+            "name": "seriesCreator",
+            "docs": [
+              "Who may create series on Tier 1 and Tier 2 markets (the quoter); the authority always may. Tier 3 is open.",
+              "Zero means \"authority only\", so a protocol account written before this field behaves as before."
+            ],
+            "type": "pubkey"
+          },
+          {
             "name": "reserved",
             "type": {
               "array": [
                 "u8",
-                64
+                32
               ]
             }
           }
@@ -4258,6 +4266,12 @@ export type RosterFinance = {
             "name": "pausedAll",
             "type": {
               "option": "bool"
+            }
+          },
+          {
+            "name": "seriesCreator",
+            "type": {
+              "option": "pubkey"
             }
           }
         ]

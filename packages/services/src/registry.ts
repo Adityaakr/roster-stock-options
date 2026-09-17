@@ -51,8 +51,13 @@ let preipoCache: { at: number; byMint: Map<string, PreIpoToken> } | null = null;
 export async function issuerMark(entry: LaunchEntry): Promise<{ price: number; source: "tessera" | "prestocks" } | null> {
   if (entry.wrapper === "xStock") return null;
   if (!preipoCache || Date.now() - preipoCache.at > 60_000) {
-    const all = [...(await tesseraTokens().catch(() => [] as PreIpoToken[])), ...(await prestocksTokens().catch(() => [] as PreIpoToken[]))];
-    preipoCache = { at: Date.now(), byMint: new Map(all.map((t) => [t.mint, t])) };
+    // A refresh that fails keeps the previous marks rather than dropping every pre-IPO price for a tick.
+    const [t, p] = await Promise.all([tesseraTokens().catch(() => null), prestocksTokens().catch(() => null)]);
+    const fresh = [...(t ?? []), ...(p ?? [])];
+    const byMint = new Map(preipoCache?.byMint ?? []);
+    for (const x of fresh) byMint.set(x.mint, x);
+    if (t && p) preipoCache = { at: Date.now(), byMint };
+    else preipoCache = { at: preipoCache?.at ?? 0, byMint };
   }
   const t = preipoCache.byMint.get(entry.mint.toBase58());
   if (!t) return null;

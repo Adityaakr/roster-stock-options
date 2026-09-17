@@ -13,6 +13,7 @@ pub struct UpdateProtocolParams {
     pub keeper_fee_usdc: Option<u64>,
     pub grace_secs: Option<i64>,
     pub paused_all: Option<bool>,
+    pub series_creator: Option<Pubkey>,
 }
 
 #[derive(Accounts)]
@@ -28,7 +29,7 @@ pub fn handle_update_protocol(ctx: Context<UpdateProtocol>, p: UpdateProtocolPar
     let pr = &mut ctx.accounts.protocol;
     if signer != pr.authority {
         require!(signer == pr.pause_authority, RosterError::Unauthorized);
-        let only_pause = p.authority.is_none() && p.pause_authority.is_none() && p.treasury.is_none() && p.fee_bps.is_none() && p.integrator_share_bps.is_none() && p.keeper_fee_usdc.is_none() && p.grace_secs.is_none();
+        let only_pause = p.authority.is_none() && p.pause_authority.is_none() && p.treasury.is_none() && p.fee_bps.is_none() && p.integrator_share_bps.is_none() && p.series_creator.is_none() && p.keeper_fee_usdc.is_none() && p.grace_secs.is_none();
         require!(only_pause && p.paused_all == Some(true), RosterError::Unauthorized);
     }
     if let Some(v) = p.authority { pr.authority = v; }
@@ -38,6 +39,7 @@ pub fn handle_update_protocol(ctx: Context<UpdateProtocol>, p: UpdateProtocolPar
     if let Some(v) = p.integrator_share_bps { require!(v <= 10_000, RosterError::FeeOutOfRange); pr.integrator_share_bps = v; }
     if let Some(v) = p.keeper_fee_usdc { pr.keeper_fee_usdc = v; }
     if let Some(v) = p.grace_secs { require!(v >= 0, RosterError::FeeOutOfRange); pr.grace_secs = v; }
+    if let Some(v) = p.series_creator { pr.series_creator = v; }
     if let Some(v) = p.paused_all {
         pr.paused_all = v;
         emit!(PauseToggled { market: None, paused: v });

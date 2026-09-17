@@ -4,7 +4,12 @@
 # nothing here depends on gPA). Fork state is ephemeral: keep this in its own terminal and re-seed after a restart.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-if [ -f .env ]; then set -a; . ./.env; set +a; fi
+if [ -f .env ]; then
+  while IFS='=' read -r k v; do
+    case "$k" in ''|\#*) continue;; esac
+    [ -n "$v" ] && [ -z "${!k:-}" ] && export "$k=$v"
+  done < .env
+fi
 PORT="${FORK_PORT:-8899}"
 WS_PORT="${FORK_WS_PORT:-8900}"
 ARGS=(start --no-tui -y --no-deploy --port "$PORT" --ws-port "$WS_PORT")

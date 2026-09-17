@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
   }
   try {
-    const signature = await sendSigned(body.signed, Number(body.lastValidBlockHeight));
+    const signature = await sendSigned(body.signed, body.lastValidBlockHeight);
     return NextResponse.json({ signature });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 400 });

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { buildTransaction, type BuildRequest } from "@/lib/tx-server";
+import { buildTransaction } from "@/lib/tx-server";
 
 export const dynamic = "force-dynamic";
 
 /** Build an unsigned transaction for the browser wallet to sign. Nothing here signs or holds a key. */
 export async function POST(req: Request) {
-  let body: BuildRequest;
+  let body: unknown;
   try {
-    body = (await req.json()) as BuildRequest;
+    body = await req.json();
   } catch {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
   }

@@ -28,11 +28,17 @@ pub struct Protocol {
     pub keeper_fee_usdc: u64,
     pub grace_secs: i64,
     pub paused_all: bool,
-    pub _reserved: [u8; 64],
+    /// Who may create series on Tier 1 and Tier 2 markets (the quoter); the authority always may. Tier 3 is open.
+    /// Zero means "authority only", so a protocol account written before this field behaves as before.
+    pub series_creator: Pubkey,
+    pub _reserved: [u8; 32],
 }
 
 impl Protocol {
     pub const SEED: &'static [u8] = b"protocol";
+    pub fn may_create_series(&self, signer: &Pubkey, tier: u8) -> bool {
+        tier >= 3 || *signer == self.authority || (self.series_creator != Pubkey::default() && *signer == self.series_creator)
+    }
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, InitSpace)]

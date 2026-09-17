@@ -25,7 +25,7 @@ export interface ServicesMarket {
 }
 export interface ServicesRoster {
   cluster: string; programDeployed: boolean; program: string; nowTs: number; session: string; feeBps: number | null; keeperFeeUsdc: string | null;
-  graceSecs: string | null; treasury: string | null; quoter: string | null; blocked: string | null; markets: ServicesMarket[];
+  graceSecs: string | null; treasury: string | null; quoter: string | null; blocked: string | null; hermesKeyed?: boolean; markets: ServicesMarket[];
 }
 export interface ServicesEvent { signature: string; ix_index: number; slot: number; block_time: number; name: string; data_json: string }
 export interface ServicesPosition { series: string; market: string; side: "call" | "put"; strike_usdc_per_lot: string; expiry_ts: number; position_mint: string; lots6: string; autoExercise: boolean }

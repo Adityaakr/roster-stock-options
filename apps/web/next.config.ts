@@ -18,7 +18,8 @@ const nextConfig: NextConfig = {
   agentRules: false,
   devIndicators: false,
   outputFileTracingRoot: new URL("../../", import.meta.url).pathname,
-  images: { remotePatterns: [{ protocol: "https", hostname: "**" }] },
+  // Only the issuers' logo hosts: an open image proxy fetches any URL from the server.
+  images: { remotePatterns: [{ protocol: "https", hostname: "xstocks-metadata.backed.fi" }, { protocol: "https", hostname: "www.prestocks.com" }, { protocol: "https", hostname: "prestocks.com" }] },
   // Workspace packages ship TypeScript source; Next compiles them in place.
   transpilePackages: ["@roster/sdk", "@roster/core", "@roster/registry"],
   // Anchor's ESM build references `exports`; let Node load it as CommonJS on the server instead of bundling it.

@@ -1,6 +1,6 @@
 import "server-only";
-import { AddressLookupTableAccount, ComputeBudgetProgram, Connection, PublicKey, TransactionMessage, VersionedTransaction, type Transaction } from "@solana/web3.js";
-import { RosterClient, readOnlyWallet, sendRawAndConfirm } from "@roster/sdk";
+import { AddressLookupTableAccount, ComputeBudgetProgram, Connection, PublicKey, Transaction, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+import { RosterClient, ROSTER_PROGRAM_ID, readOnlyWallet, sendRawAndConfirm } from "@roster/sdk";
 import { jupiterQuote, jupiterSwapInstructions, type JupiterQuote } from "./jupiter";
 
 /*
@@ -10,8 +10,20 @@ import { jupiterQuote, jupiterSwapInstructions, type JupiterQuote } from "./jupi
 
 export const RPC_URL = process.env.RPC_URL ?? process.env.FORK_RPC_URL ?? "http://127.0.0.1:8899";
 
+const JUPITER_PROGRAM = new PublicKey("JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4");
+
+/** Every RPC read is bounded: a hung RPC must not hold a route open. */
 export function connection(): Connection {
-  return new Connection(RPC_URL, "confirmed");
+  return new Connection(RPC_URL, { commitment: "confirmed", fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(10_000) }) });
+}
+
+/** A u64 for the program: an integer string in range, or a plain error rather than a silently wrapped value. */
+function u64(p: Record<string, string | number | null> | undefined, k: string): bigint {
+  const raw = p?.[k];
+  if (raw === undefined || raw === null || !/^\d+$/.test(String(raw))) throw new Error(`${k} must be a non-negative integer`);
+  const v = BigInt(String(raw));
+  if (v >= 2n ** 64n) throw new Error(`${k} is out of range`);
+  return v;
 }
 
 export type TxKind = "buy" | "exercise" | "quote" | "cancel_ask" | "withdraw_unsold" | "claim_premium" | "settle_writer" | "enable_auto_exercise" | "disable_auto_exercise" | "protected_buy";
@@ -32,52 +44,70 @@ export interface BuildResponse {
   summary: string;
 }
 
-const str = (p: Record<string, string | number | null> | undefined, k: string): string => {
-  const v = p?.[k];
-  if (v === undefined || v === null) throw new Error(`missing ${k}`);
-  return String(v);
-};
+const KINDS: TxKind[] = ["buy", "exercise", "quote", "cancel_ask", "withdraw_unsold", "claim_premium", "settle_writer", "enable_auto_exercise", "disable_auto_exercise", "protected_buy"];
 
-export async function buildTransaction(req: BuildRequest): Promise<BuildResponse> {
+/** The request shape, checked before anything touches the RPC. */
+function parseBuildRequest(body: unknown): BuildRequest {
+  if (!body || typeof body !== "object") throw new Error("body must be an object");
+  const b = body as Record<string, unknown>;
+  if (!KINDS.includes(b.kind as TxKind)) throw new Error(`kind must be one of ${KINDS.join(", ")}`);
+  for (const k of ["wallet", "mint"] as const) {
+    if (typeof b[k] !== "string") throw new Error(`${k} must be a base58 address`);
+    try { new PublicKey(b[k] as string); } catch { throw new Error(`${k} is not a valid address`); }
+  }
+  if (b.series !== undefined && b.series !== "" && (typeof b.series !== "string" || !safeKey(b.series))) throw new Error("series is not a valid address");
+  if (b.params !== undefined && (b.params === null || typeof b.params !== "object" || Array.isArray(b.params))) throw new Error("params must be an object");
+  return { kind: b.kind as TxKind, wallet: b.wallet as string, mint: b.mint as string, series: (b.series as string | undefined) ?? "", params: (b.params as BuildRequest["params"]) ?? {} };
+}
+
+function safeKey(s: string): boolean {
+  try { new PublicKey(s); return true; } catch { return false; }
+}
+
+export async function buildTransaction(body: unknown): Promise<BuildResponse> {
+  const req = parseBuildRequest(body);
   const wallet = new PublicKey(req.wallet);
   const client = new RosterClient(connection(), readOnlyWallet(wallet));
   if (req.kind === "protected_buy") return buildProtectedBuy(client, wallet, req);
   const market = await client.fetchMarket(new PublicKey(req.mint));
   if (!market) throw new Error("market not listed");
+  if (!req.series) throw new Error("series is required");
   const series = await client.fetchSeries(new PublicKey(req.series));
   if (!series) throw new Error("series not found: it may have closed");
+  if (!series.market.equals(market.address)) throw new Error("series does not belong to this market");
   let tx: Transaction;
   let summary: string;
   const p = req.params;
   switch (req.kind) {
     case "buy": {
-      const lots6 = BigInt(str(p, "lots6"));
-      const max = BigInt(str(p, "maxPremiumPerLot"));
+      const lots6 = u64(p, "lots6");
+      const max = u64(p, "maxPremiumPerLot");
+      if (p?.referrer && !safeKey(String(p.referrer))) throw new Error("referrer is not a valid address");
       const referrer = p?.referrer ? new PublicKey(String(p.referrer)) : null;
       tx = await client.buy(market, series, lots6, max, referrer);
       summary = `buy ${Number(lots6) / 1e6} lots at up to ${Number(max) / 1e6} USDC per lot`;
       break;
     }
     case "exercise": {
-      const lots6 = BigInt(str(p, "lots6"));
+      const lots6 = u64(p, "lots6");
       tx = await client.exercise(market, series, lots6);
       summary = `exercise ${Number(lots6) / 1e6} lots`;
       break;
     }
     case "quote": {
-      const deposit = BigInt(str(p, "depositLots6"));
-      const ask = BigInt(str(p, "askLots6"));
-      const per = BigInt(str(p, "askPerLot"));
+      const deposit = u64(p, "depositLots6");
+      const ask = u64(p, "askLots6");
+      const per = u64(p, "askPerLot");
       tx = await client.quote(market, series, deposit, ask, per);
       summary = `deposit ${Number(deposit) / 1e6} lots and ask ${Number(per) / 1e6} USDC per lot on ${Number(ask) / 1e6} lots`;
       break;
     }
     case "cancel_ask":
-      tx = await client.cancelAsk(series, BigInt(str(p, "seq")));
+      tx = await client.cancelAsk(series, u64(p, "seq"));
       summary = "cancel ask";
       break;
     case "withdraw_unsold":
-      tx = await client.withdrawUnsold(market, series, BigInt(str(p, "lots6")));
+      tx = await client.withdrawUnsold(market, series, u64(p, "lots6"));
       summary = "withdraw unsold collateral";
       break;
     case "claim_premium":
@@ -89,7 +119,7 @@ export async function buildTransaction(req: BuildRequest): Promise<BuildResponse
       summary = "settle after expiry";
       break;
     case "enable_auto_exercise":
-      tx = await client.enableAutoExercise(market, series, Number(p?.minItmBps ?? 0));
+      tx = await client.enableAutoExercise(market, series, Number(u64(p, "minItmBps")));
       summary = "enable auto-exercise";
       break;
     case "disable_auto_exercise":
@@ -141,8 +171,8 @@ const USDC = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
  */
 async function buildProtectedBuy(client: RosterClient, wallet: PublicKey, req: BuildRequest): Promise<BuildResponse> {
   const conn = client.provider.connection;
-  const usdcIn = BigInt(str(req.params, "usdcIn"));
-  const slippage = Number(req.params?.slippageBps ?? 50);
+  const usdcIn = u64(req.params, "usdcIn");
+  const slippage = Math.min(500, Math.max(0, Number(u64({ slippageBps: req.params?.slippageBps ?? 50 }, "slippageBps"))));
   const market = await client.fetchMarket(new PublicKey(req.mint));
   if (!market) throw new Error("market not listed");
   const series = req.series ? await client.fetchSeries(new PublicKey(req.series)) : null;
@@ -165,7 +195,7 @@ async function buildProtectedBuy(client: RosterClient, wallet: PublicKey, req: B
       const min = market.minLots6;
       const rounded = (lots6 / min) * min;
       if (rounded < min) throw new Error(`too small to protect: ${Number(lots6) / 1e6} lots is under the market minimum ${Number(min) / 1e6}`);
-      const max = BigInt(str(req.params, "maxPremiumPerLot"));
+      const max = u64(req.params, "maxPremiumPerLot");
       const buy = await client.buy(market, series, rounded, max);
       ixs.push(...buy.instructions);
       summary += `; buy a floor on ${Number(rounded) / 1e6} lots at up to ${Number(max) / 1e6} USDC per lot`;
@@ -186,6 +216,36 @@ async function buildProtectedBuy(client: RosterClient, wallet: PublicKey, req: B
   throw new Error(`no swap route survived simulation (tried excluding ${excluded.join(", ")}): ${lastError}`);
 }
 
-export async function sendSigned(signedBase64: string, lastValidBlockHeight: number): Promise<string> {
-  return sendRawAndConfirm(connection(), Buffer.from(signedBase64, "base64"), lastValidBlockHeight);
+/**
+ * Submit a wallet-signed transaction. Only transactions that call this program (or Jupiter alongside it, for a
+ * Protected Buy) are relayed: the app's RPC is not an open relay. The height bound is checked against the chain so a
+ * bad value cannot hold the confirm loop open.
+ */
+export async function sendSigned(signedBase64: string, lastValidBlockHeight: unknown): Promise<string> {
+  if (typeof signedBase64 !== "string" || signedBase64.length > 2_000) throw new Error("signed must be a base64 transaction");
+  const raw = Buffer.from(signedBase64, "base64");
+  const programs = programsOf(raw);
+  if (!programs.some((p) => p.equals(ROSTER_PROGRAM_ID))) throw new Error("only transactions for the Roster program are relayed");
+  const foreign = programs.filter((p) => !ALLOWED_PROGRAMS.some((a) => a.equals(p)));
+  if (foreign.length) throw new Error(`transaction calls a program the app does not relay: ${foreign[0]!.toBase58()}`);
+  const conn = connection();
+  const height = await conn.getBlockHeight("confirmed");
+  const lvbh = Number(lastValidBlockHeight);
+  if (!Number.isFinite(lvbh) || lvbh < height - 300 || lvbh > height + 300) throw new Error("lastValidBlockHeight is not near the current block height");
+  return sendRawAndConfirm(conn, raw, lvbh, "confirmed", 90_000);
+}
+
+const ALLOWED_PROGRAMS = [ROSTER_PROGRAM_ID, JUPITER_PROGRAM, ComputeBudgetProgram.programId, new PublicKey("11111111111111111111111111111111"), new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"), new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")];
+
+/** Program ids a serialized (legacy or v0) transaction invokes at the top level. Program ids are always static keys. */
+function programsOf(raw: Buffer): PublicKey[] {
+  const sigs = raw[0] ?? 0;
+  const versioned = ((raw[1 + 64 * sigs] ?? 0) & 0x80) !== 0;
+  if (versioned) {
+    const tx = VersionedTransaction.deserialize(raw);
+    const keys = tx.message.staticAccountKeys;
+    return tx.message.compiledInstructions.map((ix) => keys[ix.programIdIndex]!).filter(Boolean);
+  }
+  const tx = Transaction.from(raw);
+  return tx.instructions.map((ix) => ix.programId);
 }

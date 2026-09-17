@@ -535,8 +535,14 @@ impl Env {
     }
 
     pub fn auto_exercise(&mut self, holder: &Pubkey, series: &Pubkey, lots6: u64, price_update: Pubkey) -> Result<(), String> {
-        let s = load_series(&self.svm, series);
         let k = self.keeper.insecure_clone();
+        self.auto_exercise_as(&k, holder, series, lots6, price_update)
+    }
+
+    /// The crank signed by any keypair: only the registered keeper (the pause authority) is paid.
+    pub fn auto_exercise_as(&mut self, k: &Keypair, holder: &Pubkey, series: &Pubkey, lots6: u64, price_update: Pubkey) -> Result<(), String> {
+        let s = load_series(&self.svm, series);
+        self.svm.airdrop(&k.pubkey(), 10_000_000_000).ok();
         create_ata(&mut self.svm, &k, &k.pubkey(), &self.usdc, &spl_token::id());
         let ix = Instruction::new_with_bytes(
             self.program_id,

@@ -22,6 +22,9 @@ export async function ensureTier1Market(connection: Connection, expiries: bigint
   if (!(await connection.getAccountInfo(c.protocol))) {
     await c.send(await c.initProtocol(USDC_MINT, { pauseAuthority: keeper.publicKey, treasury: deployer.publicKey, feeBps: 10, integratorShareBps: 3000, keeperFeeUsdc: 2n * USDC, graceSecs: 3600n }));
   }
+  // The quoter wallet creates the grid's series on Tier 1 and 2 markets (the program limits creation there).
+  const quoter = loadOrCreateKey("quoter");
+  if (!(await c.fetchProtocol()).seriesCreator.equals(quoter.publicKey)) await c.send(await c.updateProtocol({ seriesCreator: quoter.publicKey }));
   let m = await c.fetchMarket(mint);
   if (!m) {
     await c.send(await c.createMarket({ mint, tokenFeedId: NVDAX_FEED, equityFeedId: NVDA_FEED, allowedExpiries: expiries, strikeStep: USDC, minStrike: 100n * USDC, maxStrike: 300n * USDC, maxLiveSeries: 12, minLots6: LOT / 100n, maxLots6: 10_000n * LOT, maxWriterLots6: 5_000n * LOT, tier: 1, maxPriceAgeSecs: 60, maxConfBps: 100, symbol: "NVDAx", feedPricesUiShare: true }));

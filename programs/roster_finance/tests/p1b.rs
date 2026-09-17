@@ -21,7 +21,7 @@ fn no_market_change() -> UpdateMarketParams {
     UpdateMarketParams { allowed_expiries: None, strike_step: None, min_strike: None, max_strike: None, max_live_series: None, min_lots6: None, max_lots6: None, max_writer_lots6: None, tier: None, listed: None, paused: None, max_price_age_secs: None, max_conf_bps: None }
 }
 fn no_protocol_change() -> UpdateProtocolParams {
-    UpdateProtocolParams { authority: None, pause_authority: None, treasury: None, fee_bps: None, integrator_share_bps: None, keeper_fee_usdc: None, grace_secs: None, paused_all: None }
+    UpdateProtocolParams { authority: None, pause_authority: None, treasury: None, fee_bps: None, integrator_share_bps: None, keeper_fee_usdc: None, grace_secs: None, paused_all: None, series_creator: None }
 }
 
 #[test]
@@ -102,6 +102,18 @@ fn auto_exercise_fires_in_the_money_inside_the_window_and_declines_otherwise() {
     assert_eq!(fee_vault_before - balance(&env.svm, &env.fee_vault), keeper_fee);
     assert_eq!(balance(&env.svm, &env.us(&env.keeper.pubkey())), keeper_fee);
     assert_eq!(load_series(&env.svm, &series).total_exercised_lots6, 100 * LOT);
+    // A stranger may crank another opted-in holder but is paid nothing: the fee vault cannot be farmed by self-cranking.
+    env.quote(&a, &series, 100 * LOT, 100 * LOT, 5_400_000).unwrap();
+    let h2 = env.wallet(0, 100_000);
+    env.buy(&h2, &series, 100 * LOT, 5_400_000).unwrap();
+    env.enable_auto_exercise(&h2, &series, 0).unwrap();
+    let stranger = Keypair::new();
+    create_ata(&mut env.svm, &env.authority.insecure_clone(), &stranger.pubkey(), &env.usdc, &anchor_spl::token::spl_token::id());
+    let vault_before = balance(&env.svm, &env.fee_vault);
+    let pu = fresh(&mut env, 200.0);
+    env.auto_exercise_as(&stranger, &h2.pubkey(), &series, 100 * LOT, pu).unwrap();
+    assert_eq!(balance(&env.svm, &env.fee_vault), vault_before, "a stranger's crank takes nothing from the fee vault");
+    assert_eq!(balance(&env.svm, &env.us(&stranger.pubkey())), 0);
     // A second call finds nothing to exercise; opting out revokes and the crank is refused outright.
     let pu = fresh(&mut env, 200.0);
     expect_err(env.auto_exercise(&h.pubkey(), &series, 100 * LOT, pu), "SizeOutOfRange");
@@ -221,7 +233,9 @@ fn random_sequences_keep_the_invariants() {
             assigned_sum += f.assigned_lots6;
             free_sum += roster_finance::math::free_lots6(&s, i) + s.resident_lots6(i);
         }
-        assert!(open_sum <= s.unassigned_lots6, "step {step}: open {open_sum} > unassigned {}", s.unassigned_lots6);
+        // The product rounds toward the vault: writers' unassigned can exceed the pool's by rounding dust (trimmed at
+        // settle), and their assigned never exceeds what was exercised, so the settlement vault is never over-drawn.
+        assert!(open_sum >= s.unassigned_lots6 && open_sum - s.unassigned_lots6 <= 64, "step {step}: open {open_sum} vs unassigned {}", s.unassigned_lots6);
         assert!(assigned_sum <= s.total_exercised_lots6, "step {step}: assigned {assigned_sum} > exercised");
         let vault = balance(&env.svm, &s.collateral_vault);
         assert!(vault >= (s.unassigned_lots6 + free_sum) * RAW_PER_LOT6, "step {step}: vault {vault} < {}", (s.unassigned_lots6 + free_sum) * RAW_PER_LOT6);

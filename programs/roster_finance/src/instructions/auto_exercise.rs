@@ -211,7 +211,9 @@ pub fn handle_auto_exercise(ctx: Context<AutoExerciseCrank>, lots6: u64) -> Resu
         }
     };
     // Keeper fee from the fee vault, never from the holder.
-    let fee = protocol.keeper_fee_usdc.min(ctx.accounts.fee_vault.amount);
+    // Anyone may crank; only the protocol's registered keeper (the pause authority) is paid for it. Otherwise a
+    // holder could farm the fee vault with dust positions across wallets and crank itself.
+    let fee = if ctx.accounts.keeper.key() == protocol.pause_authority { protocol.keeper_fee_usdc.min(ctx.accounts.fee_vault.amount) } else { 0 };
     if fee > 0 {
         let pbump = [protocol.bump];
         let pseeds: [&[u8]; 2] = [Protocol::SEED, &pbump];

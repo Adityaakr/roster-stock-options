@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T16:25:36.427Z",
+  "generatedAt": "2026-09-17T16:50:26.538Z",
   "cluster": "http://127.0.0.1:8899",
   "entries": [
     {
@@ -16,7 +16,7 @@
         "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "32127749457698",
+        "supply": "32127749457696",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -78,7 +78,7 @@
         "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "22963696203639",
+        "supply": "22963696203633",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -140,7 +140,7 @@
         "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "9523182362997",
+        "supply": "9523177666103",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -202,7 +202,7 @@
         "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "15376341294752",
+        "supply": "15376341126200",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -264,7 +264,7 @@
         "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "10497090241047",
+        "supply": "10497090110408",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -326,7 +326,7 @@
         "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "16040666170467",
+        "supply": "16040666168163",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -388,7 +388,7 @@
         "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "17229522269539",
+        "supply": "17229522269538",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -450,7 +450,7 @@
         "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "7237782391172",
+        "supply": "7237782389743",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -512,7 +512,7 @@
         "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "82107815119114",
+        "supply": "82107815119108",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -574,7 +574,7 @@
         "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "48631617041966",
+        "supply": "48631617041965",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -636,7 +636,7 @@
         "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "8436077860123",
+        "supply": "8436077770896",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -794,8 +794,8 @@
       "tier": 2,
       "wrapper": "PreStocks",
       "issuerMark": {
-        "markPrice": 965.5600371823631,
-        "tokenPrice": 1054.9048765498626,
+        "markPrice": 965.5688898523129,
+        "tokenPrice": 1030.2299378542293,
         "holders": null,
         "source": "prestocks.com/api"
       },
@@ -858,7 +858,7 @@
       "tier": 2,
       "wrapper": "PreStocks",
       "issuerMark": {
-        "markPrice": 153.36708328675908,
+        "markPrice": 154.5834822082568,
         "tokenPrice": 120.71925219948439,
         "holders": null,
         "source": "prestocks.com/api"

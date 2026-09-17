@@ -14,6 +14,8 @@ import { decideAsk, gridStrikes } from "./model";
 export interface MarketQuoteContext {
   market: MarketState;
   symbol: string;
+  /** The protocol's grace after expiry, seconds: the next expiry's series are created this far ahead of the nearest one. */
+  graceSecs: number;
   /** Liquidity tier (Part 2 section 2): 1 quotes every expiry both sides, 2 the nearest expiry, 3 nothing from the treasury. */
   tier: number;
   /** Transfer fee on the mint, basis points: a deposit credits less than sent, so the ask is sized under it. */
@@ -66,21 +68,13 @@ export class Quoter {
     const m = ctx.market;
     const mk = ctx.symbol;
     const at = ctx.nowTs;
-    if (!m.listed || m.paused) {
-      this.say({ at, market: mk, action: "breaker", detail: "market not listed or paused" });
-      return 0;
-    }
-    if (ctx.priceAgeSecs > this.cfg.maxPriceAgeSecs) {
-      this.say({ at, market: mk, action: "breaker", detail: `price stale ${ctx.priceAgeSecs}s` });
-      return 0;
-    }
+    // A breaker pulls the treasury's own asks: a resident ask priced on a stale or missing input is the loss.
+    if (!m.listed || m.paused) return this.breaker(ctx, "market not listed or paused");
+    if (ctx.priceAgeSecs > this.cfg.maxPriceAgeSecs) return this.breaker(ctx, `price stale ${ctx.priceAgeSecs}s`);
     const session: Session = sessionAt(ctx.nowTs);
     if (session === "regular" && ctx.equityPrice) {
       const basisBps = ((ctx.price - ctx.equityPrice) / ctx.equityPrice) * 10_000;
-      if (Math.abs(basisBps) > this.cfg.maxBasisBps) {
-        this.say({ at, market: mk, action: "breaker", detail: `basis ${basisBps.toFixed(0)} bps > ${this.cfg.maxBasisBps}` });
-        return 0;
-      }
+      if (Math.abs(basisBps) > this.cfg.maxBasisBps) return this.breaker(ctx, `basis ${basisBps.toFixed(0)} bps > ${this.cfg.maxBasisBps}`);
     }
     if (ctx.tier >= 3) {
       this.say({ at, market: mk, action: "skip", detail: "tier 3: listed, no treasury quotes" });
@@ -93,7 +87,11 @@ export class Quoter {
     // 1. Keep the grid populated: three strikes a side per allowed expiry, within the live cap.
     let live = m.liveSeries;
     let capSaid = false;
-    const quotable = m.allowedExpiries.filter((e) => e > BigInt(ctx.nowTs)).sort((a, b) => (a < b ? -1 : 1)).slice(0, ctx.tier === 2 ? 1 : undefined);
+    // Tier 2 quotes the nearest expiry, and the next one as well once the nearest is within grace of expiring, so the
+    // market never goes dark between an expiry and the close that frees its series slots.
+    const ahead = m.allowedExpiries.filter((e) => e > BigInt(ctx.nowTs)).sort((a, b) => (a < b ? -1 : 1));
+    const nearExpiry = ahead[0] !== undefined && ahead[0] - BigInt(ctx.nowTs) <= BigInt(ctx.graceSecs);
+    const quotable = ahead.slice(0, ctx.tier === 2 ? (nearExpiry ? 2 : 1) : undefined);
     for (const expiry of quotable) {
       // Floors are refused by the program on transfer-fee mints until fee-inclusive settlement ships.
       for (const side of (m.hasTransferFee ? ["call"] : ["call", "put"]) as ("call" | "put")[]) {
@@ -135,27 +133,34 @@ export class Quoter {
           this.say({ at, market: mk, series: s.address.toBase58(), action: "keep", detail: `${Number(current.askPerLot) / 1e6} vs model ${Number(d.askPerLot) / 1e6}` });
           continue;
         }
-        try {
-          for (const a of myAsks) await this.client.send(await this.client.cancelAsk(s, a.seq));
-          sent += myAsks.length;
-          this.say({ at, market: mk, series: s.address.toBase58(), action: "cancel", detail: `${myAsks.length} asks, off ${(off * 100).toFixed(1)}%` });
-        } catch (e) {
-          this.say({ at, market: mk, series: s.address.toBase58(), action: "skip", detail: `cancel failed: ${(e as Error).message.slice(0, 120)}` });
+      }
+      // What the wallet can back is settled before anything is cancelled, so a cancel is never left without a repost.
+      // On a fee mint only what arrives is credited: ask for what will be free after the fee, floored to the unit.
+      const have = mySlot ? mySlot.depositedLots6 - mySlot.withdrawnLots6 - mySlot.soldLots6 : 0n;
+      let want = this.cfg.lotsPerSeries;
+      let deposit = have >= want ? 0n : want - have;
+      if (deposit > 0n && !(await this.canDeposit(m, s, deposit))) {
+        // Quote what is already in the slot rather than nothing.
+        deposit = 0n;
+        want = (have / 10_000n) * 10_000n;
+        if (want < m.minLots6) {
+          this.say({ at, market: mk, series: s.address.toBase58(), action: "skip", detail: "wallet cannot fund the deposit and the slot holds less than a minimum ask" });
           continue;
         }
       }
-      // Deposit what is missing to back the ask, then post. On a fee mint only what arrives is credited: ask for
-      // what will be free after the fee, floored to the minimum size unit.
-      const have = mySlot ? mySlot.depositedLots6 - mySlot.withdrawnLots6 - mySlot.soldLots6 : 0n;
-      let want = this.cfg.lotsPerSeries;
-      const deposit = have >= want ? 0n : want - have;
       if (ctx.feeBps > 0 && deposit > 0n && s.side === "call") {
         const arrives = (deposit * BigInt(10_000 - ctx.feeBps)) / 10_000n;
         want = ((have + arrives) / 10_000n) * 10_000n - 10_000n;
       }
-      if (deposit > 0n && !(await this.canDeposit(m, s, deposit))) {
-        this.say({ at, market: mk, series: s.address.toBase58(), action: "skip", detail: "wallet cannot fund the deposit" });
-        continue;
+      if (current) {
+        try {
+          for (const a of myAsks) await this.client.send(await this.client.cancelAsk(s, a.seq));
+          sent += myAsks.length;
+          this.say({ at, market: mk, series: s.address.toBase58(), action: "cancel", detail: `${myAsks.length} asks, off ${((Math.abs(Number(current.askPerLot) - Number(d.askPerLot)) / Number(d.askPerLot)) * 100).toFixed(1)}%` });
+        } catch (e) {
+          this.say({ at, market: mk, series: s.address.toBase58(), action: "skip", detail: `cancel failed: ${(e as Error).message.slice(0, 120)}` });
+          continue;
+        }
       }
       try {
         await this.client.send(await this.client.quote(m, s, deposit, want, d.askPerLot));
@@ -166,6 +171,30 @@ export class Quoter {
       }
     }
     return sent;
+  }
+
+  /** Pull every ask of ours on the market and log why. */
+  async pullQuotes(m: MarketState, symbol: string, nowTs: number, why: string): Promise<number> {
+    const me = this.client.wallet;
+    let n = 0;
+    for (const s of await this.client.fetchSeriesForMarket(m.address)) {
+      if (s.expiryTs <= BigInt(nowTs)) continue;
+      for (const a of s.asks.filter((a) => s.writers[a.writerSlot]?.writer.equals(me))) {
+        try {
+          await this.client.send(await this.client.cancelAsk(s, a.seq));
+          n += 1;
+        } catch (e) {
+          this.say({ at: nowTs, market: symbol, series: s.address.toBase58(), action: "skip", detail: `pull failed: ${(e as Error).message.slice(0, 100)}` });
+        }
+      }
+    }
+    if (n) this.say({ at: nowTs, market: symbol, action: "cancel", detail: `${n} asks pulled: ${why}` });
+    return n;
+  }
+
+  private async breaker(ctx: MarketQuoteContext, why: string): Promise<number> {
+    this.say({ at: ctx.nowTs, market: ctx.symbol, action: "breaker", detail: why });
+    return this.pullQuotes(ctx.market, ctx.symbol, ctx.nowTs, why);
   }
 
   private async canDeposit(m: MarketState, s: SeriesState, lots6: bigint): Promise<boolean> {

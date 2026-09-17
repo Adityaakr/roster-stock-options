@@ -54,8 +54,10 @@ pub fn apply_exercise(series: &mut Series, q: u64) {
         series.unassigned_lots6 = 0;
         return;
     }
-    // p * (u - q) / u, with u >= 1 and p <= P_ONE so the product fits in u128 comfortably.
-    let mut p = series.p() * (u - q) as u128 / u as u128;
+    // p * (u - q) / u rounded UP: `p` is the fraction of every writer's open lots still unassigned, so rounding it
+    // up under-states assignment. A writer can then never be paid more from the settlement vault than the exercises
+    // that filled it (feedback finding F1, docs/BUILD_LOG.md M8.1); the rounding residue stays as dust for `close_series`.
+    let mut p = (series.p() * (u - q) as u128 + (u as u128 - 1)) / u as u128;
     if p < P_FLOOR {
         p *= P_SCALE;
         series.scale = series.scale.wrapping_add(1);
@@ -94,13 +96,15 @@ fn split(w: &WriterSlot, p: u128, scale: u8, epoch: u32) -> (u64, u64) {
         return (0, w.open_lots6);
     }
     let diff = scale.wrapping_sub(w.scale_snap);
-    if diff >= 2 || w.p_snap() == 0 {
-        // Two rescales since the snapshot: the remaining fraction is below 1e-18 of a lot unit, treat as fully assigned.
+    if diff >= 3 || w.p_snap() == 0 {
+        // Three rescales since the snapshot: the remaining fraction is below 1e-27, treat as fully assigned.
         return (0, w.open_lots6);
     }
-    let denom = if diff == 1 { w.p_snap() * P_SCALE } else { w.p_snap() };
-    let unassigned = open * p / denom;
-    let assigned = open * (denom - p) / denom;
+    // p_snap <= 1e18 and P_SCALE^2 = 1e18, so denom <= 1e36 and open * p <= 1.8e19 * 1e18 both fit u128.
+    let denom = w.p_snap() * if diff == 2 { P_SCALE * P_SCALE } else if diff == 1 { P_SCALE } else { 1 };
+    // Unassigned rounds up and assigned is its complement: both legs err toward the vault, never past it.
+    let unassigned = ((open * p + denom - 1) / denom).min(open);
+    let assigned = open - unassigned;
     (unassigned as u64, assigned as u64)
 }
 
@@ -200,7 +204,9 @@ mod tests {
 
     #[test]
     fn one_unit_exercise_never_leaves_the_last_settler_short() {
-        // Skeptic B(a): two writers of 1e6 units, one exercise of a single unit. Sum of assigned floors <= exercised.
+        // Skeptic B(a): two writers of 1e6 units, one exercise of a single unit. Sum of assigned <= exercised (the
+        // settlement vault is never over-drawn); the writers' unassigned sum can exceed the pool's by rounding dust,
+        // which `settle_writer` trims against the collateral vault.
         let mut s = series();
         sell(&mut s, 0, LOT6);
         sell(&mut s, 1, LOT6);
@@ -208,7 +214,7 @@ mod tests {
         let (a_open, a_assigned) = settled(&s, 0);
         let (b_open, b_assigned) = settled(&s, 1);
         assert!(a_assigned + b_assigned <= s.total_exercised_lots6);
-        assert!(a_open + b_open <= s.unassigned_lots6);
+        assert!(a_open + b_open >= s.unassigned_lots6 && a_open + b_open - s.unassigned_lots6 <= 2);
         assert!(a_open + a_assigned <= LOT6 && b_open + b_assigned <= LOT6);
     }
 
@@ -240,7 +246,7 @@ mod tests {
         exercise(&mut s, 7 * LOT6);
         let total_open: u64 = (0..3).map(|i| settled(&s, i).0).sum();
         let total_assigned: u64 = (0..3).map(|i| settled(&s, i).1).sum();
-        assert!(total_open <= s.unassigned_lots6 && s.unassigned_lots6 - total_open <= 3);
+        assert!(total_open >= s.unassigned_lots6 && total_open - s.unassigned_lots6 <= 3);
         assert!(total_assigned <= s.total_exercised_lots6 && s.total_exercised_lots6 - total_assigned <= 3);
         // Exact rationals: A ends with 4 * (6/13) * (8/10) ... computed independently below.
         // A: 7 -> after ex3 4 (A alone). Then B 11 -> pool 15, ex5 -> A 4*10/15=2.6667, B 7.3333. C 13 -> pool 23,
@@ -270,6 +276,93 @@ mod tests {
             assert!(open <= 2, "old writer {slot} open {open}");
             assert!(assigned <= 1_000_000_000);
         }
+    }
+
+    // ---- QA boundary probes (adversarial pass, 2026-09-17) ----
+
+    /// `P` at its floor (1e9) with a large pool: the sum of every writer's `assigned` never exceeds what was exercised
+    /// (the feedback pass found the old floor-rounding over-assigned by 4 units here, which bricked the last settle).
+    #[test]
+    fn qa_p_at_floor_never_over_assigns() {
+        let mut s = series();
+        sell(&mut s, 0, 1_000 * LOT6);
+        exercise(&mut s, 1_000 * LOT6 - 1);
+        assert_eq!(s.p(), P_FLOOR, "p lands exactly on the floor");
+        sell(&mut s, 1, 5_000 * LOT6);
+        exercise(&mut s, 1);
+        let (_, a_assigned) = settled(&s, 0);
+        let (_, b_assigned) = settled(&s, 1);
+        let total_assigned = a_assigned + b_assigned;
+        assert!(total_assigned <= s.total_exercised_lots6, "over-assigned: {total_assigned} > {}", s.total_exercised_lots6);
+        assert!(s.total_exercised_lots6 - total_assigned <= 2, "dust bounded by one unit per writer");
+    }
+
+    /// Exercising down to a handful of units: with `P` rounded up it never reaches zero, so no epoch roll forfeits the
+    /// unexercised residue, and the sum of assignments stays at or below the exercises.
+    #[test]
+    fn qa_exercising_to_a_residue_keeps_assignment_under_exercised() {
+        let mut s = series();
+        sell(&mut s, 0, 1_000 * LOT6);
+        exercise(&mut s, 1_000 * LOT6 - 1); // p = 1e9
+        sell(&mut s, 1, 5_000 * LOT6);
+        let u = s.unassigned_lots6;
+        exercise(&mut s, u - 4);
+        assert_eq!(s.unassigned_lots6, 4);
+        assert_eq!(s.epoch, 0, "no epoch roll while units remain unassigned");
+        let total_assigned: u64 = (0..2).map(|i| settled(&s, i).1).sum();
+        assert!(total_assigned <= s.total_exercised_lots6, "over-assigned: {total_assigned} > {}", s.total_exercised_lots6);
+    }
+
+    /// A 400k-lot writer folded after one rescale: the complement form fits u128 (the old `open * (denom - p)` overflowed).
+    #[test]
+    fn qa_split_fits_u128_after_one_rescale_with_a_large_writer() {
+        let mut s = series();
+        sell(&mut s, 0, 400_000 * LOT6); // 4e11 units at p = 1e18
+        let u = s.unassigned_lots6;
+        exercise(&mut s, u - 1); // p = 1e18 / 4e11 = 2.5e6 < floor -> rescale, scale = 1
+        assert_eq!(s.scale, 1);
+        let (open, assigned) = settled(&s, 0);
+        assert_eq!(open + assigned, 400_000 * LOT6);
+        assert!(assigned <= s.total_exercised_lots6);
+        assert!(open >= 1, "the one unexercised unit stays unassigned");
+    }
+
+    /// Control for probe C: the same fold with `assigned` computed as `open - ceil(open * p / denom)` fits.
+    #[test]
+    fn qa_split_control_complement_form_fits_u128() {
+        let open: u128 = 400_000 * LOT6 as u128;
+        let denom: u128 = P_ONE * P_SCALE;
+        let p: u128 = 2_500_000 * P_SCALE;
+        let unassigned_ceil = (open * p + denom - 1) / denom;
+        let assigned = open - unassigned_ceil;
+        assert_eq!(assigned, open - 1); // 4e11 * 2.5e-12 = 1 unit unassigned
+    }
+
+    /// Two rescales since the snapshot are divided exactly, so a 1e6-lot writer's real remainder is not forfeited.
+    #[test]
+    fn qa_two_rescales_since_snapshot_keep_the_real_remainder() {
+        let mut s = series();
+        sell(&mut s, 0, 1_000 * LOT6);
+        exercise(&mut s, 1_000 * LOT6 - 1); // p = 1e9 (floor), scale 0
+        sell(&mut s, 1, 1_000_000 * LOT6); // B snapshots at p = 1e9
+        let u = s.unassigned_lots6;
+        exercise(&mut s, u - 1_001);
+        exercise(&mut s, 1);
+        let (b_open, b_assigned) = settled(&s, 1);
+        let total_assigned: u64 = (0..2).map(|i| settled(&s, i).1).sum();
+        // `P` carries 1e-9 relative precision at its floor and rounds up, so B's 1e12 units gain up to 1e3 units of
+        // unassigned dust per exercise step (two here); the settlement leg is never over-drawn for it.
+        assert!(b_open >= 1_000 && b_open <= 3_000, "B keeps its real remainder plus bounded dust, got {b_open}");
+        assert_eq!(b_open + b_assigned, 1_000_000 * LOT6);
+        assert!(total_assigned <= s.total_exercised_lots6, "over-assigned: {total_assigned} > {}", s.total_exercised_lots6);
+    }
+
+    /// `create_market` caps decimals at 19 so `raw_per_lot6` (10^(decimals-6)) always fits u64.
+    #[test]
+    fn qa_raw_per_lot6_fits_up_to_19_decimals() {
+        let mut m: crate::state::MarketConfig = unsafe { core::mem::zeroed() };
+        m.decimals = 19;
+        assert_eq!(m.raw_per_lot6(), 10u64.pow(13));
     }
 
     #[test]

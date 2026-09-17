@@ -3870,11 +3870,19 @@
             "type": "bool"
           },
           {
+            "name": "series_creator",
+            "docs": [
+              "Who may create series on Tier 1 and Tier 2 markets (the quoter); the authority always may. Tier 3 is open.",
+              "Zero means \"authority only\", so a protocol account written before this field behaves as before."
+            ],
+            "type": "pubkey"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                64
+                32
               ]
             }
           }
@@ -4252,6 +4260,12 @@
             "name": "paused_all",
             "type": {
               "option": "bool"
+            }
+          },
+          {
+            "name": "series_creator",
+            "type": {
+              "option": "pubkey"
             }
           }
         ]

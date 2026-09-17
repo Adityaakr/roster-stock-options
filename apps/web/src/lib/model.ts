@@ -153,6 +153,8 @@ export interface RosterData {
   programDeployed: boolean;
   /** Set when the services cannot price: the name of the missing operator input (docs/OPERATOR.md). */
   blocked: string | null;
+  /** Whether the keeper can post Pyth updates, which auto-exercise at expiry needs. */
+  autoExerciseLive: boolean;
   nowTs: number;
   session: Session;
   /** Every listed market, sorted by executable depth. */

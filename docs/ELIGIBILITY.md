@@ -1,6 +1,6 @@
 # Eligibility
 
-Generated 2026-09-17T16:25:36.427Z by `scripts/eligibility.ts` against `http://127.0.0.1:8899` (a surfpool fork carries mainnet account state). Mints come from the xStocks Assets API, extensions from the mint account, feeds from Hermes' listing endpoint, verdicts from the rule in `packages/registry/src/eligibility.ts`. The escrow proof column is written by `scripts/list-markets.ts` when a series is created, one lot quoted into the vault and withdrawn on the fork; a mint is never listed before that.
+Generated 2026-09-17T16:50:26.538Z by `scripts/eligibility.ts` against `http://127.0.0.1:8899` (a surfpool fork carries mainnet account state). Mints come from the xStocks Assets API, extensions from the mint account, feeds from Hermes' listing endpoint, verdicts from the rule in `packages/registry/src/eligibility.ts`. The escrow proof column is written by `scripts/list-markets.ts` when a series is created, one lot quoted into the vault and withdrawn on the fork; a mint is never listed before that.
 
 **Verdicts.** `eligible`: plain Token-2022 or SPL mint, escrow proven. `eligible_with_fee`: transfer fee; Gaps only until fee-inclusive settlement (First Print). `restricted_wrapper`: a live transfer hook whose extra accounts are not yet proven. `ineligible`: cannot be escrowed (fewer than six decimals, non-transferable, not a token).
 

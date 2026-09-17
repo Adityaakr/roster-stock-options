@@ -52,7 +52,7 @@ export default function PositionsPage() {
             <Stat k="Auto-exercise on" v={String(list.filter((p) => p.autoExercise).length)} s="positions with the delegate enabled" />
           </div>
           <div className="card">
-            {list.map((p) => <PositionRow key={p.id} p={p} market={markets.get(p.market)} nowTs={data.nowTs} keeperFeeUsd={data.keeperFeeUsd} programDeployed={cluster.programDeployed} onChange={reload} />)}
+            {list.map((p) => <PositionRow key={p.id} p={p} market={markets.get(p.market)} nowTs={data.nowTs} keeperFeeUsd={data.keeperFeeUsd} programDeployed={cluster.programDeployed} autoExerciseLive={data.autoExerciseLive} onChange={reload} />)}
           </div>
         </>
       ) : null}
@@ -86,7 +86,7 @@ export default function PositionsPage() {
 
 const RECEIPT_LABEL: Record<string, string> = { buy: "Bought", exercise: "Exercised", auto_exercise: "Auto-exercised", claim: "Premium claimed", withdraw: "Withdrawn", release: "Released", quote: "Quoted" };
 
-function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, onChange }: { p: Position; market: Market | undefined; nowTs: number; keeperFeeUsd: number; programDeployed: boolean; onChange: () => void }) {
+function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExerciseLive, onChange }: { p: Position; market: Market | undefined; nowTs: number; keeperFeeUsd: number; programDeployed: boolean; autoExerciseLive: boolean; onChange: () => void }) {
   const tx = useTransaction();
   const auto = useTransaction();
   const [confirm, setConfirm] = useState(false);
@@ -125,7 +125,7 @@ function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, onChange
             { k: "Premium paid", v: <span className="mono">${usdSmart(p.premiumPaid)}</span> },
             { k: "Intrinsic value now", v: <span className={`mono ${value !== null && value > 0 ? "up" : ""}`}>{value === null ? "no feed" : `$${usdSmart(value)}`}</span> },
             { k: "Exercising requires", v: <span className="mono">{words}</span> },
-            { k: "Auto-exercise", v: p.autoExercise ? `on: the keeper exercises in the hour before expiry if in the money by more than $${usd(keeperFeeUsd)}, paid from the fee vault` : "off: nothing happens at expiry unless you exercise" },
+            { k: "Auto-exercise", v: p.autoExercise ? (autoExerciseLive ? `on: the keeper exercises in the hour before expiry if in the money by more than $${usd(keeperFeeUsd)}, paid from the fee vault` : `on: the delegate is set, but no keeper cranks on this cluster yet (it needs a Pyth key), so exercise yourself before expiry`) : "off: nothing happens at expiry unless you exercise" },
             { k: "Bought", v: <span className="mono">{p.signature ? `${p.signature.slice(0, 8)}…${p.signature.slice(-8)}` : "no signature on this cluster"}</span> },
             ...(p.exercised > 0 ? [{ k: "Exercised so far", v: <span className="mono">{p.exercised} {symbol}</span> }] : [])
           ]} />

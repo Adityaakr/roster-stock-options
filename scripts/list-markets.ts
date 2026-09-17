@@ -79,7 +79,7 @@ async function main() {
 
 async function listOne(connection: Connection, c: RosterClient, e: RegistryEntry, expiries: bigint[], quoterKey: PublicKey): Promise<void> {
   const mint = new PublicKey(e.mint);
-  const perShare = e.issuerMark ? (e.issuerMark.tokenPrice ?? e.issuerMark.markPrice) : await xstocksQuote(e.symbol);
+  const perShare = e.issuerMark ? (e.issuerMark.tokenPrice ?? e.issuerMark.markPrice) : (await xstocksQuote(e.symbol)) ?? (e.underlyingSymbol ? await xstocksQuote(`${e.underlyingSymbol}x`) : null);
   if (!perShare) throw new Error("no issuer quote to size the grid");
   // Strikes are per lot (one raw token); the issuer quotes per UI share, and a ScaledUiAmount mint shows one token as
   // `multiplier` shares, so the grid is sized off the per-lot forward.

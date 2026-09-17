@@ -32,9 +32,9 @@ export function Stat({ k, v, s, tone }: { k: string; v: ReactNode; s?: ReactNode
   );
 }
 
-export function KV({ items }: { items: { k: string; v: ReactNode }[] }) {
+export function KV({ items, wrap = false }: { items: { k: string; v: ReactNode }[]; wrap?: boolean }) {
   return (
-    <dl className="kv">
+    <dl className={`kv ${wrap ? "wrap" : ""}`}>
       {items.map((it) => (
         <div key={it.k} className="contents">
           <dt>{it.k}</dt>

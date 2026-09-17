@@ -4,7 +4,11 @@ import { services, servicesReachable, type ServicesMarket, type ServicesRoster, 
 import { freshSeries } from "./tx-server";
 import { readRegistry } from "@roster/registry";
 
-const LOGOS = new Map((readRegistry()?.entries ?? []).map((e) => [e.mint, e.logo]));
+const REG = readRegistry()?.entries ?? [];
+const LOGOS = new Map(REG.map((e) => [e.mint, e.logo ?? REG.find((x) => x.underlyingSymbol === e.underlyingSymbol && x.logo)?.logo ?? null]));
+const UNDERLYING = new Map(REG.map((e) => [e.mint, e.underlyingSymbol]));
+const WRAPPERS = new Map<string, number>();
+for (const e of REG) if (e.underlyingSymbol) WRAPPERS.set(e.underlyingSymbol, (WRAPPERS.get(e.underlyingSymbol) ?? 0) + 1);
 
 /*
  * The data the app renders, assembled server-side from the services process (indexer, oracle, quoter). When the
@@ -91,6 +95,8 @@ function liveMarket(m: ServicesMarket, nowTs: number, terms: Term[]): Market {
     depthUsdc,
     bestAsk: asks.length ? Math.min(...asks) : null,
     logo: LOGOS.get(m.mint) ?? null,
+    underlyingSymbol: UNDERLYING.get(m.mint) ?? null,
+    wrappersOfUnderlying: WRAPPERS.get(UNDERLYING.get(m.mint) ?? "") ?? 1,
     sparkline: m.sparkline ?? [],
     changePct: m.sparkline && m.sparkline.length >= 2 && m.sparkline[0]![1] > 0 ? ((m.sparkline[m.sparkline.length - 1]![1] - m.sparkline[0]![1]) / m.sparkline[0]![1]) * 100 : null
   };
@@ -255,7 +261,7 @@ function fixture(): RosterData {
     symbol: "NVDAx", name: "Nvidia xStock", mint: null, address: null, decimals: 8, tier: 1, listed: true, paused: false, wrapperTier: "xStock",
     feeBps: 0, hasTransferFee: false, hasPermanentDelegate: true, pausable: true, mark: FIXTURE_MARK, priceSource: "fixture", equityMark: equityOpen ? 182.08 : null,
     basisBps: equityOpen ? 12 : null, multiplier: 1, pendingActivationTs: null, inActivationWindow: false, vol: 0.35, volSource: "fixture", expiries,
-    liveSeries: terms.length, maxLiveSeries: 12, minLots6: "10000", depthUsdc: terms.reduce((a, t) => a + t.capacity * t.strike, 0), bestAsk: 0.6, logo: null, sparkline: [], changePct: null
+    liveSeries: terms.length, maxLiveSeries: 12, minLots6: "10000", depthUsdc: terms.reduce((a, t) => a + t.capacity * t.strike, 0), bestAsk: 0.6, logo: null, underlyingSymbol: "NVDA", wrappersOfUnderlying: 1, sparkline: [], changePct: null
   };
   return {
     cluster: "fixture",

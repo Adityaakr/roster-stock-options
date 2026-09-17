@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T16:50:26.538Z",
+  "generatedAt": "2026-09-17T18:40:08.796Z",
   "cluster": "http://127.0.0.1:8899",
   "entries": [
     {
@@ -11,6 +11,7 @@
       "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
       "tier": 1,
       "wrapper": "xStock",
+      "holders": null,
       "issuerMark": null,
       "inspection": {
         "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
@@ -36,6 +37,7 @@
           "paused": false,
           "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1.0009180758490996,
           "newMultiplier": 1.001701196801074,
@@ -65,6 +67,69 @@
       "issuerHalted": false
     },
     {
+      "symbol": "NVDAon",
+      "name": "NVIDIA (Ondo Tokenized)",
+      "underlyingSymbol": "NVDA",
+      "isin": "CH1436219195",
+      "logo": null,
+      "mint": "gEGtLTPNQ7jcg25zTetkbmF7teoDLcrfTnQfmn2ondo",
+      "tier": 3,
+      "wrapper": "Ondo",
+      "holders": 1791,
+      "issuerMark": null,
+      "inspection": {
+        "mint": "gEGtLTPNQ7jcg25zTetkbmF7teoDLcrfTnQfmn2ondo",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "16689553692265",
+        "extensions": [
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "DefaultAccountState",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "51QVCuHfL1FeNjd8BDeffCKhCcAYoULnVB3yjNhShiuK",
+        "mintAuthority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.0017152487959897,
+          "newMultiplier": 1.0017152487959897,
+          "newMultiplierEffectiveTimestamp": 1788998645
+        },
+        "verdict": "eligible",
+        "reason": "pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "207ddea2a443d30b7e13a7c88a9e3f106765deb97049afc65a18cede50fffc82",
+          "symbol": "Crypto.NVDAON/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "b1073854ed24cbc755dc527418f52b7d271f6cc967bbf8d8129112b18860a593",
+          "symbol": "Equity.US.NVDA/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "468frXBDxEgJ6jn8TFXZT1QVA6nFX5yWAidoNGUbfLEo",
+        "quote": "PkCHYacg6oQMEekYF2Pc2hiXgu5L1i6J63HK9KmedkDRtXnE4pM2ZzULTMaXrGMcebcy7GfGkiatDBDhpnMKhLj",
+        "withdraw": "5bHyCom3ciHf3KzdAiHFLnyA6iRieJRCQnEZR89tofWt4zJbyNXoUu6ux5AnwenWvd2Z2cQJ8Q74bqEb1UsVJAL7",
+        "provenAt": "2026-09-17T18:23:11.965Z"
+      },
+      "issuerHalted": false
+    },
+    {
       "symbol": "TSLAx",
       "name": "Tesla xStock",
       "underlyingSymbol": "TSLA",
@@ -73,6 +138,7 @@
       "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
       "tier": 1,
       "wrapper": "xStock",
+      "holders": null,
       "issuerMark": null,
       "inspection": {
         "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
@@ -98,6 +164,7 @@
           "paused": false,
           "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1,
           "newMultiplier": 1,
@@ -127,6 +194,69 @@
       "issuerHalted": false
     },
     {
+      "symbol": "TSLAon",
+      "name": "Tesla (Ondo Tokenized)",
+      "underlyingSymbol": "TSLA",
+      "isin": "CH1436219252",
+      "logo": null,
+      "mint": "KeGv7bsfR4MheC1CkmnAVceoApjrkvBhHYjWb67ondo",
+      "tier": 3,
+      "wrapper": "Ondo",
+      "holders": 744,
+      "issuerMark": null,
+      "inspection": {
+        "mint": "KeGv7bsfR4MheC1CkmnAVceoApjrkvBhHYjWb67ondo",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "401539518519",
+        "extensions": [
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "DefaultAccountState",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "51QVCuHfL1FeNjd8BDeffCKhCcAYoULnVB3yjNhShiuK",
+        "mintAuthority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 1788344044
+        },
+        "verdict": "eligible",
+        "reason": "pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "c09ef687ed07091c047da444f1499f2da52cdc1c085104643ec565a9eb1af514",
+          "symbol": "Crypto.TSLAON/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "16dad506d7db8da01c87581c87ca897a012a153557d4d578c3b9c9e1bc0632f1",
+          "symbol": "Equity.US.TSLA/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "2Es3wEKhAKdF3i1FswsAAGsPdHWvSY7PqUsiG8hTxNu8",
+        "quote": "UEWmmZwNzd2dxG3QzANtKo4GVSzvrRjbNcFuQn2g8A51CqU13mELSX6CAeRhSbC6Fu1T5snVgZevBy9PfZpXvZr",
+        "withdraw": "5TK5KftCenZL7ggrHTxUAmf4WLaAc45U9mo4H8cu7Z4NEsJqTZuzFKpMCky7xCjGJdS3L9L9CYSnrb8bPLQ2jgpn",
+        "provenAt": "2026-09-17T18:23:37.786Z"
+      },
+      "issuerHalted": false
+    },
+    {
       "symbol": "SPYx",
       "name": "SP500 xStock",
       "underlyingSymbol": "SPY",
@@ -135,6 +265,7 @@
       "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
       "tier": 1,
       "wrapper": "xStock",
+      "holders": null,
       "issuerMark": null,
       "inspection": {
         "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
@@ -160,6 +291,7 @@
           "paused": false,
           "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1.003909240011759,
           "newMultiplier": 1.005714560286254,
@@ -189,6 +321,60 @@
       "issuerHalted": false
     },
     {
+      "symbol": "SPYon",
+      "name": "SPDR S&P 500 ETF (Ondo Tokenized)",
+      "underlyingSymbol": "SPY",
+      "isin": "CH1436219716",
+      "logo": null,
+      "mint": "k18WJUULWheRkSpSquYGdNNmtuE2Vbw1hpuUi92ondo",
+      "tier": 3,
+      "wrapper": "Ondo",
+      "holders": 1743,
+      "issuerMark": null,
+      "inspection": {
+        "mint": "k18WJUULWheRkSpSquYGdNNmtuE2Vbw1hpuUi92ondo",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "1504819564385",
+        "extensions": [
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "DefaultAccountState",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "51QVCuHfL1FeNjd8BDeffCKhCcAYoULnVB3yjNhShiuK",
+        "mintAuthority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.0077209101501272,
+          "newMultiplier": 1.0077209101501272,
+          "newMultiplierEffectiveTimestamp": 1788344044
+        },
+        "verdict": "eligible",
+        "reason": "pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": {
+          "id": "19e09bb805456ada3979a7d1cbb4b6d63babc3a0f8e8a9509f68afa5c4c11cd5",
+          "symbol": "Equity.US.SPY/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": null,
+      "issuerHalted": false
+    },
+    {
       "symbol": "AAPLx",
       "name": "Apple xStock",
       "underlyingSymbol": "AAPL",
@@ -197,6 +383,7 @@
       "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
       "tier": 2,
       "wrapper": "xStock",
+      "holders": null,
       "issuerMark": null,
       "inspection": {
         "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
@@ -222,6 +409,7 @@
           "paused": false,
           "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1.0026642075893797,
           "newMultiplier": 1.0032690125398187,
@@ -251,6 +439,69 @@
       "issuerHalted": false
     },
     {
+      "symbol": "AAPLon",
+      "name": "Apple (Ondo Tokenized)",
+      "underlyingSymbol": "AAPL",
+      "isin": "CH1436219187",
+      "logo": null,
+      "mint": "123mYEnRLM2LLYsJW3K6oyYh8uP1fngj732iG638ondo",
+      "tier": 3,
+      "wrapper": "Ondo",
+      "holders": 1872,
+      "issuerMark": null,
+      "inspection": {
+        "mint": "123mYEnRLM2LLYsJW3K6oyYh8uP1fngj732iG638ondo",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "367789809287",
+        "extensions": [
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "DefaultAccountState",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "51QVCuHfL1FeNjd8BDeffCKhCcAYoULnVB3yjNhShiuK",
+        "mintAuthority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.003376073740221,
+          "newMultiplier": 1.003376073740221,
+          "newMultiplierEffectiveTimestamp": 1788344044
+        },
+        "verdict": "eligible",
+        "reason": "pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "e6734de88a83d9d2fb33072adab319004700aefd069653aba30ba9e3cac056f2",
+          "symbol": "Crypto.AAPLON/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "49f6b65cb1de6b10eaf75e7c03ca029c306d0357e91b5311b175084a5ad55688",
+          "symbol": "Equity.US.AAPL/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "6MzWHEuJx2hd7gDM1Uw4cDSGTiVEobiEAqnibPov4MZL",
+        "quote": "3kWwyuCEYReR5QoXxKLx4A261z7GNzxmJksApih3iwCLvesKt1EsoyV3rUCEk7Uaeyk7NqMQ3buxx4mHLGjNwM5J",
+        "withdraw": "3b5jZWcoPHKPy9JobNvzfW6LaC6xAPPhoRKSKMYdvRtLePuAidAXgDAygBwAh7eLxvW75BbnWcua2rQj2hJ76Zhw",
+        "provenAt": "2026-09-17T18:23:41.155Z"
+      },
+      "issuerHalted": false
+    },
+    {
       "symbol": "MSFTx",
       "name": "Microsoft xStock",
       "underlyingSymbol": "MSFT",
@@ -259,6 +510,7 @@
       "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
       "tier": 2,
       "wrapper": "xStock",
+      "holders": null,
       "issuerMark": null,
       "inspection": {
         "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
@@ -284,6 +536,7 @@
           "paused": false,
           "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1.0045820905025638,
           "newMultiplier": 1.0059033904787456,
@@ -313,6 +566,69 @@
       "issuerHalted": false
     },
     {
+      "symbol": "MSFTon",
+      "name": "Microsoft (Ondo Tokenized)",
+      "underlyingSymbol": "MSFT",
+      "isin": "CH1436219203",
+      "logo": null,
+      "mint": "FRmH6iRkMr33DLG6zVLR7EM4LojBFAuq6NtFzG6ondo",
+      "tier": 3,
+      "wrapper": "Ondo",
+      "holders": 371,
+      "issuerMark": null,
+      "inspection": {
+        "mint": "FRmH6iRkMr33DLG6zVLR7EM4LojBFAuq6NtFzG6ondo",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "406802425472",
+        "extensions": [
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "DefaultAccountState",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "51QVCuHfL1FeNjd8BDeffCKhCcAYoULnVB3yjNhShiuK",
+        "mintAuthority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.0057308568927839,
+          "newMultiplier": 1.0057308568927839,
+          "newMultiplierEffectiveTimestamp": 1788344044
+        },
+        "verdict": "eligible",
+        "reason": "pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "29b228e9fd72bbd306bcca3b10c165d8dba5d535ef8d5aab6c6e4bc18912d150",
+          "symbol": "Crypto.MSFTON/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "d0ca23c1cc005e004ccf1db5bf76aeb6a49218f43dac3d4b275e92de12ded4d1",
+          "symbol": "Equity.US.MSFT/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "2Pa3AZV6i6qJoFhm3hFnmpEu9Foh2JaQ6B2TFMfGpsyo",
+        "quote": "54vFDGpAS8uXhyaqnDaFcGfDUebkAy3j7q4h3CRz9sGBd4fJ8teci9VZp9oZMj1HrvJj7DT1YyAzHSdu5mg3Uvyr",
+        "withdraw": "4yW4D9DBf8YdXwwD9URTGkGKswMX31eRoXJdizTxWotYpEwiGKo2A7abDdmiFYEWHYA7zryzftA6uXbdXNMrXvzd",
+        "provenAt": "2026-09-17T18:23:45.839Z"
+      },
+      "issuerHalted": false
+    },
+    {
       "symbol": "GOOGLx",
       "name": "Alphabet xStock",
       "underlyingSymbol": "GOOGL",
@@ -321,6 +637,7 @@
       "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
       "tier": 2,
       "wrapper": "xStock",
+      "holders": null,
       "issuerMark": null,
       "inspection": {
         "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
@@ -346,6 +663,7 @@
           "paused": false,
           "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1.001926722393864,
           "newMultiplier": 1.0023772500603487,
@@ -375,6 +693,69 @@
       "issuerHalted": false
     },
     {
+      "symbol": "GOOGLon",
+      "name": "Alphabet Class A (Ondo Tokenized)",
+      "underlyingSymbol": "GOOGL",
+      "isin": "CH1436219237",
+      "logo": null,
+      "mint": "bbahNA5vT9WJeYft8tALrH1LXWffjwqVoUbqYa1ondo",
+      "tier": 3,
+      "wrapper": "Ondo",
+      "holders": 308,
+      "issuerMark": null,
+      "inspection": {
+        "mint": "bbahNA5vT9WJeYft8tALrH1LXWffjwqVoUbqYa1ondo",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "839918152962",
+        "extensions": [
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "DefaultAccountState",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "51QVCuHfL1FeNjd8BDeffCKhCcAYoULnVB3yjNhShiuK",
+        "mintAuthority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.0024603266374352,
+          "newMultiplier": 1.0024603266374352,
+          "newMultiplierEffectiveTimestamp": 1788480244
+        },
+        "verdict": "eligible",
+        "reason": "pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "ad79b3487bef87ff8f8ab31c0b779ad08d931fdfa5436f7e92a234bb82bff7e4",
+          "symbol": "Crypto.GOOGLON/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "5a48c03e9b9cb337801073ed9d166817473697efff0d138874e0f6a33d6d5aa6",
+          "symbol": "Equity.US.GOOGL/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "3LUZRXrtr5vSPJfcsya1gnNK2EuvqqvGaBcmKQZyP1Av",
+        "quote": "7zfrubqc6E7xyzidJgphFcWxXbmgAuZUbQbB8YcQQ8KQXFbtyVUpPGjrAoYLECQAG5TVLbxA93bJuWF9c2Mkesj",
+        "withdraw": "377gPPYSt1PXS3PBUPufpZKYXrSMyedYuuDcBHXXjCNygfzhQsuo2gY8Jf74BJZBv73BMR1UbwiAKHquUChv2qxV",
+        "provenAt": "2026-09-17T18:23:49.910Z"
+      },
+      "issuerHalted": false
+    },
+    {
       "symbol": "AMZNx",
       "name": "Amazon.com xStock",
       "underlyingSymbol": "AMZN",
@@ -383,6 +764,7 @@
       "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
       "tier": 2,
       "wrapper": "xStock",
+      "holders": null,
       "issuerMark": null,
       "inspection": {
         "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
@@ -408,6 +790,7 @@
           "paused": false,
           "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1,
           "newMultiplier": 1,
@@ -437,6 +820,60 @@
       "issuerHalted": false
     },
     {
+      "symbol": "AMZNon",
+      "name": "Amazon (Ondo Tokenized)",
+      "underlyingSymbol": "AMZN",
+      "isin": "CH1436219211",
+      "logo": null,
+      "mint": "14Tqdo8V1FhzKsE3W2pFsZCzYPQxxupXRcqw9jv6ondo",
+      "tier": 3,
+      "wrapper": "Ondo",
+      "holders": 268,
+      "issuerMark": null,
+      "inspection": {
+        "mint": "14Tqdo8V1FhzKsE3W2pFsZCzYPQxxupXRcqw9jv6ondo",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "620226190986",
+        "extensions": [
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "DefaultAccountState",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "51QVCuHfL1FeNjd8BDeffCKhCcAYoULnVB3yjNhShiuK",
+        "mintAuthority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 1788344044
+        },
+        "verdict": "eligible",
+        "reason": "pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": {
+          "id": "b5d0e0fa58a1f8b81498ae670ce93c872d14434b72c364885d4fa1b257cbb07a",
+          "symbol": "Equity.US.AMZN/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": null,
+      "issuerHalted": false
+    },
+    {
       "symbol": "METAx",
       "name": "Meta xStock",
       "underlyingSymbol": "META",
@@ -445,6 +882,7 @@
       "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
       "tier": 2,
       "wrapper": "xStock",
+      "holders": null,
       "issuerMark": null,
       "inspection": {
         "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
@@ -470,6 +908,7 @@
           "paused": false,
           "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1.0016490257902244,
           "newMultiplier": 1.002298265651938,
@@ -499,6 +938,60 @@
       "issuerHalted": false
     },
     {
+      "symbol": "METAon",
+      "name": "Meta Platforms (Ondo Tokenized)",
+      "underlyingSymbol": "META",
+      "isin": "CH1436219229",
+      "logo": null,
+      "mint": "fDxs5y12E7x7jBwCKBXGqt71uJmCWsAQ3Srkte6ondo",
+      "tier": 3,
+      "wrapper": "Ondo",
+      "holders": 241,
+      "issuerMark": null,
+      "inspection": {
+        "mint": "fDxs5y12E7x7jBwCKBXGqt71uJmCWsAQ3Srkte6ondo",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "4005096235595",
+        "extensions": [
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "DefaultAccountState",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "51QVCuHfL1FeNjd8BDeffCKhCcAYoULnVB3yjNhShiuK",
+        "mintAuthority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.0022791066933001,
+          "newMultiplier": 1.0022791066933001,
+          "newMultiplierEffectiveTimestamp": 1788344044
+        },
+        "verdict": "eligible",
+        "reason": "pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": {
+          "id": "78a3e3b8e676a8f73c439f5d749737034b139bbbe899ba5775216fba596607fe",
+          "symbol": "Equity.US.META/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": null,
+      "issuerHalted": false
+    },
+    {
       "symbol": "CRCLx",
       "name": "Circle xStock",
       "underlyingSymbol": "CRCL",
@@ -507,6 +1000,7 @@
       "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
       "tier": 2,
       "wrapper": "xStock",
+      "holders": null,
       "issuerMark": null,
       "inspection": {
         "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
@@ -532,6 +1026,7 @@
           "paused": false,
           "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1,
           "newMultiplier": 1,
@@ -561,6 +1056,69 @@
       "issuerHalted": false
     },
     {
+      "symbol": "CRCLon",
+      "name": "Circle Internet Group (Ondo Tokenized)",
+      "underlyingSymbol": "CRCL",
+      "isin": "CH1436219773",
+      "logo": null,
+      "mint": "6xHEyem9hmkGtVq6XGCiQUGpPsHBaoYuYdFNZa5ondo",
+      "tier": 3,
+      "wrapper": "Ondo",
+      "holders": 82,
+      "issuerMark": null,
+      "inspection": {
+        "mint": "6xHEyem9hmkGtVq6XGCiQUGpPsHBaoYuYdFNZa5ondo",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "16480291854431",
+        "extensions": [
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "DefaultAccountState",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "51QVCuHfL1FeNjd8BDeffCKhCcAYoULnVB3yjNhShiuK",
+        "mintAuthority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 1788344044
+        },
+        "verdict": "eligible",
+        "reason": "pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "25edf380836977c4fea6d1e8df3567192c4e11deeeb566c8e0bd8022068860df",
+          "symbol": "Crypto.CRCLON/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "92b8527aabe59ea2b12230f7b532769b133ffb118dfbd48ff676f14b273f1365",
+          "symbol": "Equity.US.CRCL/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "4WtaHcewDWiYWBJMEfPbUSd7pjNvz2fQDKtNgCYEMUzE",
+        "quote": "5tTm46VGmBxmm3kFPH5TzKUvUjFSkEjBCuvDv6HnzEJAQLLvMA6uqcreqLh1Y9621S9u82nEwRyDMk7iHjGHGChz",
+        "withdraw": "4aVtJYHa777UxWpYTCyvamJEQzsUxZwvgKudL8GoT84L3HjkBeu4CMQmwQkzF1pG848mRAE8yyLpaNTMSxHCZ1KB",
+        "provenAt": "2026-09-17T18:23:53.112Z"
+      },
+      "issuerHalted": false
+    },
+    {
       "symbol": "MSTRx",
       "name": "MicroStrategy xStock",
       "underlyingSymbol": "MSTR",
@@ -569,6 +1127,7 @@
       "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
       "tier": 2,
       "wrapper": "xStock",
+      "holders": null,
       "issuerMark": null,
       "inspection": {
         "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
@@ -594,6 +1153,7 @@
           "paused": false,
           "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1,
           "newMultiplier": 1,
@@ -623,6 +1183,69 @@
       "issuerHalted": false
     },
     {
+      "symbol": "MSTRon",
+      "name": "MicroStrategy (Ondo Tokenized)",
+      "underlyingSymbol": "MSTR",
+      "isin": "CH1436219633",
+      "logo": null,
+      "mint": "FSz4ouiqXpHuGPcpacZfTzbMjScoj5FfzHkiyu2ondo",
+      "tier": 3,
+      "wrapper": "Ondo",
+      "holders": 41,
+      "issuerMark": null,
+      "inspection": {
+        "mint": "FSz4ouiqXpHuGPcpacZfTzbMjScoj5FfzHkiyu2ondo",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "365063130720",
+        "extensions": [
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "DefaultAccountState",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "51QVCuHfL1FeNjd8BDeffCKhCcAYoULnVB3yjNhShiuK",
+        "mintAuthority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 1788344044
+        },
+        "verdict": "eligible",
+        "reason": "pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": {
+          "id": "89a131faf74b5298981e3d25bbce60a25c6f452004da31ddd3c5805cdaa9b6ab",
+          "symbol": "Crypto.MSTRON/USD",
+          "schedule": "America/New_York;O,O,O,O,O,O,O;"
+        },
+        "equityFeed": {
+          "id": "e1e80251e5f5184f2195008382538e847fafc36f751896889dd3d1b1f6111f09",
+          "symbol": "Equity.US.MSTR/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": {
+        "series": "AB9se2MP7dgwP2r5EZcwJ5GtAFmuMwWvNc5nBGGaVDwm",
+        "quote": "42gyu6LozW2WvznVogak5WCnMSHqaoLNcFp68LUtr68yXdnf9R3Thvcrvft3q54YRTD3Gz8PMq1Dm7EkyxDbkk4s",
+        "withdraw": "3bJ1f1KxGY9CZNufD5P5R9pvYF5YpHondFg3iuQNsfZFWfRZQiXkQGbmN2pHXkyz74cUMJ6RofGiZNB8YuygNJ7L",
+        "provenAt": "2026-09-17T18:23:57.243Z"
+      },
+      "issuerHalted": false
+    },
+    {
       "symbol": "QQQx",
       "name": "Nasdaq xStock",
       "underlyingSymbol": "QQQ",
@@ -631,6 +1254,7 @@
       "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
       "tier": 2,
       "wrapper": "xStock",
+      "holders": null,
       "issuerMark": null,
       "inspection": {
         "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
@@ -656,6 +1280,7 @@
           "paused": false,
           "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1.0019546533977475,
           "newMultiplier": 1.0027250296551051,
@@ -685,6 +1310,60 @@
       "issuerHalted": false
     },
     {
+      "symbol": "QQQon",
+      "name": "Invesco QQQ (Ondo Tokenized)",
+      "underlyingSymbol": "QQQ",
+      "isin": "CH1436219724",
+      "logo": null,
+      "mint": "HrYNm6jTQ71LoFphjVKBTdAE4uja7WsmLG8VxB8ondo",
+      "tier": 3,
+      "wrapper": "Ondo",
+      "holders": 599,
+      "issuerMark": null,
+      "inspection": {
+        "mint": "HrYNm6jTQ71LoFphjVKBTdAE4uja7WsmLG8VxB8ondo",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "62989457416",
+        "extensions": [
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "DefaultAccountState",
+          "ConfidentialTransferMint",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "51QVCuHfL1FeNjd8BDeffCKhCcAYoULnVB3yjNhShiuK",
+        "mintAuthority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "9foMHsSDq7nMg4WPusSz9eY7tyxyukqborA8GyU5cUxD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.0033528541550838,
+          "newMultiplier": 1.0033528541550838,
+          "newMultiplierEffectiveTimestamp": 1788344044
+        },
+        "verdict": "eligible",
+        "reason": "pausable by the issuer; freeze authority present"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": {
+          "id": "9695e2b96ea7b3859da9ed25b7a46a920a776e2fdae19a7bcfdf2b219230452d",
+          "symbol": "Equity.US.QQQ/USD",
+          "schedule": "America/New_York;0930-1600,0930-1600,0930-1600,0930-1600,0930-1600,C,C;0907/C,1126/C,1127/0930-1300,1224/0930-1300,1225/C,0101/C,0118/C,0215/C,0326/C,0531/C,0618/C,0705/C"
+        }
+      },
+      "escrowProof": null,
+      "issuerHalted": false
+    },
+    {
       "symbol": "tOpenAI",
       "name": "T-OpenAI",
       "underlyingSymbol": null,
@@ -693,6 +1372,7 @@
       "mint": "oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ",
       "tier": 2,
       "wrapper": "Tessera",
+      "holders": 8259,
       "issuerMark": {
         "markPrice": 812.79,
         "tokenPrice": null,
@@ -718,6 +1398,7 @@
           "maxFee": "18446744073709551615"
         },
         "pausable": null,
+        "defaultAccountState": null,
         "scaledUiAmount": null,
         "verdict": "eligible_with_fee",
         "reason": "20 bps transfer fee: Gaps only until fee-inclusive settlement ships"
@@ -743,6 +1424,7 @@
       "mint": "TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ",
       "tier": 2,
       "wrapper": "Tessera",
+      "holders": 2605,
       "issuerMark": {
         "markPrice": 413.8,
         "tokenPrice": null,
@@ -768,6 +1450,7 @@
           "maxFee": "18446744073709551615"
         },
         "pausable": null,
+        "defaultAccountState": null,
         "scaledUiAmount": null,
         "verdict": "eligible_with_fee",
         "reason": "20 bps transfer fee: Gaps only until fee-inclusive settlement ships"
@@ -793,9 +1476,10 @@
       "mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
       "tier": 2,
       "wrapper": "PreStocks",
+      "holders": null,
       "issuerMark": {
-        "markPrice": 965.5688898523129,
-        "tokenPrice": 1030.2299378542293,
+        "markPrice": 965.6539154828967,
+        "tokenPrice": 1040.5594839659263,
         "holders": null,
         "source": "prestocks.com/api"
       },
@@ -828,6 +1512,7 @@
           "paused": false,
           "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1,
           "newMultiplier": 1.4861347,
@@ -857,9 +1542,10 @@
       "mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
       "tier": 2,
       "wrapper": "PreStocks",
+      "holders": null,
       "issuerMark": {
-        "markPrice": 154.5834822082568,
-        "tokenPrice": 120.71925219948439,
+        "markPrice": 155.056092320174,
+        "tokenPrice": 123.7843023639554,
         "holders": null,
         "source": "prestocks.com/api"
       },
@@ -892,6 +1578,7 @@
           "paused": false,
           "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc"
         },
+        "defaultAccountState": "initialized",
         "scaledUiAmount": {
           "multiplier": 1,
           "newMultiplier": 5,

@@ -58,7 +58,7 @@ export class Hermes {
     this.lastCall = Date.now();
     const url = `${HERMES_URL}/v2/updates/price/latest?${missing.map((id) => `ids[]=${id}`).join("&")}&encoding=base64`;
     const res = await fetch(url, { headers: { authorization: `Bearer ${this.apiKey}` }, signal: AbortSignal.timeout(8_000) });
-    if (!res.ok) throw new HermesError(`Hermes ${res.status}`, res.status);
+    if (!res.ok) throw new HermesError(`Hermes ${res.status}${res.status === 403 ? `: ${(await res.text()).slice(0, 160)}` : ""}`, res.status);
     const j = Latest.parse(await res.json());
     for (const p of j.parsed) {
       const sample: PriceSample = { feedId: p.id, price: Number(p.price.price) * 10 ** p.price.expo, conf: Number(p.price.conf) * 10 ** p.price.expo, publishTime: p.price.publish_time, binary: j.binary.data[0] ?? "" };

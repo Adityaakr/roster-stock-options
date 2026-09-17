@@ -21,7 +21,9 @@ export interface RegistryEntry {
   logo: string | null;
   mint: string;
   tier: Tier;
-  wrapper: "xStock" | "Tessera" | "PreStocks";
+  wrapper: "xStock" | "Ondo" | "Tessera" | "PreStocks";
+  /** Holder count where an issuer or Jupiter publishes one. */
+  holders: number | null;
   /** For pre-IPO tokens with no Pyth feed: the issuer's mark and token price at registry time, and where they came from. */
   issuerMark: { markPrice: number | null; tokenPrice: number | null; holders: number | null; source: string } | null;
   inspection: MintInspection;

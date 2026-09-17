@@ -87,7 +87,7 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
           <div className="card pad">
             <div className="h6">The wrapper</div>
             <div style={{ marginTop: 10 }}>
-              <KV items={[
+              <KV wrap items={[
                 { k: "Mint", v: <Address value={token.mint} href={explorerUrl(cluster, "address", token.mint)} /> },
                 { k: "Rights", v: token.rights.rights },
                 { k: "Transfer fee", v: token.feeBps === null ? "not read" : token.feeBps === 0 ? "none" : `${(token.feeBps / 100).toFixed(2)}% on every transfer` },

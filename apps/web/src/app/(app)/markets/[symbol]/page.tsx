@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Bars, LineChart, type Point } from "@/components/charts";
 import { DiscoverTable } from "@/components/discover-table";
 import { MarketLogo } from "@/components/market-list";
@@ -17,14 +18,22 @@ import { useRoster } from "@/lib/use-roster";
  * exercise history. Everything on this page is read from the services; nothing is invented.
  */
 interface Prices { mark: Point[]; token: Point[]; equity: Point[]; basis: { bps: number; at: number }[] }
+interface Wrapper { symbol: string; name: string; issuer: string; mint: string; tier: number; holders: number | null; verdict: string; reason: string; feeBps: number; tokenFeed: string | null; escrowProven: boolean; status: string; market: { symbol: string; mark: number | null; bestAsk: number | null; depthUsdc: number; liveSeries: number; tier: number } | null }
 
 export default function MarketPage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = use(params);
+  const router = useRouter();
   const { data, error } = useRoster(symbol);
   const cluster = useCluster();
   const [days, setDays] = useState(1);
   const [prices, setPrices] = useState<Prices | null>(null);
+  const [wrappers, setWrappers] = useState<Wrapper[]>([]);
   const mint = data?.underlying.mint ?? null;
+  const underlying = data?.markets.find((x) => x.symbol.toLowerCase() === symbol.toLowerCase())?.underlyingSymbol ?? null;
+  useEffect(() => {
+    if (!underlying) return;
+    fetch(`/api/wrappers?underlying=${encodeURIComponent(underlying)}`, { cache: "no-store" }).then(async (r) => (r.ok ? ((await r.json()) as { underlyings: { wrappers: Wrapper[] }[] }) : null)).then((j) => setWrappers(j?.underlyings[0]?.wrappers ?? [])).catch(() => setWrappers([]));
+  }, [underlying]);
   useEffect(() => {
     if (!mint) return;
     fetch(`/api/prices/${mint}?days=${days}`, { cache: "no-store" }).then(async (r) => (r.ok ? ((await r.json()) as Prices) : null)).then((p) => setPrices(p)).catch(() => setPrices(null));
@@ -146,17 +155,45 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
         </div>
       </div>
 
+      {wrappers.length > 1 ? (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
+            <div className="h6">Every wrapper of {underlying} on Solana</div>
+            <div className="small" style={{ marginTop: 2 }}>The same stock from more than one issuer. Each one is judged on its own mint; a listed wrapper is its own market with its own roster, so the best price and depth can be compared here.</div>
+          </div>
+          <div className="scroll-x">
+            <table className="table">
+              <thead><tr><th>Wrapper</th><th>Issuer</th><th className="num">Mark</th><th className="num">Best ask</th><th className="num">Depth</th><th className="num">Holders</th><th>Feed</th><th>Status</th></tr></thead>
+              <tbody>
+                {wrappers.map((w) => (
+                  <tr key={w.mint} className={w.market ? "row-link" : ""} onClick={() => { if (w.market) router.push(`/markets/${w.market.symbol}`); }} style={w.symbol === m.symbol ? { background: "var(--surface)" } : undefined}>
+                    <td><div style={{ fontWeight: 500 }}>{w.market ? <Link href={`/markets/${w.market.symbol}`} onClick={(e) => e.stopPropagation()}>{w.symbol}</Link> : w.symbol}{w.symbol === m.symbol ? <span className="small muted"> · this page</span> : null}</div><div className="small muted">{w.name}</div></td>
+                    <td><Badge>{w.issuer === "xStock" ? "xStocks" : w.issuer}</Badge></td>
+                    <td className="num">{w.market?.mark != null ? `$${usd(w.market.mark)}` : <span className="muted">–</span>}</td>
+                    <td className="num">{w.market?.bestAsk != null ? `$${usd(w.market.bestAsk)}` : <span className="muted">–</span>}</td>
+                    <td className="num">{w.market ? (w.market.depthUsdc > 0 ? `$${usd0(w.market.depthUsdc)}` : <span className="muted" title="Tier 3: no treasury capital; any underwriter may quote">none yet</span>) : <span className="muted">–</span>}</td>
+                    <td className="num">{w.holders === null ? <span className="muted">–</span> : w.holders.toLocaleString("en-US")}</td>
+                    <td className="small">{w.tokenFeed ? <span className="mono">{w.tokenFeed}</span> : <span className="muted">none on Pyth</span>}</td>
+                    <td><Badge tone={w.status === "listed" ? "green" : w.status === "restricted" || w.status === "ineligible" ? "amber" : undefined} dot={w.status === "listed"}>{w.status === "listed" ? `listed · ${TIER_LABEL[(w.market!.tier as 1 | 2 | 3)]}` : w.status}</Badge>{w.reason && w.status !== "listed" ? <div className="small muted" style={{ maxWidth: 260 }}>{w.reason}</div> : null}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid-2" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", marginBottom: 16 }}>
         <div className="card pad">
           <div className="h6">The wrapper</div>
           <div className="small" style={{ margin: "2px 0 12px" }}>Read from the mint. What the issuer can do to this token, and so to a contract on it.</div>
-          <KV items={[
+          <KV wrap items={[
             { k: "Mint", v: m.mint ? <Address value={m.mint} href={explorerUrl(cluster, "address", m.mint)} /> : "none" },
             { k: "Decimals", v: <span className="mono">{m.decimals}</span> },
             { k: "Permanent delegate", v: m.hasPermanentDelegate ? "yes: the issuer can move tokens from any account, including a vault" : "no" },
             { k: "Pausable", v: m.pausable ? "yes: a pause halts every series until the resume, and expiry extends 24 hours" : "no" },
             { k: "Transfer fee", v: m.feeBps > 0 ? `${(m.feeBps / 100).toFixed(2)}% on every transfer; exercise delivers the raw amount less the fee` : "none" },
-            { k: "Rights", v: m.wrapperTier === "xStock" ? "tracker certificate, no voting rights; dividends reinvested through the multiplier" : m.wrapperTier === "Tessera" ? "loan participation rights, not securities" : "SPV exposure, no ownership, voting or dividend rights" }
+            { k: "Rights", v: m.wrapperTier === "xStock" ? "tracker certificate, no voting rights; dividends reinvested through the multiplier" : m.wrapperTier === "Ondo" ? "Ondo tokenized stock; no voting rights, corporate actions through the issuer's multiplier" : m.wrapperTier === "Tessera" ? "loan participation rights, not securities" : "SPV exposure, no ownership, voting or dividend rights" }
           ]} />
         </div>
         <div className="card">

@@ -16,7 +16,8 @@ export interface LaunchEntry {
   mint: PublicKey;
   decimals: number;
   tier: number;
-  wrapper: "xStock" | "Tessera" | "PreStocks";
+  wrapper: "xStock" | "Ondo" | "Tessera" | "PreStocks";
+  underlyingSymbol: string | null;
   /** Transfer fee on the mint, basis points; the quoter sizes asks under the deposit by this much. */
   feeBps: number;
 }
@@ -28,13 +29,13 @@ export interface LaunchEntry {
 export async function launchSet(): Promise<LaunchEntry[]> {
   const symbols = process.env.LAUNCH_SYMBOLS?.split(",").map((s) => s.trim()).filter(Boolean);
   const reg = readRegistry();
-  if (reg && !symbols) return listable(reg).map((e) => ({ symbol: e.symbol, name: e.name, mint: new PublicKey(e.mint), decimals: e.inspection.decimals, tier: e.tier, wrapper: e.wrapper, feeBps: e.inspection.transferFee?.bps ?? 0 }));
+  if (reg && !symbols) return listable(reg).map((e) => ({ symbol: e.symbol, name: e.name, mint: new PublicKey(e.mint), decimals: e.inspection.decimals, tier: e.tier, wrapper: e.wrapper, underlyingSymbol: e.underlyingSymbol, feeBps: e.inspection.transferFee?.bps ?? 0 }));
   const wanted = symbols ?? LAUNCH_SET;
   const fromRegistry = reg ? new Map(reg.entries.map((e) => [e.symbol, e])) : new Map();
   const out: LaunchEntry[] = [];
   for (const s of wanted) {
     const r = fromRegistry.get(s);
-    if (r) out.push({ symbol: r.symbol, name: r.name, mint: new PublicKey(r.mint), decimals: r.inspection.decimals, tier: r.tier, wrapper: r.wrapper, feeBps: r.inspection.transferFee?.bps ?? 0 });
+    if (r) out.push({ symbol: r.symbol, name: r.name, mint: new PublicKey(r.mint), decimals: r.inspection.decimals, tier: r.tier, wrapper: r.wrapper, underlyingSymbol: r.underlyingSymbol, feeBps: r.inspection.transferFee?.bps ?? 0 });
     else out.push(...(await resolveLaunchSet([s])));
   }
   return out;
@@ -49,7 +50,7 @@ export { xstocksQuote };
  */
 let preipoCache: { at: number; byMint: Map<string, PreIpoToken> } | null = null;
 export async function issuerMark(entry: LaunchEntry): Promise<{ price: number; source: "tessera" | "prestocks" } | null> {
-  if (entry.wrapper === "xStock") return null;
+  if (entry.wrapper === "xStock" || entry.wrapper === "Ondo") return null;
   if (!preipoCache || Date.now() - preipoCache.at > 60_000) {
     // A refresh that fails keeps the previous marks rather than dropping every pre-IPO price for a tick.
     const [t, p] = await Promise.all([tesseraTokens().catch(() => null), prestocksTokens().catch(() => null)]);
@@ -73,13 +74,13 @@ export async function resolveLaunchSet(symbols: string[]): Promise<LaunchEntry[]
       console.warn(`[registry] ${symbol}: xStocks API ${res.status}, skipped`);
       continue;
     }
-    const j = (await res.json()) as { name?: string; deployments?: { network: string; address: string; decimals?: number }[] };
+    const j = (await res.json()) as { name?: string; underlyingSymbol?: string; deployments?: { network: string; address: string; decimals?: number }[] };
     const dep = j.deployments?.find((d) => d.network === "Solana");
     if (!dep) {
       console.warn(`[registry] ${symbol}: no Solana deployment, skipped`);
       continue;
     }
-    out.push({ symbol, name: j.name ?? symbol, mint: new PublicKey(dep.address), decimals: dep.decimals ?? 8, tier: TIER1_SET.includes(symbol) ? 1 : 2, wrapper: "xStock", feeBps: 0 });
+    out.push({ symbol, name: j.name ?? symbol, mint: new PublicKey(dep.address), decimals: dep.decimals ?? 8, tier: TIER1_SET.includes(symbol) ? 1 : 2, wrapper: "xStock", underlyingSymbol: j.underlyingSymbol ?? null, feeBps: 0 });
   }
   return out;
 }

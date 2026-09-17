@@ -26,12 +26,14 @@ export function MarketList({ markets, selected, compact = false, hrefFor, maxHei
   const router = useRouter();
   const [q, setQ] = useState("");
   const [tier, setTier] = useState<Tier | 0>(0);
+  const [issuer, setIssuer] = useState<string>("all");
+  const issuers = useMemo(() => [...new Set(markets.map((m) => m.wrapperTier))], [markets]);
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return markets
-      .filter((m) => (tier === 0 || m.tier === tier) && (!needle || m.symbol.toLowerCase().includes(needle) || m.name.toLowerCase().includes(needle)))
+      .filter((m) => (tier === 0 || m.tier === tier) && (issuer === "all" || m.wrapperTier === issuer) && (!needle || m.symbol.toLowerCase().includes(needle) || m.name.toLowerCase().includes(needle) || (m.underlyingSymbol ?? "").toLowerCase().includes(needle)))
       .slice(0, compact ? 6 : undefined);
-  }, [markets, q, tier, compact]);
+  }, [markets, q, tier, issuer, compact]);
   const counts = [1, 2, 3].map((t) => markets.filter((m) => m.tier === t).length);
   const maxDepth = Math.max(1, ...markets.map((m) => m.depthUsdc));
   const link = hrefFor ?? ((m: Market) => `/markets/${encodeURIComponent(m.symbol)}`);
@@ -48,6 +50,12 @@ export function MarketList({ markets, selected, compact = false, hrefFor, maxHei
                 {t === 0 ? `All · ${markets.length}` : `${TIER_LABEL[t]} · ${counts[t - 1]}`}
               </button>
             ))}
+          </div>
+        ) : null}
+        {!compact && issuers.length > 1 ? (
+          <div className="seg" role="group" aria-label="Issuer filter">
+            <button className={issuer === "all" ? "on" : ""} onClick={() => setIssuer("all")}>Every issuer</button>
+            {issuers.map((i) => <button key={i} className={issuer === i ? "on" : ""} onClick={() => setIssuer(i)}>{i === "xStock" ? "xStocks" : i}</button>)}
           </div>
         ) : null}
       </div>
@@ -78,7 +86,7 @@ export function MarketList({ markets, selected, compact = false, hrefFor, maxHei
                         {m.paused ? <Badge tone="amber" dot>paused</Badge> : null}
                         {m.pendingActivationTs ? <Badge tone="amber">activation pending</Badge> : null}
                       </div>
-                      <div className="small muted" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div>
+                      <div className="small muted" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}{!compact && m.wrappersOfUnderlying > 1 ? <> · <span title={`${m.wrappersOfUnderlying} wrappers of ${m.underlyingSymbol} on Solana`}>{m.wrapperTier === "xStock" ? "xStocks" : m.wrapperTier}, 1 of {m.wrappersOfUnderlying}</span></> : null}</div>
                     </div>
                   </div>
                 </td>

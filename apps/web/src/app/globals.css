@@ -148,6 +148,8 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .kv { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 8px 20px; font-size: 14px; align-items: baseline; }
 .kv dt { color: var(--slate); }
 .kv dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; max-width: 100%; }
+.kv.wrap { grid-template-columns: minmax(120px, 0.6fr) minmax(0, 1.4fr); }
+.kv.wrap dd { white-space: normal; text-align: left; line-height: 1.45; }
 @media (max-width: 640px) { .kv { grid-template-columns: 1fr; gap: 2px 0; } .kv dd { text-align: left; white-space: normal; margin-bottom: 8px; } }
 .stat .k { font-size: 13px; color: var(--slate); }
 .stat .v { font-family: var(--display); font-size: 28px; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 6px; }

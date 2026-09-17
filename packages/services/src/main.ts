@@ -36,7 +36,7 @@ interface MarketLive {
   price: number | null;
   priceAt: number;
   priceSource: "hermes" | "reference" | "xstocks" | "tessera" | "prestocks" | "none";
-  wrapper: "xStock" | "Tessera" | "PreStocks";
+  wrapper: "xStock" | "Ondo" | "Tessera" | "PreStocks";
   feeBps: number;
   equityPrice: number | null;
   basisBps: number | null;
@@ -126,9 +126,11 @@ async function main() {
           // Without a Pyth key the issuer's own quote stands in: on the fork the quoter may price off it (a test device,
           // refused elsewhere by the loopback rule); on a real cluster it is a display mark only and the quoter stays blocked.
           const ref = process.env[`REFERENCE_PRICE_${l.symbol.toUpperCase()}`];
-          const issuer = ref ? Number(ref) : await xstocksQuote(l.symbol).catch(() => null);
+          // An Ondo wrapper has no issuer quote endpoint: the xStocks quote of the same stock stands in on the fork.
+          const issuer = ref ? Number(ref) : (await xstocksQuote(l.symbol).catch(() => null)) ?? (l.underlyingSymbol ? await xstocksQuote(`${l.underlyingSymbol}x`).catch(() => null) : null);
           if (issuer) { price = issuer; priceAt = nowTs; priceSource = ref ? "reference" : "xstocks"; }
           if (err instanceof HermesError && err.status === 401) blocked = "PYTH_CORE_API_KEY";
+          else if (err instanceof HermesError && err.status === 403) blocked = `PYTH_CORE_API_KEY grant: ${err.message.replace(/^Hermes 403: /, "")}`;
           else console.warn(`[oracle] ${l.symbol}: ${(err as Error).message}`);
         }
       }

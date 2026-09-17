@@ -45,6 +45,9 @@ export interface Market {
   /** Executable depth: USDC notional fillable right now across every live term. */
   depthUsdc: number;
   bestAsk: number | null;
+  /** The stock behind the wrapper (AAPL for AAPLx and AAPLon) and how many wrappers of it the registry knows. */
+  underlyingSymbol: string | null;
+  wrappersOfUnderlying: number;
   /** The issuer's logo when the registry has one; null is rendered as the symbol's initials, never a placeholder image. */
   logo: string | null;
   /** Marks recorded by the services over the last day, [unix, price], for the list's sparkline. */

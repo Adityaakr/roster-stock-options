@@ -3,7 +3,12 @@
  * 0.5/0.3/0.2 with a floor, refreshed hourly. Falls back to a stated floor when Benchmarks is unreachable so the
  * quoter widens instead of stopping; every use logs which it was.
  */
-export const BENCHMARKS_URL = process.env.PYTH_BENCHMARKS_URL ?? "https://benchmarks.pyth.network";
+/**
+ * Pyth's keyed history API (the upgraded host, same key as Hermes): TradingView-shaped daily bars for a feed symbol.
+ * Verified 2026-09-17 with `GET /v1/fixed_rate@1000ms/history?symbol=Crypto.BTC/USD&resolution=1D` on
+ * pyth.dourolabs.app; a feed outside the key's grant answers "Not entitled".
+ */
+export const BENCHMARKS_URL = process.env.PYTH_BENCHMARKS_URL ?? "https://pyth.dourolabs.app";
 
 export interface VolEstimate {
   vol7: number | null;
@@ -38,18 +43,22 @@ export function blend(vol7: number | null, vol30: number | null, vol90: number |
   return { blended: Math.max(floor, acc / w), source: "benchmarks" };
 }
 
-/** Daily closes for `days` from Benchmarks' TradingView-style history endpoint; null when unavailable. */
+/** Daily closes for `days` from the history API; null when unavailable, with the reason kept for the log. */
+export const lastBenchmarksError = new Map<string, string>();
 export async function dailyCloses(feedSymbol: string, days: number, apiKey?: string): Promise<number[] | null> {
   const to = Math.floor(Date.now() / 1000);
   const from = to - days * 86_400;
-  const url = `${BENCHMARKS_URL}/v1/shims/tradingview/history?symbol=${encodeURIComponent(feedSymbol)}&resolution=D&from=${from}&to=${to}`;
+  const url = `${BENCHMARKS_URL}/v1/fixed_rate@1000ms/history?symbol=${encodeURIComponent(feedSymbol)}&resolution=1D&from=${from}&to=${to}`;
   try {
     const res = await fetch(url, { headers: apiKey ? { authorization: `Bearer ${apiKey}` } : {}, signal: AbortSignal.timeout(8_000) });
-    if (!res.ok) return null;
-    const j = (await res.json()) as { s?: string; c?: number[] };
-    if (j.s !== "ok" || !Array.isArray(j.c)) return null;
+    const text = await res.text();
+    if (!res.ok || text.startsWith("Not entitled")) { lastBenchmarksError.set(feedSymbol, res.ok ? text.slice(0, 120) : `HTTP ${res.status}`); return null; }
+    const j = JSON.parse(text) as { s?: string; c?: number[] };
+    if (j.s !== "ok" || !Array.isArray(j.c)) { lastBenchmarksError.set(feedSymbol, `unexpected shape ${text.slice(0, 80)}`); return null; }
+    lastBenchmarksError.delete(feedSymbol);
     return j.c;
-  } catch {
+  } catch (e) {
+    lastBenchmarksError.set(feedSymbol, (e as Error).message);
     return null;
   }
 }

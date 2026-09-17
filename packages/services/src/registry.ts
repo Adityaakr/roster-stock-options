@@ -5,7 +5,7 @@
  */
 import { PublicKey } from "@solana/web3.js";
 
-import { listable, readRegistry, TIER1_SET, xstocksQuote } from "@roster/registry";
+import { listable, prestocksTokens, readRegistry, tesseraTokens, TIER1_SET, xstocksQuote, type PreIpoToken } from "@roster/registry";
 
 export const LAUNCH_SET = TIER1_SET;
 export const XSTOCKS_API = "https://api.xstocks.fi/api/v2";
@@ -16,6 +16,9 @@ export interface LaunchEntry {
   mint: PublicKey;
   decimals: number;
   tier: number;
+  wrapper: "xStock" | "Tessera" | "PreStocks";
+  /** Transfer fee on the mint, basis points; the quoter sizes asks under the deposit by this much. */
+  feeBps: number;
 }
 
 /**
@@ -25,13 +28,13 @@ export interface LaunchEntry {
 export async function launchSet(): Promise<LaunchEntry[]> {
   const symbols = process.env.LAUNCH_SYMBOLS?.split(",").map((s) => s.trim()).filter(Boolean);
   const reg = readRegistry();
-  if (reg && !symbols) return listable(reg).map((e) => ({ symbol: e.symbol, name: e.name, mint: new PublicKey(e.mint), decimals: e.inspection.decimals, tier: e.tier }));
+  if (reg && !symbols) return listable(reg).map((e) => ({ symbol: e.symbol, name: e.name, mint: new PublicKey(e.mint), decimals: e.inspection.decimals, tier: e.tier, wrapper: e.wrapper, feeBps: e.inspection.transferFee?.bps ?? 0 }));
   const wanted = symbols ?? LAUNCH_SET;
   const fromRegistry = reg ? new Map(reg.entries.map((e) => [e.symbol, e])) : new Map();
   const out: LaunchEntry[] = [];
   for (const s of wanted) {
     const r = fromRegistry.get(s);
-    if (r) out.push({ symbol: r.symbol, name: r.name, mint: new PublicKey(r.mint), decimals: r.inspection.decimals, tier: r.tier });
+    if (r) out.push({ symbol: r.symbol, name: r.name, mint: new PublicKey(r.mint), decimals: r.inspection.decimals, tier: r.tier, wrapper: r.wrapper, feeBps: r.inspection.transferFee?.bps ?? 0 });
     else out.push(...(await resolveLaunchSet([s])));
   }
   return out;
@@ -39,6 +42,23 @@ export async function launchSet(): Promise<LaunchEntry[]> {
 
 /** The issuer's spot quote, the fork-only stand-in for a keyed Hermes read and the display mark elsewhere. */
 export { xstocksQuote };
+
+/**
+ * Pre-IPO marks from the issuers, refreshed at most once a minute: with no Pyth feed the issuer's mark is the price
+ * source by design (Part 2 section 2), on every cluster. Tessera publishes a mark; PreStocks a token price too.
+ */
+let preipoCache: { at: number; byMint: Map<string, PreIpoToken> } | null = null;
+export async function issuerMark(entry: LaunchEntry): Promise<{ price: number; source: "tessera" | "prestocks" } | null> {
+  if (entry.wrapper === "xStock") return null;
+  if (!preipoCache || Date.now() - preipoCache.at > 60_000) {
+    const all = [...(await tesseraTokens().catch(() => [] as PreIpoToken[])), ...(await prestocksTokens().catch(() => [] as PreIpoToken[]))];
+    preipoCache = { at: Date.now(), byMint: new Map(all.map((t) => [t.mint, t])) };
+  }
+  const t = preipoCache.byMint.get(entry.mint.toBase58());
+  if (!t) return null;
+  const price = t.tokenPrice ?? t.markPrice;
+  return price ? { price, source: t.issuer === "Tessera" ? "tessera" : "prestocks" } : null;
+}
 
 export async function resolveLaunchSet(symbols: string[]): Promise<LaunchEntry[]> {
   const out: LaunchEntry[] = [];
@@ -54,7 +74,7 @@ export async function resolveLaunchSet(symbols: string[]): Promise<LaunchEntry[]
       console.warn(`[registry] ${symbol}: no Solana deployment, skipped`);
       continue;
     }
-    out.push({ symbol, name: j.name ?? symbol, mint: new PublicKey(dep.address), decimals: dep.decimals ?? 8, tier: TIER1_SET.includes(symbol) ? 1 : 2 });
+    out.push({ symbol, name: j.name ?? symbol, mint: new PublicKey(dep.address), decimals: dep.decimals ?? 8, tier: TIER1_SET.includes(symbol) ? 1 : 2, wrapper: "xStock", feeBps: 0 });
   }
   return out;
 }

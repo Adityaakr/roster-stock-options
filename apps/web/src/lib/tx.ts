@@ -2,14 +2,14 @@
 
 import { useCallback, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Transaction } from "@solana/web3.js";
+import { Transaction, VersionedTransaction } from "@solana/web3.js";
 
 /*
  * The one way a transaction happens in the app: the server builds it, the wallet signs it, the server submits it
  * (CLAUDE.md 4.4). Every failure is turned into what happened and the next action (Part 2 section 6, Act).
  */
 
-export type TxKind = "buy" | "exercise" | "quote" | "cancel_ask" | "withdraw_unsold" | "claim_premium" | "settle_writer" | "enable_auto_exercise" | "disable_auto_exercise";
+export type TxKind = "buy" | "exercise" | "quote" | "cancel_ask" | "withdraw_unsold" | "claim_premium" | "settle_writer" | "enable_auto_exercise" | "disable_auto_exercise" | "protected_buy";
 
 export interface TxRequest {
   kind: TxKind;
@@ -66,7 +66,12 @@ export function useTransaction(): { state: TxState; run: (req: TxRequest) => Pro
       setState({ status: "building" });
       const built = await post<{ transaction: string; lastValidBlockHeight: number }>("/api/tx/build", { ...req, wallet: publicKey.toBase58() });
       setState({ status: "signing" });
-      const tx = Transaction.from(Buffer.from(built.transaction, "base64"));
+      const bytes = Buffer.from(built.transaction, "base64");
+      // A serialized transaction is [signature count][signatures][message]; a versioned message (Protected Buy, with
+      // lookup tables) starts with a version prefix byte with the high bit set, a legacy message does not.
+      const sigs = bytes[0]!;
+      const versioned = (bytes[1 + 64 * sigs]! & 0x80) !== 0;
+      const tx = versioned ? VersionedTransaction.deserialize(bytes) : Transaction.from(bytes);
       const signed = await signTransaction(tx);
       setState({ status: "sending" });
       const { signature } = await post<{ signature: string }>("/api/tx/send", { signed: Buffer.from(signed.serialize()).toString("base64"), lastValidBlockHeight: built.lastValidBlockHeight });

@@ -17,7 +17,7 @@ import { Hermes, HermesError, estimateVol, readMultiplier, sessionAt } from "@ro
 import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
 import { Quoter, DEFAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
-import { launchSet, xstocksQuote } from "./registry";
+import { issuerMark, launchSet, xstocksQuote } from "./registry";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
 const args = new Set(process.argv.slice(2));
@@ -35,7 +35,9 @@ interface MarketLive {
   meta: MarketMeta;
   price: number | null;
   priceAt: number;
-  priceSource: "hermes" | "reference" | "xstocks" | "none";
+  priceSource: "hermes" | "reference" | "xstocks" | "tessera" | "prestocks" | "none";
+  wrapper: "xStock" | "Tessera" | "PreStocks";
+  feeBps: number;
   equityPrice: number | null;
   basisBps: number | null;
   multiplier: number;
@@ -97,25 +99,28 @@ async function main() {
       let equityPrice: number | null = null;
       let priceAt = 0;
       let priceSource: MarketLive["priceSource"] = "none";
-      try {
-        const samples = await hermes.latest([feedId, equityFeed].filter((f) => !/^0+$/.test(f)));
-        const t = samples.get(feedId);
-        if (t) { price = t.price; priceAt = t.publishTime; priceSource = "hermes"; store.recordPrice({ feed_id: feedId, price: t.price, conf: t.conf, publish_time: t.publishTime }); }
-        const e = samples.get(equityFeed);
-        if (e) { equityPrice = e.price; store.recordPrice({ feed_id: equityFeed, price: e.price, conf: e.conf, publish_time: e.publishTime }); }
-        blocked = null;
-      } catch (err) {
-        // Without a Pyth key the issuer's own quote stands in: on the fork the quoter may price off it (a test device,
-        // refused elsewhere by genesis); on a real cluster it is a display mark only and the quoter stays blocked.
-        const ref = process.env[`REFERENCE_PRICE_${l.symbol.toUpperCase()}`];
-        const issuer = ref ? Number(ref) : await xstocksQuote(l.symbol).catch(() => null);
-        if (issuer) {
-          price = issuer;
-          priceAt = nowTs;
-          priceSource = ref ? "reference" : "xstocks";
+      const noFeed = /^0+$/.test(feedId);
+      if (noFeed) {
+        // No Pyth feed exists for this wrapper: the issuer's mark is the price source, on every cluster.
+        const im = await issuerMark(l);
+        if (im) { price = im.price; priceAt = nowTs; priceSource = im.source; } else console.warn(`[oracle] ${l.symbol}: issuer mark unavailable`);
+      } else {
+        try {
+          const samples = await hermes.latest([feedId, equityFeed].filter((f) => !/^0+$/.test(f)));
+          const t = samples.get(feedId);
+          if (t) { price = t.price; priceAt = t.publishTime; priceSource = "hermes"; store.recordPrice({ feed_id: feedId, price: t.price, conf: t.conf, publish_time: t.publishTime }); }
+          const e = samples.get(equityFeed);
+          if (e) { equityPrice = e.price; store.recordPrice({ feed_id: equityFeed, price: e.price, conf: e.conf, publish_time: e.publishTime }); }
+          blocked = null;
+        } catch (err) {
+          // Without a Pyth key the issuer's own quote stands in: on the fork the quoter may price off it (a test device,
+          // refused elsewhere by the loopback rule); on a real cluster it is a display mark only and the quoter stays blocked.
+          const ref = process.env[`REFERENCE_PRICE_${l.symbol.toUpperCase()}`];
+          const issuer = ref ? Number(ref) : await xstocksQuote(l.symbol).catch(() => null);
+          if (issuer) { price = issuer; priceAt = nowTs; priceSource = ref ? "reference" : "xstocks"; }
+          if (err instanceof HermesError && err.status === 401) blocked = "PYTH_CORE_API_KEY";
+          else console.warn(`[oracle] ${l.symbol}: ${(err as Error).message}`);
         }
-        if (err instanceof HermesError && err.status === 401) blocked = "PYTH_CORE_API_KEY";
-        else console.warn(`[oracle] ${l.symbol}: ${(err as Error).message}`);
       }
       const mult = await readMultiplier(connection, l.symbol, l.mint, nowTs);
       const vol = await estimateVol(`Crypto.${l.symbol.toUpperCase()}/USD`, Number(process.env.VOL_FLOOR ?? 0.35), process.env.PYTH_CORE_API_KEY);
@@ -123,17 +128,17 @@ async function main() {
       const basisBps = price !== null && equityPrice !== null && session === "regular" ? ((price - equityPrice) / equityPrice) * 10_000 : null;
       if (basisBps !== null) store.recordBasis(l.mint.toBase58(), basisBps, nowTs);
       const paused = await keeper.mintPaused(market.mint, market.tokenProgram);
-      const state: MarketLive = { market, meta: meta.get(l.mint.toBase58())!, price, priceAt, priceSource, equityPrice, basisBps, multiplier: mult.onChain, pendingDividendMultiplier: mult.pendingMultiplier !== null && mult.pendingIsDividend && mult.pendingAt !== null && market.allowedExpiries.some((e) => e > BigInt(mult.pendingAt!)) ? mult.pendingMultiplier : null, pendingActivationTs: mult.pendingAt, inActivationWindow: mult.inWindow, vol: vol.blended, volSource: vol.source, session, paused };
+      const state: MarketLive = { market, meta: meta.get(l.mint.toBase58())!, price, priceAt, priceSource, wrapper: l.wrapper, feeBps: l.feeBps, equityPrice, basisBps, multiplier: mult.onChain, pendingDividendMultiplier: mult.pendingMultiplier !== null && mult.pendingIsDividend && mult.pendingAt !== null && market.allowedExpiries.some((e) => e > BigInt(mult.pendingAt!)) ? mult.pendingMultiplier : null, pendingActivationTs: mult.pendingAt, inActivationWindow: mult.inWindow, vol: vol.blended, volSource: vol.source, session, paused };
       live.set(l.symbol, state);
       if (!flag("--no-keeper")) {
         await keeper.rollGrid(market, nowTs, (process.env.EXTRA_EXPIRIES ?? "").split(",").filter(Boolean).map(BigInt));
         await keeper.cycle(await reader.fetchMarket(l.mint) ?? market, nowTs, paused);
       }
       // The quoter prices only off Hermes, or off the issuer quote on the fork; a real cluster without a key does not quote.
-      const canQuote = priceSource === "hermes" || (isFork && priceSource !== "none");
+      const canQuote = priceSource === "hermes" || priceSource === "tessera" || priceSource === "prestocks" || (isFork && priceSource !== "none");
       if (!flag("--no-quoter") && price !== null && canQuote) {
         const fresh = (await reader.fetchMarket(l.mint)) ?? market;
-        await quoter.cycle({ market: fresh, symbol: l.symbol, tier: l.tier, price, priceAgeSecs: Math.max(0, nowTs - priceAt), equityPrice, multiplier: mult.onChain, pendingDividendMultiplier: state.pendingDividendMultiplier, inActivationWindow: mult.inWindow, vol: vol.blended, nowTs });
+        await quoter.cycle({ market: fresh, symbol: l.symbol, tier: l.tier, feeBps: l.feeBps, price, priceAgeSecs: Math.max(0, nowTs - priceAt), equityPrice, multiplier: mult.onChain, pendingDividendMultiplier: state.pendingDividendMultiplier, inActivationWindow: mult.inWindow, vol: vol.blended, nowTs });
       }
       await indexer.snapshotMarket((await reader.fetchMarket(l.mint)) ?? market);
     }
@@ -149,7 +154,7 @@ async function main() {
       if (url.pathname === "/v1/health") return json(200, { ok: true, cluster, lastTick, blocked, tickMs: TICK_MS, program: ROSTER_PROGRAM_ID.toBase58(), hermesKeyed: hermes.keyed });
       if (url.pathname === "/v1/roster") {
         const nowTs = await clockUnix(connection);
-        const markets = [...live.values()].map((m) => ({ symbol: m.meta.symbol, name: m.meta.name, mint: m.market.mint.toBase58(), market: m.market.address.toBase58(), decimals: m.market.decimals, tier: m.market.tier, listed: m.market.listed, paused: m.market.paused || m.paused, hasTransferFee: m.market.hasTransferFee, hasPermanentDelegate: m.market.hasPermanentDelegate, pausable: m.market.pausable, hookProgram: m.market.hookProgram.toBase58(), allowedExpiries: m.market.allowedExpiries.map(String), strikeStep: m.market.strikeStep.toString(), minLots6: m.market.minLots6.toString(), maxLots6: m.market.maxLots6.toString(), maxLiveSeries: m.market.maxLiveSeries, liveSeries: m.market.liveSeries, price: m.price, priceAt: m.priceAt, priceSource: m.priceSource, equityPrice: m.equityPrice, basisBps: m.basisBps, multiplier: m.multiplier, pendingActivationTs: m.pendingActivationTs, inActivationWindow: m.inActivationWindow, vol: m.vol, volSource: m.volSource, series: store.series(m.market.address.toBase58()).map((s) => ({ ...s, asks: JSON.parse(s.asks_json), writers: JSON.parse(s.writers_json), asks_json: undefined, writers_json: undefined })) }));
+        const markets = [...live.values()].map((m) => ({ symbol: m.meta.symbol, name: m.meta.name, wrapper: m.wrapper, feeBps: m.feeBps, mint: m.market.mint.toBase58(), market: m.market.address.toBase58(), decimals: m.market.decimals, tier: m.market.tier, listed: m.market.listed, paused: m.market.paused || m.paused, hasTransferFee: m.market.hasTransferFee, hasPermanentDelegate: m.market.hasPermanentDelegate, pausable: m.market.pausable, hookProgram: m.market.hookProgram.toBase58(), allowedExpiries: m.market.allowedExpiries.map(String), strikeStep: m.market.strikeStep.toString(), minLots6: m.market.minLots6.toString(), maxLots6: m.market.maxLots6.toString(), maxLiveSeries: m.market.maxLiveSeries, liveSeries: m.market.liveSeries, price: m.price, priceAt: m.priceAt, priceSource: m.priceSource, equityPrice: m.equityPrice, basisBps: m.basisBps, multiplier: m.multiplier, pendingActivationTs: m.pendingActivationTs, inActivationWindow: m.inActivationWindow, vol: m.vol, volSource: m.volSource, series: store.series(m.market.address.toBase58()).map((s) => ({ ...s, asks: JSON.parse(s.asks_json), writers: JSON.parse(s.writers_json), asks_json: undefined, writers_json: undefined })) }));
         const protocol = await reader.fetchProtocol().catch(() => null);
         return json(200, { cluster, programDeployed: true, program: ROSTER_PROGRAM_ID.toBase58(), nowTs, session: sessionAt(nowTs), feeBps: protocol?.feeBps ?? null, keeperFeeUsdc: protocol?.keeperFeeUsdc.toString() ?? null, graceSecs: protocol?.graceSecs.toString() ?? null, treasury: protocol?.treasury.toBase58() ?? null, quoter: quoterKey.publicKey.toBase58(), blocked, markets, quoterLog: quoter.log.slice(-40), keeperLog: keeper.log.slice(-40) });
       }

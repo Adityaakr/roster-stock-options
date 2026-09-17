@@ -11,7 +11,7 @@ import { FORK_URL, USDC_MINT, clockUnix, fundSol, fundToken, loadOrCreateKey, on
 import { readRegistry } from "../packages/registry/src";
 
 const SYMBOL = process.env.SEED_SYMBOL ?? "NVDAx";
-const EXTRA = (readRegistry()?.entries ?? []).map((e) => e.symbol).filter((s) => s !== SYMBOL);
+const EXTRA = (readRegistry()?.entries ?? []).filter((e) => e.symbol !== SYMBOL && e.escrowProof).map((e) => ({ symbol: e.symbol, mint: new PublicKey(e.mint), decimals: e.inspection.decimals }));
 
 async function main() {
   const connection = new Connection(FORK_URL, "confirmed");
@@ -30,11 +30,9 @@ async function main() {
     (out.wallets as Record<string, unknown>)[n] = { pubkey: kp.publicKey.toBase58(), underlyingAta: nv.toBase58(), usdcAta: us.toBase58() };
   }
   // Every other registry market too, so the quoter and the test wallets can write Gaps on all of them.
-  for (const sym of EXTRA) {
-    const r = await resolveXstockMint(sym).catch(() => null);
-    if (!r) continue;
+  for (const r of EXTRA) {
     for (const [n, kp] of keys) if (n !== "keeper") await fundToken(connection, kp, r.mint, TOKEN_2022_PROGRAM_ID, 1_000n * 10n ** BigInt(r.decimals));
-    console.log(`funded ${sym} for ${keys.length - 1} wallets`);
+    console.log(`funded ${r.symbol} for ${keys.length - 1} wallets`);
   }
   out.multiplierOnChain = await onChainMultiplier(connection, mint);
   out.multiplierApi = (await xstockMultiplier(SYMBOL)).currentMultiplier;

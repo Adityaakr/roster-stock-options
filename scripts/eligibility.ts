@@ -7,7 +7,7 @@ import "./env-load";
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { inspectMint, readRegistry, resolveFeeds, xstocksAsset, xstocksAssets, REGISTRY_PATH, TIER1_SET, TIER2_SET, type RegistryEntry, type RegistryFile, type Tier } from "../packages/registry/src";
+import { inspectMint, prestocksTokens, readRegistry, resolveFeeds, tesseraTokens, xstocksAsset, xstocksAssets, REGISTRY_PATH, TIER1_SET, TIER2_SET, type RegistryEntry, type RegistryFile, type Tier } from "../packages/registry/src";
 import { FORK_URL } from "./fork-lib";
 
 const args = new Set(process.argv.slice(2));
@@ -31,8 +31,17 @@ async function main() {
     }
     const inspection = await inspectMint(connection, new PublicKey(asset.mint));
     const feeds = await resolveFeeds(asset.symbol, asset.underlyingSymbol).catch((e) => { console.warn(`${c.symbol}: feeds: ${(e as Error).message}`); return { tokenFeed: null, equityFeed: null }; });
-    entries.push({ symbol: asset.symbol, name: asset.name, underlyingSymbol: asset.underlyingSymbol, isin: asset.isin, logo: asset.logo, mint: asset.mint, tier: c.tier, wrapper: "xStock", inspection, feeds, escrowProof: proofs.get(asset.mint) ?? null, issuerHalted: asset.isTradingHalted });
+    entries.push({ symbol: asset.symbol, name: asset.name, underlyingSymbol: asset.underlyingSymbol, isin: asset.isin, logo: asset.logo, mint: asset.mint, tier: c.tier, wrapper: "xStock", issuerMark: null, inspection, feeds, escrowProof: proofs.get(asset.mint) ?? null, issuerHalted: asset.isTradingHalted });
     console.log(`${asset.symbol.padEnd(7)} ${asset.mint} ${inspection.verdict.padEnd(18)} feed=${feeds.tokenFeed ? "yes" : "no"} eq=${feeds.equityFeed ? "yes" : "no"} ${inspection.reason}`);
+  }
+  // Pre-IPO (Part 2 section 2): tOpenAI, tKalshi, OPENAI and SPACEX at Tier 2, the rest of both registries at Tier 3.
+  const preipoTier2 = new Set(["tOpenAI", "tKalshi", "OPENAI", "SPACEX"]);
+  for (const t of [...(await tesseraTokens().catch((e) => { console.warn(`tessera: ${(e as Error).message}`); return []; })), ...(await prestocksTokens().catch((e) => { console.warn(`prestocks: ${(e as Error).message}`); return []; }))]) {
+    if (!preipoTier2.has(t.symbol) && !args.has("--all")) continue;
+    const inspection = await inspectMint(connection, new PublicKey(t.mint));
+    const tier: Tier = preipoTier2.has(t.symbol) ? 2 : 3;
+    entries.push({ symbol: t.symbol, name: t.name, underlyingSymbol: null, isin: null, logo: t.logo, mint: t.mint, tier, wrapper: t.issuer, issuerMark: { markPrice: t.markPrice, tokenPrice: t.tokenPrice, holders: t.holders, source: t.issuer === "Tessera" ? "rest-api.tessera.pe" : "prestocks.com/api" }, inspection, feeds: { tokenFeed: null, equityFeed: null }, escrowProof: proofs.get(t.mint) ?? null, issuerHalted: false });
+    console.log(`${t.symbol.padEnd(7)} ${t.mint} ${inspection.verdict.padEnd(18)} ${t.issuer} mark=${t.markPrice} token=${t.tokenPrice} ${inspection.reason}`);
   }
   const file: RegistryFile = { generatedAt: new Date().toISOString(), cluster: RPC, entries };
   mkdirSync("fixtures/registry", { recursive: true });
@@ -46,9 +55,9 @@ function report(f: RegistryFile): string {
     const i = e.inspection;
     const ext = i.extensions.join(", ") || "none";
     const flags = [i.permanentDelegate ? "delegate" : null, i.pausable ? (i.pausable.paused ? "paused" : "pausable") : null, i.freezeAuthority ? "freeze" : null, i.transferFee ? `fee ${i.transferFee.bps} bps` : null, i.transferHook ? (i.transferHook.live ? "hook live" : "hook slot") : null].filter(Boolean).join(", ") || "none";
-    const feeds = `${e.feeds.tokenFeed ? "`" + e.feeds.tokenFeed.id.slice(0, 8) + "…`" : "none"} / ${e.feeds.equityFeed ? "`" + e.feeds.equityFeed.id.slice(0, 8) + "…`" : "none"}`;
+    const feeds = e.issuerMark ? `issuer mark (${e.issuerMark.source})` : `${e.feeds.tokenFeed ? "`" + e.feeds.tokenFeed.id.slice(0, 8) + "…`" : "none"} / ${e.feeds.equityFeed ? "`" + e.feeds.equityFeed.id.slice(0, 8) + "…`" : "none"}`;
     const proof = e.escrowProof ? `proven \`${e.escrowProof.quote.slice(0, 8)}…\`` : "not yet";
-    return `| ${e.symbol} | Tier ${e.tier} | \`${e.mint}\` | ${i.decimals} | ${ext} | ${flags} | ${i.scaledUiAmount ? i.scaledUiAmount.multiplier.toFixed(6) : "n/a"} | ${feeds} | **${i.verdict}** | ${proof} | ${i.reason} |`;
+    return `| ${e.symbol} (${e.wrapper}) | Tier ${e.tier} | \`${e.mint}\` | ${i.decimals} | ${ext} | ${flags} | ${i.scaledUiAmount ? i.scaledUiAmount.multiplier.toFixed(6) : "n/a"} | ${feeds} | **${i.verdict}** | ${proof} | ${i.reason} |`;
   });
   return `# Eligibility
 

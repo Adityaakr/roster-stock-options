@@ -129,6 +129,7 @@ export default function ActPage({ params }: { params: Promise<{ term: string }> 
             {publicKey && cluster.programDeployed && !c.fillable ? <div className="msg" style={{ marginTop: 10 }} role="status">Not fillable at {size}. {Math.floor(t.capacity)} {u.symbol} is quoted on this term right now; lower the size or wait for the roster to refresh.</div> : null}
             <TxStatus state={tx.state} onRetry={() => { tx.reset(); reload(true); }} doneHref="/positions" doneLabel="See it under Positions" />
             <p className="note" style={{ marginTop: 12 }}>Contracts can expire worthless. Maximum loss is the premium plus fees. {t.side === "call" ? "Exercising requires paying the strike in USDC." : "Exercising requires delivering the tokens."} One transaction; the wallet signs, the app submits.</p>
+            {market && market.feeBps > 0 ? <div className="msg" role="status" style={{ marginTop: 10 }} data-testid="fee-note">This mint charges a {(market.feeBps / 100).toFixed(2)}% transfer fee. On exercise you pay the full strike and receive {size} {u.symbol} less that fee, about {(size * (1 - market.feeBps / 10_000)).toFixed(4)} {u.symbol}. Floors are not listed on it until fee-inclusive settlement ships.</div> : null}
           </div>
           <div className="card pad">
             <div className="h6">What happens next</div>

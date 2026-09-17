@@ -12,7 +12,7 @@ import * as anchorNs from "@anchor-lang/core";
 import { RosterClient } from "../packages/sdk/src";
 import { nextExpiries } from "../packages/core/src";
 import { readRegistry, xstocksQuote, REGISTRY_PATH, type RegistryEntry } from "../packages/registry/src";
-import { FORK_URL, USDC_MINT, clockUnix, fundSol, fundToken, loadOrCreateKey, onChainMultiplier, resolveXstockMint, tokenProgramFor } from "./fork-lib";
+import { FORK_URL, USDC_MINT, clockUnix, fundSol, fundToken, loadOrCreateKey, onChainMultiplier, tokenProgramFor } from "./fork-lib";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
 const LOT = 1_000_000n;
@@ -56,8 +56,8 @@ async function main() {
   for (const e of registry.entries) {
     if (only.length && !only.includes(e.symbol)) continue;
     const ok = e.inspection.verdict === "eligible" || e.inspection.verdict === "eligible_with_fee";
-    if (!ok || !e.feeds.tokenFeed) {
-      console.log(`${e.symbol}: ${e.inspection.verdict}${e.feeds.tokenFeed ? "" : ", no token feed"}; not listed`);
+    if (!ok || (!e.feeds.tokenFeed && !e.issuerMark)) {
+      console.log(`${e.symbol}: ${e.inspection.verdict}${e.feeds.tokenFeed || e.issuerMark ? "" : ", no token feed and no issuer mark"}; not listed`);
       continue;
     }
     if (e.tier === 3 && !args.has("--tier3")) continue;
@@ -73,29 +73,35 @@ async function main() {
 
 async function listOne(connection: Connection, c: RosterClient, e: RegistryEntry, expiries: bigint[], quoterKey: PublicKey): Promise<void> {
   const mint = new PublicKey(e.mint);
-  const quote = (await xstocksQuote(e.symbol)) ?? null;
-  if (!quote) throw new Error("no issuer quote to size the grid");
+  const perShare = e.issuerMark ? (e.issuerMark.tokenPrice ?? e.issuerMark.markPrice) : await xstocksQuote(e.symbol);
+  if (!perShare) throw new Error("no issuer quote to size the grid");
+  // Strikes are per lot (one raw token); the issuer quotes per UI share, and a ScaledUiAmount mint shows one token as
+  // `multiplier` shares, so the grid is sized off the per-lot forward.
+  const mult = await onChainMultiplier(connection, mint).catch(() => 1);
+  const quote = perShare * mult;
   const p = marketParams(e.tier, quote);
   let m = await c.fetchMarket(mint);
   if (!m) {
-    await c.send(await c.createMarket({ mint, tokenFeedId: Buffer.from(e.feeds.tokenFeed!.id, "hex"), equityFeedId: e.feeds.equityFeed ? Buffer.from(e.feeds.equityFeed.id, "hex") : new Uint8Array(32), allowedExpiries: expiries, ...p, tier: e.tier, maxPriceAgeSecs: 60, maxConfBps: 100, symbol: e.symbol, feedPricesUiShare: true }));
+    await c.send(await c.createMarket({ mint, tokenFeedId: e.feeds.tokenFeed ? Buffer.from(e.feeds.tokenFeed.id, "hex") : new Uint8Array(32), equityFeedId: e.feeds.equityFeed ? Buffer.from(e.feeds.equityFeed.id, "hex") : new Uint8Array(32), allowedExpiries: expiries, ...p, tier: e.tier, maxPriceAgeSecs: 60, maxConfBps: 100, symbol: e.symbol, feedPricesUiShare: true }));
     m = (await c.fetchMarket(mint))!;
     console.log(`${e.symbol}: market created (tier ${e.tier}, step ${Number(p.strikeStep) / 1e6}, ${Number(p.minStrike) / 1e6}..${Number(p.maxStrike) / 1e6})`);
   } else {
-    await c.send(await c.updateMarket(mint, { allowedExpiries: expiries }));
+    // Keep the grid where the price is: expiries roll, and the strike bounds follow the per-lot forward.
+    const gridMoved = m.strikeStep !== p.strikeStep || m.minStrike !== p.minStrike || m.maxStrike !== p.maxStrike;
+    await c.send(await c.updateMarket(mint, { allowedExpiries: expiries, ...(gridMoved ? { strikeStep: p.strikeStep, minStrike: p.minStrike, maxStrike: p.maxStrike } : {}) }));
+    if (gridMoved) console.log(`${e.symbol}: grid moved to step ${Number(p.strikeStep) / 1e6}, ${Number(p.minStrike) / 1e6}..${Number(p.maxStrike) / 1e6} (per lot, multiplier ${mult.toFixed(4)})`);
   }
   if (e.escrowProof) {
     console.log(`${e.symbol}: escrow already proven ${e.escrowProof.provenAt}`);
     return;
   }
   // The proof: a real deposit into the series vault and back, through the same instructions a writer uses.
-  const { decimals } = await resolveXstockMint(e.symbol);
+  const decimals = e.inspection.decimals;
   const lot = 10n ** BigInt(decimals);
   const program = tokenProgramFor(m.tokenProgram);
   await fundToken(connection, c.provider.wallet.payer!, mint, program, 10n * lot);
   await fundToken(connection, c.provider.wallet.payer!, USDC_MINT, TOKEN_PROGRAM_ID, 10_000n * USDC);
-  const mult = await onChainMultiplier(connection, mint).catch(() => 1);
-  const strike = BigInt(Math.round((quote * mult) / (Number(p.strikeStep) / 1e6))) * p.strikeStep;
+  const strike = BigInt(Math.round(quote / (Number(p.strikeStep) / 1e6))) * p.strikeStep;
   const clamped = strike < p.minStrike ? p.minStrike : strike > p.maxStrike ? p.maxStrike : strike;
   // A market at its live-series cap (the quoter fills the grid) proves the escrow on one of its live call series.
   const now = BigInt(await clockUnix(connection));
@@ -110,11 +116,17 @@ async function listOne(connection: Connection, c: RosterClient, e: RegistryEntry
     if (!(await connection.getAccountInfo(series))) await c.send(created.tx);
   }
   const me = c.wallet;
-  const quoteSig = await c.send(await c.quote(m, (await c.fetchSeries(series))!, LOT, LOT, 1_000_000n));
+  // A transfer-fee mint delivers less than sent: the vault credits what arrived, so the ask stays under one lot.
+  const feeBps = BigInt(e.inspection.transferFee?.bps ?? 0);
+  const askLots = feeBps > 0n ? ((LOT * (10_000n - feeBps)) / 10_000n / 10_000n) * 10_000n - 10_000n : LOT;
+  const quoteSig = await c.send(await c.quote(m, (await c.fetchSeries(series))!, LOT, askLots, 1_000_000n));
   const after = (await c.fetchSeries(series))!;
   const mySlot = after.writers.findIndex((w) => w.writer.equals(me));
   for (const a of after.asks.filter((a) => a.writerSlot === mySlot)) await c.send(await c.cancelAsk(after, a.seq));
-  const withdrawSig = await c.send(await c.withdrawUnsold(m, (await c.fetchSeries(series))!, LOT));
+  const slot = (await c.fetchSeries(series))!.writers[mySlot]!;
+  const free = slot.depositedLots6 - slot.withdrawnLots6 - slot.openLots6 - slot.assignedLots6;
+  const withdrawSig = await c.send(await c.withdrawUnsold(m, (await c.fetchSeries(series))!, free));
+  if (feeBps > 0n) console.log(`${e.symbol}: fee mint, deposited 1 lot, vault credited ${Number(slot.depositedLots6) / 1e6} lots, withdrew ${Number(free) / 1e6}`);
   e.escrowProof = { series: series.toBase58(), quote: quoteSig, withdraw: withdrawSig, provenAt: new Date().toISOString() };
   console.log(`${e.symbol}: escrow proven (quote ${quoteSig.slice(0, 8)}…, withdraw ${withdrawSig.slice(0, 8)}…) on series ${series.toBase58().slice(0, 8)}…`);
   void program; void TOKEN_2022_PROGRAM_ID; void quoterKey;

@@ -17,9 +17,9 @@ export interface ServicesSeries {
   unassigned_lots6: string; halted: number; collateral_balance: string; settlement_balance: string; asks: ServicesAsk[]; writers: ServicesWriter[];
 }
 export interface ServicesMarket {
-  symbol: string; name: string; mint: string; market: string; decimals: number; tier: number; listed: boolean; paused: boolean;
+  symbol: string; name: string; wrapper: "xStock" | "Tessera" | "PreStocks"; feeBps: number; mint: string; market: string; decimals: number; tier: number; listed: boolean; paused: boolean;
   hasTransferFee: boolean; hasPermanentDelegate: boolean; pausable: boolean; hookProgram: string; allowedExpiries: string[]; strikeStep: string;
-  minLots6: string; maxLots6: string; maxLiveSeries: number; liveSeries: number; price: number | null; priceAt: number; priceSource: "hermes" | "reference" | "none";
+  minLots6: string; maxLots6: string; maxLiveSeries: number; liveSeries: number; price: number | null; priceAt: number; priceSource: "hermes" | "reference" | "xstocks" | "tessera" | "prestocks" | "none";
   equityPrice: number | null; basisBps: number | null; multiplier: number; pendingActivationTs: number | null; inActivationWindow: boolean; vol: number; volSource: string;
   series: ServicesSeries[];
 }

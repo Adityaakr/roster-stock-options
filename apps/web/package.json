@@ -17,6 +17,7 @@
     "@solana/wallet-adapter-unsafe-burner": "0.1.12",
     "@roster/sdk": "workspace:*",
     "@roster/core": "workspace:*",
+    "@roster/registry": "workspace:*",
     "@solana/web3.js": "1.99.0",
     "buffer": "^6.0.3",
     "lenis": "^1.3.26",

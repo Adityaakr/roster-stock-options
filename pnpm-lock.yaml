@@ -47,6 +47,9 @@ importers:
       '@roster/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@roster/registry':
+        specifier: workspace:*
+        version: link:../../packages/registry
       '@roster/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk

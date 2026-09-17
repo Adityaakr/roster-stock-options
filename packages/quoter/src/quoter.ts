@@ -15,6 +15,8 @@ export interface MarketQuoteContext {
   symbol: string;
   /** Liquidity tier (Part 2 section 2): 1 quotes every expiry both sides, 2 the nearest expiry, 3 nothing from the treasury. */
   tier: number;
+  /** Transfer fee on the mint, basis points: a deposit credits less than sent, so the ask is sized under it. */
+  feeBps: number;
   /** Token feed price per share-equivalent, USD, and its age in seconds. */
   price: number;
   priceAgeSecs: number;
@@ -92,7 +94,8 @@ export class Quoter {
     let capSaid = false;
     const quotable = m.allowedExpiries.filter((e) => e > BigInt(ctx.nowTs)).sort((a, b) => (a < b ? -1 : 1)).slice(0, ctx.tier === 2 ? 1 : undefined);
     for (const expiry of quotable) {
-      for (const side of ["call", "put"] as const) {
+      // Floors are refused by the program on transfer-fee mints until fee-inclusive settlement ships.
+      for (const side of (m.hasTransferFee ? ["call"] : ["call", "put"]) as ("call" | "put")[]) {
         for (const strike of gridStrikes(side, forwardPerLot, m.strikeStep).slice(0, this.cfg.strikesPerSide)) {
           if (strike < m.minStrike || strike > m.maxStrike) continue;
           const key = `${side}-${strike}-${expiry}`;
@@ -140,10 +143,15 @@ export class Quoter {
           continue;
         }
       }
-      // Deposit what is missing to back the ask, then post.
+      // Deposit what is missing to back the ask, then post. On a fee mint only what arrives is credited: ask for
+      // what will be free after the fee, floored to the minimum size unit.
       const have = mySlot ? mySlot.depositedLots6 - mySlot.withdrawnLots6 - mySlot.soldLots6 : 0n;
-      const want = this.cfg.lotsPerSeries;
+      let want = this.cfg.lotsPerSeries;
       const deposit = have >= want ? 0n : want - have;
+      if (ctx.feeBps > 0 && deposit > 0n && s.side === "call") {
+        const arrives = (deposit * BigInt(10_000 - ctx.feeBps)) / 10_000n;
+        want = ((have + arrives) / 10_000n) * 10_000n - 10_000n;
+      }
       if (deposit > 0n && !(await this.canDeposit(m, s, deposit))) {
         this.say({ at, market: mk, series: s.address.toBase58(), action: "skip", detail: "wallet cannot fund the deposit" });
         continue;

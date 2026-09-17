@@ -67,7 +67,8 @@ function liveMarket(m: ServicesMarket, nowTs: number, terms: Term[]): Market {
     tier: toTier(m.tier),
     listed: m.listed,
     paused: m.paused,
-    wrapperTier: "xStock",
+    wrapperTier: m.wrapper ?? "xStock",
+    feeBps: m.feeBps ?? 0,
     hasTransferFee: m.hasTransferFee,
     hasPermanentDelegate: m.hasPermanentDelegate,
     pausable: m.pausable,
@@ -83,6 +84,7 @@ function liveMarket(m: ServicesMarket, nowTs: number, terms: Term[]): Market {
     expiries: m.allowedExpiries.map(Number).filter((e) => e > nowTs).sort((a, b) => a - b),
     liveSeries: m.liveSeries,
     maxLiveSeries: m.maxLiveSeries,
+    minLots6: m.minLots6,
     depthUsdc,
     bestAsk: asks.length ? Math.min(...asks) : null
   };
@@ -163,7 +165,7 @@ async function fromServices(r: ServicesRoster, selected: string | undefined, fre
     exercises,
     feeBps: r.feeBps ?? 0,
     keeperFeeUsd: r.keeperFeeUsdc ? Number(r.keeperFeeUsdc) / 1e6 : 0,
-    source: `${label}. Program ${r.program}. Marks from ${pick?.priceSource === "hermes" ? "Pyth Hermes" : pick?.priceSource === "reference" ? "a fork-only reference price" : "no feed"}; asks, reserves and positions read from the program's accounts by the indexer.${r.blocked ? ` The quoter is blocked on ${r.blocked}.` : ""}`
+    source: `${label}. Program ${r.program}. Marks from ${pick?.priceSource === "hermes" ? "Pyth Hermes" : pick?.priceSource === "reference" ? "a fork-only reference price" : pick?.priceSource === "xstocks" ? "the xStocks API quote (no Pyth key; display only off the fork)" : pick?.priceSource === "tessera" ? "Tessera's published mark (no Pyth feed exists)" : pick?.priceSource === "prestocks" ? "the PreStocks token price (no Pyth feed exists)" : "no feed"}; asks, reserves and positions read from the program's accounts by the indexer.${r.blocked ? ` The quoter is blocked on ${r.blocked}.` : ""}`
   };
 }
 
@@ -244,9 +246,9 @@ function fixture(): RosterData {
   const terms = fixtureTerms(expiries);
   const market: Market = {
     symbol: "NVDAx", name: "Nvidia xStock", mint: null, address: null, decimals: 8, tier: 1, listed: true, paused: false, wrapperTier: "xStock",
-    hasTransferFee: false, hasPermanentDelegate: true, pausable: true, mark: FIXTURE_MARK, priceSource: "fixture", equityMark: equityOpen ? 182.08 : null,
+    feeBps: 0, hasTransferFee: false, hasPermanentDelegate: true, pausable: true, mark: FIXTURE_MARK, priceSource: "fixture", equityMark: equityOpen ? 182.08 : null,
     basisBps: equityOpen ? 12 : null, multiplier: 1, pendingActivationTs: null, inActivationWindow: false, vol: 0.35, volSource: "fixture", expiries,
-    liveSeries: terms.length, maxLiveSeries: 12, depthUsdc: terms.reduce((a, t) => a + t.capacity * t.strike, 0), bestAsk: 0.6
+    liveSeries: terms.length, maxLiveSeries: 12, minLots6: "10000", depthUsdc: terms.reduce((a, t) => a + t.capacity * t.strike, 0), bestAsk: 0.6
   };
   return {
     cluster: "fixture",

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T16:03:14.133Z",
+  "generatedAt": "2026-09-17T16:25:36.427Z",
   "cluster": "http://127.0.0.1:8899",
   "entries": [
     {
@@ -11,11 +11,12 @@
       "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
       "tier": 1,
       "wrapper": "xStock",
+      "issuerMark": null,
       "inspection": {
         "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "32127749936330",
+        "supply": "32127749457698",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -72,6 +73,7 @@
       "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
       "tier": 1,
       "wrapper": "xStock",
+      "issuerMark": null,
       "inspection": {
         "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
         "tokenProgram": "token-2022",
@@ -133,6 +135,7 @@
       "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
       "tier": 1,
       "wrapper": "xStock",
+      "issuerMark": null,
       "inspection": {
         "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
         "tokenProgram": "token-2022",
@@ -194,6 +197,7 @@
       "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
       "tier": 2,
       "wrapper": "xStock",
+      "issuerMark": null,
       "inspection": {
         "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
         "tokenProgram": "token-2022",
@@ -255,6 +259,7 @@
       "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
       "tier": 2,
       "wrapper": "xStock",
+      "issuerMark": null,
       "inspection": {
         "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
         "tokenProgram": "token-2022",
@@ -316,6 +321,7 @@
       "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
       "tier": 2,
       "wrapper": "xStock",
+      "issuerMark": null,
       "inspection": {
         "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
         "tokenProgram": "token-2022",
@@ -377,6 +383,7 @@
       "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
       "tier": 2,
       "wrapper": "xStock",
+      "issuerMark": null,
       "inspection": {
         "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
         "tokenProgram": "token-2022",
@@ -438,6 +445,7 @@
       "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
       "tier": 2,
       "wrapper": "xStock",
+      "issuerMark": null,
       "inspection": {
         "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
         "tokenProgram": "token-2022",
@@ -499,6 +507,7 @@
       "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
       "tier": 2,
       "wrapper": "xStock",
+      "issuerMark": null,
       "inspection": {
         "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
         "tokenProgram": "token-2022",
@@ -560,6 +569,7 @@
       "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
       "tier": 2,
       "wrapper": "xStock",
+      "issuerMark": null,
       "inspection": {
         "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
         "tokenProgram": "token-2022",
@@ -621,6 +631,7 @@
       "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
       "tier": 2,
       "wrapper": "xStock",
+      "issuerMark": null,
       "inspection": {
         "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
         "tokenProgram": "token-2022",
@@ -670,6 +681,234 @@
         "quote": "2e2Teixu7ZCFzmkB4FYJEm743j3CvFf7sNsPKJTbX3RSUB52tJUhXrtfjHXXY3ofWH3meFExr2zUS4DgVjLjosSg",
         "withdraw": "2ppDVqBS2VTLAiSkeEk2wgoYasQAwgqLjeNZL5aD4uWnuVzVGPB3EnS5N9NdQJ7PW2iAqjhtAwUm7AyYvpHYVouv",
         "provenAt": "2026-09-17T15:56:22.384Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "tOpenAI",
+      "name": "T-OpenAI",
+      "underlyingSymbol": null,
+      "isin": null,
+      "logo": null,
+      "mint": "oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ",
+      "tier": 2,
+      "wrapper": "Tessera",
+      "issuerMark": {
+        "markPrice": 812.79,
+        "tokenPrice": null,
+        "holders": 8259,
+        "source": "rest-api.tessera.pe"
+      },
+      "inspection": {
+        "mint": "oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "684808366550",
+        "extensions": [
+          "TransferFeeConfig",
+          "MetadataPointer",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "7n2PNcDXVDMK2m8dyV9cVPNY7p4jM4ZMHv7TzfibEt8o",
+        "mintAuthority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": {
+          "bps": 20,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": null,
+        "scaledUiAmount": null,
+        "verdict": "eligible_with_fee",
+        "reason": "20 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "FpD93toiKXDxRgQtMoPqgHUmkY2YtKioxLjC6BCuykq2",
+        "quote": "fgfzFpT6iagExqVjmD763RpHoKi3xGKisKzF6u8Cbi6gJqu2VPM5kK9Zvc1UNc1FH7rCtYAcAxzeVhCkSuhVB7d",
+        "withdraw": "3KXpya4Cy67x1m4TiB9HLfPzTBqxJXe9u9xf6ZH8bWmy6yFMvrzvetK8uaUzHjMrNgMtCxv6zxqVZQXTfW1ZwLtd",
+        "provenAt": "2026-09-17T16:13:42.812Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "tKalshi",
+      "name": "T-Kalshi",
+      "underlyingSymbol": null,
+      "isin": null,
+      "logo": null,
+      "mint": "TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ",
+      "tier": 2,
+      "wrapper": "Tessera",
+      "issuerMark": {
+        "markPrice": 413.8,
+        "tokenPrice": null,
+        "holders": 2605,
+        "source": "rest-api.tessera.pe"
+      },
+      "inspection": {
+        "mint": "TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "1557906620633",
+        "extensions": [
+          "TransferFeeConfig",
+          "MetadataPointer",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "7n2PNcDXVDMK2m8dyV9cVPNY7p4jM4ZMHv7TzfibEt8o",
+        "mintAuthority": "EXvTtxurWBUNNCtLojaN8ZBJFNJPZFSH3szoih9hh7YW",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": {
+          "bps": 20,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": null,
+        "scaledUiAmount": null,
+        "verdict": "eligible_with_fee",
+        "reason": "20 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "CrRw11Q7y8Sd4yLCiKK9ggUMJgw7S7JmfxRN46RdLeCN",
+        "quote": "4SFUdjNGbXmKipi1kUmovG5UqBAUxreaxLntTKJEFR163WLfZDzsPZo2UUwd4LVHogiTQxrYjhL7JsepRyB851jo",
+        "withdraw": "4yEhGb9XZ119veTzwWKVPio7AeWYctrz5xRPRh2ZkHeeHfanzksxJyNeVrewrmpeGoNiHUfgzvobPbg6fy2W3aMW",
+        "provenAt": "2026-09-17T16:13:45.928Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "OPENAI",
+      "name": "OpenAI PreStocks",
+      "underlyingSymbol": null,
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/openai.png",
+      "mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+      "tier": 2,
+      "wrapper": "PreStocks",
+      "issuerMark": {
+        "markPrice": 965.5600371823631,
+        "tokenPrice": 1054.9048765498626,
+        "holders": null,
+        "source": "prestocks.com/api"
+      },
+      "inspection": {
+        "mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "1901938966226",
+        "extensions": [
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ConfidentialTransferMint",
+          "Unknown(16)",
+          "TransferHook",
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "mintAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 50,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1.4861347,
+          "newMultiplierEffectiveTimestamp": 1784305800
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "50 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "8bC4xV8HaYksrBJtXjynUVbTBcT1EJdrhvS2H6oLXpy3",
+        "quote": "2kyUkNSeDg7rp8V9SFdVGpun4iYDCx2zAhWTW8mSmYToBzXSFxn4aH9HFfxiy6Chw26XURSjA5HgWLbdxYK3Mzrf",
+        "withdraw": "5hKLz1nrqRnJzug48y3mrjyZGCC38viwHNWzGsY4jkB7re9cndTz5xAZHgvVsP1YHeQf9vxJcNhsz692ArKzgqtF",
+        "provenAt": "2026-09-17T16:13:49.250Z"
+      },
+      "issuerHalted": false
+    },
+    {
+      "symbol": "SPACEX",
+      "name": "SpaceX PreStocks",
+      "underlyingSymbol": null,
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/spacex.png",
+      "mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+      "tier": 2,
+      "wrapper": "PreStocks",
+      "issuerMark": {
+        "markPrice": 153.36708328675908,
+        "tokenPrice": 120.71925219948439,
+        "holders": null,
+        "source": "prestocks.com/api"
+      },
+      "inspection": {
+        "mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "8742515833967",
+        "extensions": [
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ConfidentialTransferMint",
+          "Unknown(16)",
+          "TransferHook",
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "mintAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 50,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc"
+        },
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 5,
+          "newMultiplierEffectiveTimestamp": 1781065800
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "50 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "DUvAG1UxvSwUT3rs9MnMgJqPHGavcAg9tCDLLhfGTGCw",
+        "quote": "2uBfBRwaXygGRSXejcW4F7J7U5bywxXd8meapCnxxp7Yqia7ZsuXK7SXhU65Awxc4Ag97TesaSQ8jWrDxwmAWnU",
+        "withdraw": "64mFPaNTVDBqTRJgCRYDCSvCyRAsvkffHXDVF3LfgBkoNVH5KKjPAjFZV6M7WjZJBjeXqWssKtVY5wdw96ynkxsx",
+        "provenAt": "2026-09-17T16:13:52.391Z"
       },
       "issuerHalted": false
     }

@@ -21,12 +21,14 @@ export interface Market {
   listed: boolean;
   paused: boolean;
   wrapperTier: string;
+  /** Transfer fee on the mint in basis points; a Gap on such a mint delivers the raw amount less this on exercise. */
+  feeBps: number;
   hasTransferFee: boolean;
   hasPermanentDelegate: boolean;
   pausable: boolean;
   /** Token mark from the 24/7 token feed, USD per share equivalent; null when no feed answered. */
   mark: number | null;
-  priceSource: "hermes" | "reference" | "fixture" | "none";
+  priceSource: "hermes" | "reference" | "xstocks" | "tessera" | "prestocks" | "fixture" | "none";
   equityMark: number | null;
   basisBps: number | null;
   multiplier: number;
@@ -38,6 +40,8 @@ export interface Market {
   expiries: number[];
   liveSeries: number;
   maxLiveSeries: number;
+  /** The smallest size the program accepts, in lots6, as a string. */
+  minLots6: string;
   /** Executable depth: USDC notional fillable right now across every live term. */
   depthUsdc: number;
   bestAsk: number | null;

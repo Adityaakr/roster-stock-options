@@ -43,3 +43,17 @@ One entry per phase (CLAUDE.md 0): what was built, what was verified against whi
 - Workflow frames: captured at 2x from the main content area with `devIndicators: false`, so the Next dev badge is gone and the screens are legible (`e2e/frames.spec.ts`, its own Playwright project).
 
 **Verified.** typecheck, lint, 20 Playwright runs green (4 frames + 8 pages x 2 viewports).
+
+## 2026-09-17 · P0 foundation
+
+**Built.** Anchor 1.2.0 workspace (`Anchor.toml`, `Cargo.toml`, `rust-toolchain.toml`), `programs/roster_finance` with `init_protocol` and the `Protocol` account; `packages/core` (lots, strike per lot, multiplier rule, session clock) with unit tests; `scripts/{fork,anchor-test,idl-sync,anchor-deploy}.sh`, `scripts/fork-lib.ts` (cheatcodes, mint resolution from the xStocks API, extension-preserving token funding), `scripts/seed-fork.ts`; `tests/e2e/p0-foundation.test.ts`; `docs/PLAN.md`, `docs/MINT.md`, `docs/FEEDS.md`, `docs/01-architecture.md`, `docs/02-roadmap.md`, `docs/DECISIONS.md`, `docs/RECONCILIATION.md`, `docs/OPERATOR.md`.
+
+**Verified.**
+- `anchor build --arch v0` green with `event-cpi` and `token_2022_extensions` (81 s cold).
+- `pnpm test` (core): 8 passed. `pnpm test:fork` against surfpool 1.0.0 forked from public mainnet: 5 passed: wallet funded with NVDAx (179-byte ATA, extensions intact) and USDC; multiplier from the mint equals the xStocks API `currentMultiplier` (1.001701196801074); `transfer_checked` of 5 NVDAx between two seeded wallets succeeds; time travel to a Saturday reports the equity session closed; Hermes price read skipped with the named warning (no key).
+- NVDAx mint extensions read from chain and recorded (`docs/MINT.md`); feed ids from Hermes (`docs/FEEDS.md`); USDC mint resolved from Jupiter's verified list and read on-chain (6 decimals, SPL Token) after a from-memory address failed `WrongSize`, which is the guardrail working.
+- `surfnet_timeTravel` behaves as documented (forward only, milliseconds). `surfnet_setTokenAccount` works with the Token-2022 program id but strips account extensions; replaced by `surfnet_setAccount` on the real bytes.
+
+**Cut.** Nothing. Hermes price assertions run only when `PYTH_CORE_API_KEY` exists.
+
+**Open risks.** The Pyth key blocks P2 pricing (`docs/OPERATOR.md`). Public mainnet RPC as the fork datasource rate-limits `getProgramAccounts`; nothing here uses it.

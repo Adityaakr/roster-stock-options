@@ -3,16 +3,39 @@
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@11.23.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
+    "fork": "bash scripts/fork.sh",
+    "anchor:build": "anchor build --arch v0 && bash scripts/idl-sync.sh",
+    "anchor:deploy": "bash scripts/anchor-deploy.sh",
+    "idl:sync": "bash scripts/idl-sync.sh",
+    "seed": "tsx scripts/seed-fork.ts",
+    "probe:mint": "tsx scripts/probe-mint.ts",
+    "services": "tsx packages/services/src/main.ts",
     "dev": "pnpm --filter @roster/web dev",
     "build": "pnpm --filter @roster/web build",
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm -r --if-present lint",
-    "shots": "pnpm --filter @roster/web shots"
+    "lint": "eslint . && pnpm --filter @roster/web lint",
+    "test": "vitest run --project unit",
+    "test:anchor": "bash scripts/anchor-test.sh",
+    "test:fork": "vitest run --project e2e",
+    "shots": "pnpm --filter @roster/web shots",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm test:anchor && pnpm test:fork"
   },
   "devDependencies": {
-    "typescript": "^5.9.0"
+    "@anchor-lang/core": "1.2.0",
+    "@eslint/js": "^9.39.0",
+    "@solana/spl-token": "0.4.15",
+    "@solana/web3.js": "1.99.0",
+    "@types/node": "^22.19.0",
+    "eslint": "^9.39.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.46.0",
+    "vitest": "5.0.0",
+    "zod": "^4.6.5"
   },
   "type": "module"
 }

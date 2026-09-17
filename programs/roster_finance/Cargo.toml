@@ -1,0 +1,34 @@
+[package]
+name = "roster_finance"
+version = "0.1.0"
+description = "Roster Finance: fully collateralized, American-exercise, physically settled contracts on tokenized stocks, pooled per series"
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "roster_finance"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = { version = "1.2.0", features = ["event-cpi"] }
+anchor-spl = { version = "1.2.0", default-features = false, features = ["token", "token_2022", "token_2022_extensions", "associated_token"] }
+
+[dev-dependencies]
+litesvm = "0.16.0"
+solana-message = "4.2.4"
+solana-transaction = { version = "4.1.5", features = ["verify"] }
+solana-signer = "3.0.1"
+solana-keypair = "3.1.2"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

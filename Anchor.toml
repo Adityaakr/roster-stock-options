@@ -1,0 +1,18 @@
+skip_local_validator = true
+
+[toolchain]
+anchor_version = "1.2.0"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+roster_finance = "FJUdsdmxAp3zAwZBg3ai34xzeCBDobnH1XDarvVa7uFV"
+
+[provider]
+cluster = "http://127.0.0.1:8899"
+wallet = ".keys/deployer.json"
+
+[scripts]
+test = "cargo test --release -p roster_finance"

@@ -50,9 +50,12 @@ pub fn handle_settle_writer(ctx: Context<SettleWriter>) -> Result<()> {
     let clock = Clock::get()?;
     let series_key = ctx.accounts.series.key();
     let series_info = ctx.accounts.series.to_account_info();
-    let series = ctx.accounts.series.load()?;
+    let mut series = ctx.accounts.series.load_mut()?;
     require!(clock.unix_timestamp >= series.expiry_ts, RosterError::NotExpired);
     require!(ctx.accounts.underlying_token_program.key() == ctx.accounts.market.token_program, RosterError::WrongTokenProgram);
+    let underlying_vault = match series.side() { Side::Call => &ctx.accounts.collateral_vault, Side::Put => &ctx.accounts.settlement_vault };
+    let halted = crate::instructions::shared::observe_halt(&mut series, &ctx.accounts.underlying_mint.to_account_info(), underlying_vault, clock.unix_timestamp);
+    require!(!halted, RosterError::Halted);
     let writer = ctx.accounts.writer.key();
     let slot = series.writer_slot(&writer).ok_or(RosterError::NoWriterSlot)?;
     require!(!series.writers[slot].is_settled(), RosterError::AlreadySettled);
@@ -192,5 +195,28 @@ pub fn handle_close_series(ctx: Context<CloseSeries>) -> Result<()> {
 
     ctx.accounts.market.live_series = ctx.accounts.market.live_series.saturating_sub(1);
     emit!(SeriesClosed { series: series_key, dust_collateral: dust_underlying, dust_settlement: dust_usdc, mint_closed });
+    Ok(())
+}
+
+/// Permissionless: record an issuer pause or a frozen vault on the series so the halt grace runs from a persisted
+/// observation (a failing instruction cannot persist it). The keeper's pause watcher calls this.
+#[derive(Accounts)]
+pub struct ObserveHalt<'info> {
+    #[account(seeds = [MarketConfig::SEED, market.mint.as_ref()], bump = market.bump)]
+    pub market: Account<'info, MarketConfig>,
+    #[account(mut, has_one = market @ RosterError::WrongAccount, has_one = collateral_vault @ RosterError::WrongAccount, has_one = settlement_vault @ RosterError::WrongAccount)]
+    pub series: AccountLoader<'info, Series>,
+    #[account(address = market.mint @ RosterError::WrongAccount)]
+    pub underlying_mint: InterfaceAccount<'info, Mint>,
+    pub collateral_vault: InterfaceAccount<'info, TokenAccount>,
+    pub settlement_vault: InterfaceAccount<'info, TokenAccount>,
+}
+
+pub fn handle_observe_halt(ctx: Context<ObserveHalt>) -> Result<()> {
+    let clock = Clock::get()?;
+    let mut series = ctx.accounts.series.load_mut()?;
+    let underlying_vault = match series.side() { Side::Call => &ctx.accounts.collateral_vault, Side::Put => &ctx.accounts.settlement_vault };
+    let halted = crate::instructions::shared::observe_halt(&mut series, &ctx.accounts.underlying_mint.to_account_info(), underlying_vault, clock.unix_timestamp);
+    msg!("halted={}", halted);
     Ok(())
 }

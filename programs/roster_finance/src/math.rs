@@ -67,6 +67,10 @@ pub fn apply_exercise(series: &mut Series, q: u64) {
 /// Bring a writer slot to the present: split its `open` lots into what is still unassigned and what was assigned
 /// since the last fold, each floored, then refresh the snapshots. Idempotent.
 pub fn fold(series: &Series, w: &mut WriterSlot) {
+    // Nothing has been assigned since the snapshot: folding would only forfeit a rounding unit. Skip it.
+    if w.p_snap() == series.p() && w.scale_snap == series.scale && w.epoch_snap == series.epoch {
+        return;
+    }
     if w.open_lots6 > 0 {
         let (unassigned, assigned) = split(w, series.p(), series.scale, series.epoch);
         w.assigned_lots6 = w.assigned_lots6.saturating_add(assigned);

@@ -81,3 +81,32 @@ pub fn vault_in<'info>(
 pub fn now(clock: &Clock) -> i64 {
     clock.unix_timestamp
 }
+
+/// The halt rule (docs/01-architecture.md section 4): an issuer pause on the mint or a freeze on a vault, observed by
+/// any instruction, marks the series halted; `settle_writer` refuses until 24 hours after the last observation so a
+/// pause spanning expiry cannot move intrinsic value from holders to writers. Exercise is never gated by it.
+/// Returns true when the series is halted right now.
+pub fn observe_halt(series: &mut Series, mint_info: &AccountInfo, vault: &InterfaceAccount<TokenAccount>, now: i64) -> bool {
+    use anchor_spl::token_interface::{get_mint_extension_data, spl_token_2022};
+    use spl_token_2022::extension::pausable::PausableConfig;
+    let paused = match get_mint_extension_data::<PausableConfig>(mint_info) {
+        Ok(cfg) => bool::from(cfg.paused),
+        Err(_) => false,
+    };
+    let frozen = vault.state == spl_token_2022::state::AccountState::Frozen;
+    if paused || frozen {
+        series.state = crate::state::SERIES_HALTED;
+        series.halted_at = now;
+        return true;
+    }
+    if series.state == crate::state::SERIES_HALTED {
+        if now >= series.halted_at.saturating_add(HALT_GRACE_SECS) {
+            series.state = crate::state::SERIES_OPEN;
+            return false;
+        }
+        return true;
+    }
+    false
+}
+
+pub const HALT_GRACE_SECS: i64 = 24 * 3600;

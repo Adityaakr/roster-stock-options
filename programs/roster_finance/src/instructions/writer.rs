@@ -74,7 +74,8 @@ pub fn handle_quote(ctx: Context<WriterCollateral>, deposit_lots6: u64, ask_lots
     let mut series = ctx.accounts.series.load_mut()?;
     require!(ctx.accounts.collateral_mint.key() == collateral_mint_for(&series, market), RosterError::WrongVaultMint);
     require!(series.expiry_ts > clock.unix_timestamp, RosterError::Expired);
-    require!(series.is_open(), RosterError::Halted);
+    let halted = crate::instructions::shared::observe_halt(&mut series, &ctx.accounts.collateral_mint.to_account_info(), &ctx.accounts.collateral_vault, clock.unix_timestamp);
+    require!(!halted, RosterError::Halted);
     require!(ask_per_lot > 0 && ask_lots6 >= market.min_lots6 && ask_lots6 <= market.max_lots6, RosterError::SizeOutOfRange);
 
     let writer = ctx.accounts.writer.key();

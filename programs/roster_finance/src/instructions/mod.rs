@@ -1,3 +1,5 @@
+pub mod admin;
+pub mod auto_exercise;
 pub mod buy;
 pub mod create_market;
 pub mod create_series;
@@ -8,6 +10,8 @@ pub mod shared;
 pub mod update_market;
 pub mod writer;
 
+pub use admin::*;
+pub use auto_exercise::*;
 pub use buy::*;
 pub use create_market::*;
 pub use create_series::*;

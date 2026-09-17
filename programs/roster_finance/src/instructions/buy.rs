@@ -54,6 +54,7 @@ pub fn handle_buy(ctx: Context<Buy>, lots6: u64, max_premium_per_lot: u64, refer
     let mut series = ctx.accounts.series.load_mut()?;
     require!(series.expiry_ts > clock.unix_timestamp, RosterError::Expired);
     require!(series.is_open(), RosterError::Halted);
+    // Pause and freeze are observed where the underlying accounts are present (quote, settle); buy checks the flag.
     require!(lots6 >= market.min_lots6 && lots6 <= market.max_lots6, RosterError::SizeOutOfRange);
     require!(referrer.is_none(), RosterError::IntegratorNotRegistered);
 

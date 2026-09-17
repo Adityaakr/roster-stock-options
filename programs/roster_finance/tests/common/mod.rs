@@ -211,7 +211,7 @@ impl Env {
 
     fn create_market(&mut self) {
         let params = CreateMarketParams {
-            token_feed_id: [1; 32],
+            token_feed_id: TOKEN_FEED,
             equity_feed_id: [2; 32],
             allowed_expiries: self.expiries,
             strike_step: USDC,
@@ -449,5 +449,141 @@ impl Env {
         let issuer = self.issuer.insecure_clone();
         let ix = if paused { pausable::instruction::pause(&spl_token_2022::id(), &self.mint, &issuer.pubkey(), &[]).unwrap() } else { pausable::instruction::resume(&spl_token_2022::id(), &self.mint, &issuer.pubkey(), &[]).unwrap() };
         send(&mut self.svm, &issuer, &[&issuer], &[ix]).unwrap();
+    }
+}
+
+// ---------- M2 helpers: admin, auto-exercise, Pyth fixtures ----------
+
+use {
+    anchor_lang::AccountSerialize,
+    pyth_solana_receiver_sdk::price_update::{PriceFeedMessage, PriceUpdateV2, VerificationLevel},
+    solana_account::Account,
+};
+
+pub const TOKEN_FEED: [u8; 32] = [1; 32];
+
+impl Env {
+    pub fn update_protocol(&mut self, signer: &Keypair, params: roster_finance::UpdateProtocolParams) -> Result<(), String> {
+        let ix = Instruction::new_with_bytes(self.program_id, &roster_finance::instruction::UpdateProtocol { params }.data(), roster_finance::accounts::UpdateProtocol { signer: signer.pubkey(), protocol: self.protocol }.to_account_metas(None));
+        send(&mut self.svm, signer, &[signer], &[ix])
+    }
+
+    pub fn update_market(&mut self, signer: &Keypair, params: roster_finance::UpdateMarketParams) -> Result<(), String> {
+        let ix = Instruction::new_with_bytes(self.program_id, &roster_finance::instruction::UpdateMarket { params }.data(), roster_finance::accounts::UpdateMarket { signer: signer.pubkey(), protocol: self.protocol, market: self.market }.to_account_metas(None));
+        send(&mut self.svm, signer, &[signer], &[ix])
+    }
+
+    pub fn withdraw_fees(&mut self, amount: u64) -> Result<(), String> {
+        let a = self.authority.insecure_clone();
+        create_ata(&mut self.svm, &a, &a.pubkey(), &self.usdc, &spl_token::id());
+        let ix = Instruction::new_with_bytes(
+            self.program_id,
+            &roster_finance::instruction::WithdrawFees { amount }.data(),
+            roster_finance::accounts::WithdrawFees { authority: a.pubkey(), protocol: self.protocol, quote_mint: self.usdc, fee_vault: self.fee_vault, treasury: a.pubkey(), treasury_quote_ata: self.us(&a.pubkey()), quote_token_program: spl_token::id() }.to_account_metas(None),
+        );
+        send(&mut self.svm, &a, &[&a], &[ix])
+    }
+
+    pub fn delegate_pda(&self) -> Pubkey {
+        Pubkey::find_program_address(&[AutoExercise::AUTHORITY_SEED], &self.program_id).0
+    }
+    pub fn autoex_pda(&self, holder: &Pubkey) -> Pubkey {
+        Pubkey::find_program_address(&[AutoExercise::SEED, holder.as_ref()], &self.program_id).0
+    }
+
+    fn set_auto_exercise_accounts(&self, holder: &Keypair, series: &Pubkey) -> roster_finance::accounts::SetAutoExercise {
+        let s = load_series(&self.svm, series);
+        let (pay_mint, pay_prog) = match s.side() { Side::Call => (self.usdc, spl_token::id()), Side::Put => (self.mint, spl_token_2022::id()) };
+        roster_finance::accounts::SetAutoExercise {
+            holder: holder.pubkey(),
+            market: self.market,
+            series: *series,
+            auto_exercise: self.autoex_pda(&holder.pubkey()),
+            delegate: self.delegate_pda(),
+            position_mint: s.position_mint,
+            holder_position_ata: ata(&holder.pubkey(), &s.position_mint, &spl_token_2022::id()),
+            pay_mint,
+            holder_pay_ata: ata(&holder.pubkey(), &pay_mint, &pay_prog),
+            pay_token_program: pay_prog,
+            token_2022_program: spl_token_2022::id(),
+            system_program: system_program::ID,
+        }
+    }
+
+    pub fn enable_auto_exercise(&mut self, holder: &Keypair, series: &Pubkey, min_itm_bps: u16) -> Result<(), String> {
+        let ix = Instruction::new_with_bytes(self.program_id, &roster_finance::instruction::EnableAutoExercise { min_itm_bps }.data(), self.set_auto_exercise_accounts(holder, series).to_account_metas(None));
+        send(&mut self.svm, holder, &[holder], &[ix])
+    }
+
+    pub fn disable_auto_exercise(&mut self, holder: &Keypair, series: &Pubkey) -> Result<(), String> {
+        let ix = Instruction::new_with_bytes(self.program_id, &roster_finance::instruction::DisableAutoExercise {}.data(), self.set_auto_exercise_accounts(holder, series).to_account_metas(None));
+        send(&mut self.svm, holder, &[holder], &[ix])
+    }
+
+    /// Write a PriceUpdateV2 account owned by the receiver program, as the crank would post in the same transaction.
+    pub fn price_update(&mut self, feed_id: [u8; 32], price_usd: f64, conf_usd: f64, publish_time: i64, full: bool) -> Pubkey {
+        let key = Keypair::new().pubkey();
+        let expo = -8i32;
+        let msg = PriceFeedMessage { feed_id, price: (price_usd * 1e8) as i64, conf: (conf_usd * 1e8) as u64, exponent: expo, publish_time, prev_publish_time: publish_time - 1, ema_price: (price_usd * 1e8) as i64, ema_conf: (conf_usd * 1e8) as u64 };
+        let update = PriceUpdateV2 { write_authority: Pubkey::default(), verification_level: if full { VerificationLevel::Full } else { VerificationLevel::Partial { num_signatures: 1 } }, price_message: msg, posted_slot: 1 };
+        let mut data = Vec::new();
+        update.try_serialize(&mut data).unwrap();
+        self.svm.set_account(key, Account { lamports: 10_000_000, data, owner: pyth_solana_receiver_sdk::ID, executable: false, rent_epoch: 0 }).unwrap();
+        key
+    }
+
+    pub fn auto_exercise(&mut self, holder: &Pubkey, series: &Pubkey, lots6: u64, price_update: Pubkey) -> Result<(), String> {
+        let s = load_series(&self.svm, series);
+        let k = self.keeper.insecure_clone();
+        create_ata(&mut self.svm, &k, &k.pubkey(), &self.usdc, &spl_token::id());
+        let ix = Instruction::new_with_bytes(
+            self.program_id,
+            &roster_finance::instruction::AutoExercise { lots6 }.data(),
+            roster_finance::accounts::AutoExerciseCrank {
+                keeper: k.pubkey(),
+                protocol: self.protocol,
+                market: self.market,
+                series: *series,
+                holder: *holder,
+                auto_exercise: self.autoex_pda(holder),
+                delegate: self.delegate_pda(),
+                underlying_mint: self.mint,
+                quote_mint: self.usdc,
+                position_mint: s.position_mint,
+                holder_position_ata: ata(holder, &s.position_mint, &spl_token_2022::id()),
+                collateral_vault: s.collateral_vault,
+                settlement_vault: s.settlement_vault,
+                holder_underlying_ata: self.nv(holder),
+                holder_quote_ata: self.us(holder),
+                fee_vault: self.fee_vault,
+                keeper_quote_ata: self.us(&k.pubkey()),
+                price_update,
+                underlying_token_program: spl_token_2022::id(),
+                quote_token_program: spl_token::id(),
+                token_2022_program: spl_token_2022::id(),
+            }
+            .to_account_metas(None),
+        );
+        send(&mut self.svm, &k, &[&k], &[ix])
+    }
+}
+
+impl Env {
+    pub fn observe_halt(&mut self, series: &Pubkey) -> Result<(), String> {
+        let s = load_series(&self.svm, series);
+        let k = self.keeper.insecure_clone();
+        let ix = Instruction::new_with_bytes(self.program_id, &roster_finance::instruction::ObserveHalt {}.data(), roster_finance::accounts::ObserveHalt { market: self.market, series: *series, underlying_mint: self.mint, collateral_vault: s.collateral_vault, settlement_vault: s.settlement_vault }.to_account_metas(None));
+        send(&mut self.svm, &k, &[&k], &[ix])
+    }
+}
+
+/// Send and return compute units consumed (for docs/COMPUTE.md).
+pub fn send_cu(svm: &mut LiteSVM, payer: &Keypair, signers: &[&Keypair], ixs: &[Instruction]) -> Result<u64, String> {
+    svm.expire_blockhash();
+    let msg = Message::new_with_blockhash(ixs, Some(&payer.pubkey()), &svm.latest_blockhash());
+    let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), signers).unwrap();
+    match svm.send_transaction(tx) {
+        Ok(m) => Ok(m.compute_units_consumed),
+        Err(e) => Err(e.meta.logs.join("\n")),
     }
 }

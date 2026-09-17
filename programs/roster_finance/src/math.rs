@@ -96,16 +96,25 @@ fn split(w: &WriterSlot, p: u128, scale: u8, epoch: u32) -> (u64, u64) {
         return (0, w.open_lots6);
     }
     let diff = scale.wrapping_sub(w.scale_snap);
-    if diff >= 3 || w.p_snap() == 0 {
-        // Three rescales since the snapshot: the remaining fraction is below 1e-27, treat as fully assigned.
+    if diff >= 5 || w.p_snap() == 0 {
+        // Five rescales since the snapshot: the remaining fraction is below 1e-45 of a unit even for a u64 writer.
         return (0, w.open_lots6);
     }
-    // p_snap <= 1e18 and P_SCALE^2 = 1e18, so denom <= 1e36 and open * p <= 1.8e19 * 1e18 both fit u128.
-    let denom = w.p_snap() * if diff == 2 { P_SCALE * P_SCALE } else if diff == 1 { P_SCALE } else { 1 };
-    // Unassigned rounds up and assigned is its complement: both legs err toward the vault, never past it.
-    let unassigned = ((open * p + denom - 1) / denom).min(open);
+    // Unassigned rounds up and assigned is its complement: both legs err toward the vault, never past it. Divide by
+    // p_snap first (open * p <= 1.8e19 * 1e18 fits u128), then by P_SCALE^diff (<= 1e36 fits), each rounded up, so
+    // the nested quotient is never below the exact one.
+    let step = (open * p + w.p_snap() - 1) / w.p_snap();
+    let scale_div = P_SCALE.pow(diff as u32);
+    let unassigned = ((step + scale_div - 1) / scale_div).min(open);
     let assigned = open - unassigned;
     (unassigned as u64, assigned as u64)
+}
+
+/// Whether exercising `q` lots moves the product by at least one unit: below that the assignment could not be
+/// recorded against any writer, so `exercise` refuses such a size unless it takes the whole pool.
+pub fn moves_product(series: &Series, q: u64) -> bool {
+    let u = series.unassigned_lots6;
+    q == u || (q as u128) * series.p() >= u as u128
 }
 
 /// Add `n` freshly sold lots to a slot (fold first so the new lots enter at the current product).
@@ -127,6 +136,8 @@ pub fn free_lots6(series: &Series, slot: usize) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::state::MAX_WRITERS;
+    use anchor_lang::prelude::Pubkey;
 
     fn series() -> Series {
         let mut s: Series = bytemuck::Zeroable::zeroed();
@@ -363,6 +374,174 @@ mod tests {
         let mut m: crate::state::MarketConfig = unsafe { core::mem::zeroed() };
         m.decimals = 19;
         assert_eq!(m.raw_per_lot6(), 10u64.pow(13));
+    }
+
+
+    // ---- Skeptic pass 2 (2026-09-17): trying to break (a) sum(assigned) <= exercised, (b) settle never reverts,
+    // (c) collateral-leg loss bounded by open_i * exercises / 1e9. Vault simulation is call-side with raw_per_lot6 = 1.
+
+    /// Settle every slot in `order` against simulated vaults with the program's `min(owed, vault)` trimming.
+    /// Returns per slot (collateral received, settlement received, collateral owed, settlement owed).
+    fn settle_all(s: &Series, order: &[usize]) -> Vec<(u64, u64, u64, u64)> {
+        let mut coll_vault: u64 = 0;
+        for w in s.writers.iter() {
+            coll_vault += w.deposited_lots6 - w.withdrawn_lots6;
+        }
+        coll_vault -= s.total_exercised_lots6;
+        let mut settle_vault: u64 = s.total_exercised_lots6;
+        let mut out = vec![(0, 0, 0, 0); MAX_WRITERS];
+        for &i in order {
+            let mut w = s.writers[i];
+            fold(s, &mut w);
+            let free = w.deposited_lots6 - w.withdrawn_lots6 - w.sold_lots6;
+            let owed_c = free + w.open_lots6;
+            let owed_s = w.assigned_lots6;
+            let got_c = owed_c.min(coll_vault);
+            let got_s = owed_s.min(settle_vault);
+            coll_vault -= got_c;
+            settle_vault -= got_s;
+            out[i] = (got_c, got_s, owed_c, owed_s);
+        }
+        out
+    }
+
+    fn sell_dep(s: &mut Series, slot: usize, n: u64) {
+        s.writers[slot].deposited_lots6 += n;
+        if s.writers[slot].writer == Pubkey::default() {
+            // Mirror find_or_claim_slot: snapshot at the current product.
+            let p = s.p();
+            s.writers[slot].set_p_snap(p);
+            s.writers[slot].scale_snap = s.scale;
+            s.writers[slot].epoch_snap = s.epoch;
+            s.writers[slot].writer = Pubkey::new_unique();
+        }
+        sell(s, slot, n);
+    }
+
+    /// Attribution: a writer that snapshots at P_FLOOR over-claims up to open / 1e9 units per exercise, and that
+    /// lands on whoever settles after it. The program bounds a writer at MAX_WRITER_LOTS6 (1e7 lots), so the
+    /// over-claim is at most 0.01 lot per exercise: the largest writer allowed, at the floor, costs the small
+    /// writer that settles last no more than that (the second skeptic pass showed a 1e9-lot writer taking half a lot).
+    #[test]
+    fn skeptic2_largest_allowed_writer_at_floor_costs_others_at_most_a_minimum_size() {
+        let mut s = series();
+        sell_dep(&mut s, 0, 1_000 * LOT6);
+        exercise(&mut s, 1_000 * LOT6 - 1);
+        assert_eq!(s.p(), P_FLOOR);
+        sell_dep(&mut s, 1, crate::state::MAX_WRITER_LOTS6); // A: the largest writer the program allows
+        sell_dep(&mut s, 2, 1 * LOT6); // B: one lot
+        let u = s.unassigned_lots6;
+        let remain = u / 2 + 1;
+        exercise(&mut s, u - remain);
+        let got = settle_all(&s, &[1, 0, 2]);
+        let (b_c, _, b_owed_c, _) = got[2];
+        // 0.01 lot plus the one unit the ceiling adds.
+        assert!(b_owed_c - b_c <= 10_001, "B short by {} units, more than one minimum size", b_owed_c - b_c);
+    }
+
+    /// An exercise too small to move `P` (q * p < u) would leave the writers' assignment unrecorded: the instruction
+    /// refuses it with `SizeOutOfRange` (`moves_product`), and at the smallest accepted size `P` moves by at least one.
+    #[test]
+    fn skeptic2_sub_precision_exercise_is_refused_and_the_smallest_accepted_one_moves_p() {
+        let mut s = series();
+        sell_dep(&mut s, 0, 1_000 * LOT6);
+        exercise(&mut s, 1_000 * LOT6 - 1);
+        sell_dep(&mut s, 1, 5_000 * LOT6); // 5e9 units at p = 1e9
+        let u = s.unassigned_lots6;
+        assert!(!moves_product(&s, 4), "4 units cannot move P in a 5e9-unit pool at the floor");
+        let smallest = (u as u128 + s.p() - 1) / s.p();
+        assert!(moves_product(&s, smallest as u64));
+        let (p0, scale0) = (s.p(), s.scale);
+        exercise(&mut s, smallest as u64);
+        assert!(s.p() < p0 || s.scale != scale0, "the smallest accepted exercise moves P (or rescales it)");
+    }
+
+    /// Three rescales since the snapshot on a u64-scale writer: the remainder is divided exactly (nested ceilings),
+    /// so the sum of assignments never exceeds the exercises even here.
+    #[test]
+    fn skeptic2_three_rescales_never_over_assign() {
+        let mut s = series();
+        sell_dep(&mut s, 0, 1_000 * LOT6);
+        exercise(&mut s, 1_000 * LOT6 - 1);
+        assert_eq!(s.p(), P_FLOOR);
+        let a: u64 = u64::MAX - 1_000 * LOT6 - 10;
+        sell_dep(&mut s, 1, a);
+        // Three times: pick q so that p lands just under P_FLOOR and rescales to near 1e18.
+        for round in 0..3 {
+            let u = s.unassigned_lots6 as u128;
+            let p = s.p();
+            // largest remain with ceil(p * remain / u) < P_FLOOR
+            let mut remain = ((P_FLOOR * u - 1) / p) as u64;
+            while (p * remain as u128 + u - 1) / u >= P_FLOOR { remain -= 1; }
+            exercise(&mut s, u as u64 - remain);
+            assert_eq!(s.scale, round + 1);
+        }
+        assert!(s.p() > P_ONE / 2, "p near its max after the rescale: {}", s.p());
+        let total_assigned: u64 = (0..2).map(|i| settled(&s, i).1).sum();
+        let remainder = s.unassigned_lots6;
+        assert!(remainder >= 10, "true remainder in the pool: {remainder}");
+        assert!(total_assigned <= s.total_exercised_lots6, "over-assigned: {total_assigned} > {}", s.total_exercised_lots6);
+    }
+
+    /// Random walk with writers up to 1e9 lots and exercises from one unit to the whole pool, folding through
+    /// `add_open` on repeat sales and settling in random order. Checks (a) and (b), and measures the largest
+    /// collateral shortfall a writer suffered against the claimed bound.
+    #[test]
+    fn skeptic2_random_large_writers_dust_exercises() {
+        let mut seed: u64 = 0x2545F4914F6CDD1D;
+        let mut rnd = move || { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed };
+        let mut worst_a: i128 = 0;
+        let mut worst_loss_ratio = 0f64;
+        for _trial in 0..200 {
+            let mut s = series();
+            let mut exercises_since: [u64; MAX_WRITERS] = [0; MAX_WRITERS];
+            let mut open_at_snap: [u64; MAX_WRITERS] = [0; MAX_WRITERS];
+            for _ in 0..120 {
+                match rnd() % 5 {
+                    0 | 1 => {
+                        let slot = (rnd() % 6) as usize;
+                        let n = match rnd() % 4 { 0 => 1 + rnd() % 1_000, 1 => LOT6 * (1 + rnd() % 5_000), 2 => LOT6 * (1 + rnd() % 1_000_000), _ => LOT6 * 1_000_000_000 };
+                        if s.total_sold_lots6.checked_add(n).is_none() { continue; }
+                        if s.writers[slot].writer != Pubkey::default() {
+                            // Program path: `add_open` folds first; the fold refreshes the snapshot.
+                            exercises_since[slot] = 0;
+                        }
+                        sell_dep(&mut s, slot, n);
+                        open_at_snap[slot] = s.writers[slot].open_lots6;
+                    }
+                    _ => {
+                        let u = s.unassigned_lots6;
+                        if u == 0 { continue; }
+                        let q = match rnd() % 5 { 0 => 1, 1 => 1 + rnd() % 1_000, 2 => u, 3 => u - (rnd() % u.min(10_000)), _ => 1 + rnd() % u };
+                        let q = q.min(u).max(1);
+                        exercise(&mut s, q);
+                        for e in exercises_since.iter_mut() { *e += 1; }
+                    }
+                }
+            }
+            // (a)
+            let total_assigned: u128 = (0..MAX_WRITERS).filter(|&i| s.writers[i].writer != Pubkey::default()).map(|i| settled(&s, i).1 as u128).sum();
+            let over = total_assigned as i128 - s.total_exercised_lots6 as i128;
+            worst_a = worst_a.max(over);
+            // (b): settle everyone in a random order; nothing panics, every vault ends >= 0 by construction.
+            let mut order: Vec<usize> = (0..MAX_WRITERS).filter(|&i| s.writers[i].writer != Pubkey::default()).collect();
+            for i in (1..order.len()).rev() { let j = (rnd() % (i as u64 + 1)) as usize; order.swap(i, j); }
+            let got = settle_all(&s, &order);
+            for &i in &order {
+                let (c, _, owed_c, _) = got[i];
+                let loss = owed_c - c;
+                if loss > 0 {
+                    let w = s.writers[i];
+                    let bound = (open_at_snap[i].max(w.sold_lots6) as u128 * (exercises_since[i] as u128 + 1) / 1_000_000_000 + 1) as u64;
+                    let ratio = loss as f64 / bound as f64;
+                    worst_loss_ratio = worst_loss_ratio.max(ratio);
+                }
+            }
+        }
+        eprintln!("skeptic2 random: worst over-assignment {worst_a}, worst loss/own-bound ratio {worst_loss_ratio:.3}");
+        assert!(worst_a <= 0, "(a) violated by {worst_a} units with sub-u64 writers");
+        // (c) attribution is not reached by an unbiased walk (ratio stays < 1); the directed case above reaches it.
+        assert!(worst_loss_ratio < 1.0, "random walk found a writer losing above its own dust bound: {worst_loss_ratio}");
     }
 
     #[test]

@@ -76,6 +76,12 @@ describe.skipIf(!deployed)("P1 lifecycle on the fork with the real NVDAx mint", 
 
   it("creates a Gap series lazily with a Token-2022 position mint", async () => {
     const c = client(deployer);
+    // On a shared fork the quoter may have filled the market's grid; the authority makes room for this one series.
+    const fresh = (await c.fetchMarket(mint))!;
+    if (fresh.liveSeries >= fresh.maxLiveSeries) {
+      await c.send(await c.updateMarket(mint, { maxLiveSeries: fresh.maxLiveSeries + 1 }));
+      market = (await c.fetchMarket(mint))!;
+    }
     const { tx, series: addr } = await c.createSeries(market, "call", K180, expiry);
     if (!(await connection.getAccountInfo(addr))) await c.send(tx);
     series = (await c.fetchSeries(addr))!;

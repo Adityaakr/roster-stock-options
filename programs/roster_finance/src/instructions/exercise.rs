@@ -54,6 +54,8 @@ pub fn handle_exercise(ctx: Context<Exercise>, lots6: u64) -> Result<()> {
     let series = ctx.accounts.series.load()?;
     require!(series.effective_expiry(crate::instructions::shared::HALT_GRACE_SECS) > clock.unix_timestamp, RosterError::Expired);
     require!(lots6 > 0 && lots6 <= series.unassigned_lots6, RosterError::SizeOutOfRange);
+    // Too small to move the assignment product: the writers could not be charged for it (feedback round 2).
+    require!(crate::math::moves_product(&series, lots6), RosterError::SizeOutOfRange);
     require!(ctx.accounts.holder_position_ata.amount >= lots6, RosterError::InsufficientPosition);
     require!(ctx.accounts.underlying_token_program.key() == ctx.accounts.market.token_program, RosterError::WrongTokenProgram);
 

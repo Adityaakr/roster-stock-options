@@ -26,11 +26,15 @@ fn qa_p_at_floor_every_writer_settles_and_the_series_closes() {
     // B sells 5000 lots at p = P_FLOOR; one more unit is exercised.
     env.quote(&b, &series, 5_000 * LOT, 5_000 * LOT, 1_000).unwrap();
     env.buy(&h, &series, 5_000 * LOT, 1_000).unwrap();
-    env.exercise(&h, &series, 1).unwrap();
+    // One unit cannot move the product in a 5000-lot pool at the floor (round 2): refused; six units can.
+    expect_err(env.exercise(&h, &series, 1), "SizeOutOfRange");
+    let u = load_series(&env.svm, &series).unassigned_lots6;
+    let smallest = ((u as u128 + P_FLOOR - 1) / P_FLOOR) as u64;
+    env.exercise(&h, &series, smallest).unwrap();
 
     let s = load_series(&env.svm, &series);
     let settlement_before = balance(&env.svm, &s.settlement_vault);
-    assert_eq!(settlement_before, (1_000 * LOT - 1) * 180 + 180, "vault holds exactly the strike paid");
+    assert_eq!(settlement_before, (1_000 * LOT - 1) * 180 + smallest * 180, "vault holds exactly the strike paid");
 
     warp_to(&mut env.svm, env.expiries[0]);
     env.settle_writer(&a.pubkey(), &series).unwrap();

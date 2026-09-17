@@ -77,6 +77,7 @@ pub fn handle_create_market(ctx: Context<CreateMarket>, params: CreateMarketPara
     m.live_series = 0;
     m.min_lots6 = params.min_lots6;
     m.max_lots6 = params.max_lots6;
+    require!(params.max_writer_lots6 <= crate::state::MAX_WRITER_LOTS6, RosterError::SizeOutOfRange);
     m.max_writer_lots6 = params.max_writer_lots6;
     m.tier = params.tier;
     // A mint with a live transfer hook is listed only once the hook path exists (P8); until then it is registry-only.

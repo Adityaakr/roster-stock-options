@@ -151,6 +151,7 @@ pub fn handle_auto_exercise(ctx: Context<AutoExerciseCrank>, lots6: u64) -> Resu
     // cannot be farmed by chunking (skeptic finding 1).
     let whole = ctx.accounts.holder_position_ata.amount.min(series.unassigned_lots6);
     require!(lots6 > 0 && lots6 == whole && lots6 >= market.min_lots6, RosterError::SizeOutOfRange);
+    require!(crate::math::moves_product(&series, lots6), RosterError::SizeOutOfRange);
 
     // The only price read in the program: fresh, fully verified, the market's own feed, tight confidence.
     let price = ctx.accounts.price_update.get_price_no_older_than(&clock, u64::from(market.max_price_age_secs), &market.token_feed_id).map_err(|_| RosterError::BadPriceUpdate)?;

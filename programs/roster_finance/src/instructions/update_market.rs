@@ -46,7 +46,7 @@ pub fn handle_update_market(ctx: Context<UpdateMarket>, p: UpdateMarketParams) -
     if let Some(v) = p.max_live_series { m.max_live_series = v; }
     if let Some(v) = p.min_lots6 { m.min_lots6 = v; }
     if let Some(v) = p.max_lots6 { m.max_lots6 = v; }
-    if let Some(v) = p.max_writer_lots6 { m.max_writer_lots6 = v; }
+    if let Some(v) = p.max_writer_lots6 { require!(v <= crate::state::MAX_WRITER_LOTS6, RosterError::SizeOutOfRange); m.max_writer_lots6 = v; }
     if let Some(v) = p.tier { m.tier = v; }
     if let Some(v) = p.listed { m.listed = v; }
     if let Some(v) = p.paused { m.paused = v; }

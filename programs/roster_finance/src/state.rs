@@ -6,6 +6,9 @@ pub const MAX_ASKS: usize = 32;
 pub const MAX_WRITERS: usize = 32;
 /// Asks walked by one `buy` (addendum D).
 pub const MAX_WALK: usize = 8;
+/// The most one writer may hold open in a series, 1e7 lots: at the product's floor precision (1e-9) a writer's
+/// rounding claim is then at most 0.01 lot per exercise, one minimum size, whoever settles after it.
+pub const MAX_WRITER_LOTS6: u64 = 10_000_000 * 1_000_000;
 /// One position token (6 decimals) is one lot; amounts of lots carry six decimals.
 pub const LOT6: u64 = 1_000_000;
 /// The assignment product `P` is a fixed-point number with this many units per 1.0.

@@ -32,6 +32,22 @@ export class HermesError extends Error {
 export class Hermes {
   private cache = new Map<string, { at: number; sample: PriceSample }>();
   private lastCall = 0;
+  /** Feeds the key's grant refused, with Hermes' own words, kept ten minutes so a refused feed is not re-asked every tick. */
+  readonly denied = new Map<string, { at: number; why: string }>();
+
+  /** The grant's refusal for a feed, if Hermes refused it recently. */
+  entitlementError(feedId: string): string | null {
+    const d = this.denied.get(feedId);
+    return d && Date.now() - d.at < 600_000 ? d.why : null;
+  }
+
+  /** No feed of the request could be served: surface the refusal so the caller can name the blocker. */
+  private throwIfNothing(feedIds: string[], out: Map<string, PriceSample>, err?: Error): void {
+    if (feedIds.some((id) => out.has(id))) return;
+    const why = feedIds.map((id) => this.entitlementError(id)).find(Boolean);
+    if (why) throw new HermesError(`Hermes 403: ${why}`, 403);
+    if (err) throw err;
+  }
 
   constructor(private readonly apiKey: string | undefined, private readonly ttlMs = 2_000, private readonly minGapMs = 350) {}
 
@@ -56,15 +72,38 @@ export class Hermes {
     const wait = this.minGapMs - (now - this.lastCall);
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     this.lastCall = Date.now();
-    const url = `${HERMES_URL}/v2/updates/price/latest?${missing.map((id) => `ids[]=${id}`).join("&")}&encoding=base64`;
-    const res = await fetch(url, { headers: { authorization: `Bearer ${this.apiKey}` }, signal: AbortSignal.timeout(8_000) });
-    if (!res.ok) throw new HermesError(`Hermes ${res.status}${res.status === 403 ? `: ${(await res.text()).slice(0, 160)}` : ""}`, res.status);
-    const j = Latest.parse(await res.json());
-    for (const p of j.parsed) {
-      const sample: PriceSample = { feedId: p.id, price: Number(p.price.price) * 10 ** p.price.expo, conf: Number(p.price.conf) * 10 ** p.price.expo, publishTime: p.price.publish_time, binary: j.binary.data[0] ?? "" };
-      this.cache.set(p.id, { at: Date.now(), sample });
-      out.set(p.id, sample);
+    // One request for the batch; if the key's grant excludes any feed the whole batch is refused (403), so the
+    // feeds are then asked for one by one and the refused ones are remembered for ten minutes. What the plan
+    // covers is used; what it does not is reported by `entitlementError`.
+    const ask = async (ids: string[]) => {
+      const url = `${HERMES_URL}/v2/updates/price/latest?${ids.map((id) => `ids[]=${id}`).join("&")}&encoding=base64`;
+      const res = await fetch(url, { headers: { authorization: `Bearer ${this.apiKey}` }, signal: AbortSignal.timeout(8_000) });
+      if (!res.ok) throw new HermesError(`Hermes ${res.status}${res.status === 403 ? `: ${(await res.text()).slice(0, 160)}` : ""}`, res.status);
+      const j = Latest.parse(await res.json());
+      for (const p of j.parsed) {
+        const sample: PriceSample = { feedId: p.id, price: Number(p.price.price) * 10 ** p.price.expo, conf: Number(p.price.conf) * 10 ** p.price.expo, publishTime: p.price.publish_time, binary: j.binary.data[0] ?? "" };
+        this.cache.set(p.id, { at: Date.now(), sample });
+        out.set(p.id, sample);
+      }
+    };
+    const askable = missing.filter((id) => { const d = this.denied.get(id); return !(d && Date.now() - d.at < 600_000); });
+    if (askable.length === 0) { this.throwIfNothing(feedIds, out); return out; }
+    try {
+      await ask(askable);
+    } catch (e) {
+      if (!(e instanceof HermesError) || e.status !== 403 || askable.length === 1) {
+        if (e instanceof HermesError && e.status === 403) this.denied.set(askable[0]!, { at: Date.now(), why: e.message.replace(/^Hermes 403: /, "") });
+        this.throwIfNothing(feedIds, out, e as Error);
+        return out;
+      }
+      for (const id of askable) {
+        try { await ask([id]); } catch (one) {
+          if (one instanceof HermesError && one.status === 403) this.denied.set(id, { at: Date.now(), why: one.message.replace(/^Hermes 403: /, "") });
+          else throw one;
+        }
+      }
     }
+    this.throwIfNothing(feedIds, out);
     return out;
   }
 }

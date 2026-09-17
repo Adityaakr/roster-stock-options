@@ -115,20 +115,29 @@ async function main() {
         const im = await issuerMark(l);
         if (im) { price = im.price; priceAt = nowTs; priceSource = im.source; } else console.warn(`[oracle] ${l.symbol}: issuer mark unavailable`);
       } else {
+        // Without a Pyth price for the token feed the issuer's own quote stands in: on the fork the quoter may price
+        // off it (a test device, refused elsewhere by the loopback rule); on a real cluster it is a display mark only.
+        const issuerFallback = async () => {
+          const ref = process.env[`REFERENCE_PRICE_${l.symbol.toUpperCase()}`];
+          // An Ondo wrapper has no issuer quote endpoint: the xStocks quote of the same stock stands in on the fork.
+          const issuer = ref ? Number(ref) : (await xstocksQuote(l.symbol).catch(() => null)) ?? (l.underlyingSymbol ? await xstocksQuote(`${l.underlyingSymbol}x`).catch(() => null) : null);
+          if (issuer) { price = issuer; priceAt = nowTs; priceSource = ref ? "reference" : "xstocks"; }
+        };
         try {
           const samples = await hermes.latest([feedId, equityFeed].filter((f) => !/^0+$/.test(f)));
           const t = samples.get(feedId);
           if (t) { price = t.price; priceAt = t.publishTime; priceSource = "hermes"; store.recordPrice({ feed_id: feedId, price: t.price, conf: t.conf, publish_time: t.publishTime }); }
           const e = samples.get(equityFeed);
           if (e) { equityPrice = e.price; store.recordPrice({ feed_id: equityFeed, price: e.price, conf: e.conf, publish_time: e.publishTime }); }
-          blocked = null;
+          if (t) blocked = null;
+          else {
+            // The equity reference may be inside the key's grant while the token feed is not: use what is served.
+            const why = hermes.entitlementError(feedId);
+            if (why) blocked = `PYTH_CORE_API_KEY grant: ${why}`;
+            await issuerFallback();
+          }
         } catch (err) {
-          // Without a Pyth key the issuer's own quote stands in: on the fork the quoter may price off it (a test device,
-          // refused elsewhere by the loopback rule); on a real cluster it is a display mark only and the quoter stays blocked.
-          const ref = process.env[`REFERENCE_PRICE_${l.symbol.toUpperCase()}`];
-          // An Ondo wrapper has no issuer quote endpoint: the xStocks quote of the same stock stands in on the fork.
-          const issuer = ref ? Number(ref) : (await xstocksQuote(l.symbol).catch(() => null)) ?? (l.underlyingSymbol ? await xstocksQuote(`${l.underlyingSymbol}x`).catch(() => null) : null);
-          if (issuer) { price = issuer; priceAt = nowTs; priceSource = ref ? "reference" : "xstocks"; }
+          await issuerFallback();
           if (err instanceof HermesError && err.status === 401) blocked = "PYTH_CORE_API_KEY";
           else if (err instanceof HermesError && err.status === 403) blocked = `PYTH_CORE_API_KEY grant: ${err.message.replace(/^Hermes 403: /, "")}`;
           else console.warn(`[oracle] ${l.symbol}: ${(err as Error).message}`);

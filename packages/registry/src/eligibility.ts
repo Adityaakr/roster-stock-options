@@ -4,7 +4,8 @@
  * amount, decimals. The verdict is a rule over those facts; the escrow round trip on the fork is proven separately
  * by scripts/list-markets.ts and recorded next to it.
  */
-import { Connection, PublicKey } from "@solana/web3.js";
+import type { Connection} from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { ExtensionType, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getExtensionTypes, getMint, getPausableConfig, getPermanentDelegate, getScaledUiAmountConfig, getTransferFeeConfig, getTransferHook } from "@solana/spl-token";
 
 export type Verdict = "eligible" | "eligible_with_fee" | "restricted_wrapper" | "ineligible";

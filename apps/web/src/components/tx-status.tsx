@@ -9,7 +9,7 @@ import { CopyButton } from "@/components/copy-button";
 export function TxStatus({ state, onRetry, doneHref, doneLabel }: { state: TxState; onRetry?: () => void; doneHref?: string; doneLabel?: string }) {
   const cluster = useCluster();
   if (state.status === "idle") return null;
-  if (state.status === "building") return <div className="msg" role="status" style={{ marginTop: 10 }}>Building the transaction on the app's RPC…</div>;
+  if (state.status === "building") return <div className="msg" role="status" style={{ marginTop: 10 }}>Building the transaction on the app&apos;s RPC…</div>;
   if (state.status === "signing") return <div className="msg" role="status" style={{ marginTop: 10 }}>Waiting for the wallet to sign. Nothing is sent until it does.</div>;
   if (state.status === "sending") return <div className="msg" role="status" style={{ marginTop: 10 }}>Sent. Waiting for confirmation…</div>;
   if (state.status === "done") {

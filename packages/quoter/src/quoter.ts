@@ -6,7 +6,8 @@
  */
 import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, getAccount, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { RosterClient, type MarketState, type SeriesState } from "@roster/sdk";
+import type { RosterClient} from "@roster/sdk";
+import { type MarketState, type SeriesState } from "@roster/sdk";
 import { sessionAt, type Session } from "@roster/core";
 import { decideAsk, gridStrikes } from "./model";
 

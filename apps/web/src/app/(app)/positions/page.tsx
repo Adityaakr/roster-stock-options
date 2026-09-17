@@ -60,7 +60,7 @@ export default function PositionsPage() {
         <div className="card" style={{ marginTop: 16 }} data-testid="history">
           <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
             <div className="h6">History and receipts</div>
-            <div className="small" style={{ marginTop: 4 }}>Every buy, exercise, quote, claim, withdrawal and release for this wallet, from the program's own events, with the signature.</div>
+            <div className="small" style={{ marginTop: 4 }}>Every buy, exercise, quote, claim, withdrawal and release for this wallet, from the program&apos;s own events, with the signature.</div>
           </div>
           <div className="scroll-x">
             <table className="table">

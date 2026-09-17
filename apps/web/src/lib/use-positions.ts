@@ -12,7 +12,11 @@ export function usePositions(): { positions: Position[] | null; history: Receipt
   const [history, setHistory] = useState<Receipt[]>([]);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(() => {
-    if (!wallet) { setPositions([]); setHistory([]); return; }
+    if (!wallet) {
+      // Settle the empty state asynchronously so an effect never sets state synchronously (react-hooks rule).
+      Promise.resolve().then(() => { setPositions([]); setHistory([]); });
+      return;
+    }
     fetch(`/api/positions/${wallet}`, { cache: "no-store" })
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);

@@ -9,10 +9,10 @@ export default function FeesPage() {
     <DocPage title="Fees" lead="One taker fee on the premium, collected at purchase. Nothing at exercise, nothing at settlement, so the maximum loss shown before you buy is the true maximum loss." updated="September 17, 2026">
       <h2>Schedule</h2>
       <ul>
-        <li><b>Taker fee:</b> 10 basis points of the premium, rounded up to the nearest USDC micro unit, paid by the buyer at <code>buy</code>. The figure on every quote is the program's own <code>fee_bps</code>, read from the protocol account.</li>
+        <li><b>Taker fee:</b> 10 basis points of the premium, rounded up to the nearest USDC micro unit, paid by the buyer at <code>buy</code>. The figure on every quote is the program&apos;s own <code>fee_bps</code>, read from the protocol account.</li>
         <li><b>Integrator share:</b> 30% of the taker fee when a buy carries a registered referrer. Referrals are not open yet; every fee currently stays with the protocol and the quote says so.</li>
-        <li><b>Keeper fee:</b> up to 2 USDC per auto-exercise, paid from the protocol's fee vault to whoever cranks it. Never charged to the holder.</li>
-        <li><b>Writers:</b> no fee to quote, cancel, claim premium, withdraw or settle. Writers pay only the network's transaction fee.</li>
+        <li><b>Keeper fee:</b> up to 2 USDC per auto-exercise, paid from the protocol&apos;s fee vault to whoever cranks it. Never charged to the holder.</li>
+        <li><b>Writers:</b> no fee to quote, cancel, claim premium, withdraw or settle. Writers pay only the network&apos;s transaction fee.</li>
         <li><b>Rent:</b> creating a series costs rent for its accounts, paid by whoever creates it and returned when the series closes after expiry.</li>
       </ul>
       <h2>Where fees go</h2>

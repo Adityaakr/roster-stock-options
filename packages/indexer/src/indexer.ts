@@ -5,10 +5,12 @@
  * addresses, exercise history including failures). The app never scans the chain directly.
  */
 import * as anchorNs from "@anchor-lang/core";
-import { Connection, PublicKey, type ConfirmedSignatureInfo } from "@solana/web3.js";
+import type { Connection} from "@solana/web3.js";
+import { PublicKey, type ConfirmedSignatureInfo } from "@solana/web3.js";
 import { getAccount } from "@solana/spl-token";
 import BN from "bn.js";
-import { RosterClient, type MarketState, type SeriesState } from "@roster/sdk";
+import type { RosterClient} from "@roster/sdk";
+import { type MarketState, type SeriesState } from "@roster/sdk";
 import type { Store, SeriesRow, MarketRow } from "./store";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;

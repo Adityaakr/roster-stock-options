@@ -2,7 +2,7 @@
  * Shared fork setup: the protocol and the Tier 1 NVDAx market exactly as P1 lists them (feed ids from CLAUDE.md 1,
  * extension flags read from the real mint). Idempotent so any e2e file can run first on a fresh fork.
  */
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import type { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import * as anchorNs from "@anchor-lang/core";
 import { RosterClient, type MarketState } from "../../packages/sdk/src";
 import { USDC_MINT, clockUnix, fundSol, loadOrCreateKey, resolveXstockMint } from "../../scripts/fork-lib";

@@ -4,9 +4,10 @@
  * pre-expiry window auto-exercises opted-in holders when the posted Pyth price says they are in the money. Every
  * crank is permissionless and destination-derived, so a stolen keeper key can only spend its own SOL.
  */
-import { PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 import { ExtensionType, getAccount, getAssociatedTokenAddressSync, getExtensionData, getMint, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
-import { RosterClient, type MarketState, type SeriesState, autoExercisePda } from "@roster/sdk";
+import type { RosterClient} from "@roster/sdk";
+import { type MarketState, type SeriesState, autoExercisePda } from "@roster/sdk";
 import { nextExpiries } from "@roster/core";
 
 export interface KeeperLogLine {

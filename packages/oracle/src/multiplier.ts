@@ -3,7 +3,7 @@
  * cross-checked against the mint's ScaledUiAmount extension on-chain. Emits the banner state the app shows and the
  * window the quoter widens or pauses in (CLAUDE.md 2.1: 15 minutes either side).
  */
-import { Connection, PublicKey } from "@solana/web3.js";
+import type { Connection, PublicKey } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID, getMint, getScaledUiAmountConfig } from "@solana/spl-token";
 import { effectiveMultiplier, inActivationWindow } from "@roster/core";
 

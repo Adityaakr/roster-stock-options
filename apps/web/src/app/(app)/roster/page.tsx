@@ -30,8 +30,6 @@ function RosterInner() {
   if (error) return <ErrorState message={`Could not read the roster: ${error}`} next="Reload the page." />;
   if (!data) return <Loading what="the roster" />;
   const sym = data.underlying.symbol;
-  const usdcTotal = data.underwriters.reduce((a, u) => a + u.usdcReserved, 0);
-  const tokTotal = data.underwriters.reduce((a, u) => a + u.underlyingReserved, 0);
   const capacity = data.terms.reduce((a, t) => a + t.capacity, 0);
   const oi = data.terms.reduce((a, t) => a + t.openInterest, 0);
   const depthAll = data.markets.reduce((a, m) => a + m.depthUsdc, 0);
@@ -102,7 +100,7 @@ function RosterInner() {
         <div className="card">
           <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
             <div className="h6">Reserved capital on {sym}</div>
-            <div className="small" style={{ marginTop: 4 }}>Quoted and backed by the writer's own deposit in the series vault.</div>
+            <div className="small" style={{ marginTop: 4 }}>Quoted and backed by the writer&apos;s own deposit in the series vault.</div>
           </div>
           <table className="table">
             <thead><tr><th>Underwriter</th><th className="num">USDC</th><th className="num">{sym}</th><th>Account</th></tr></thead>

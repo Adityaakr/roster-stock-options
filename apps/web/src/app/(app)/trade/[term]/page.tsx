@@ -9,7 +9,7 @@ import { Slider } from "@/components/landing/examples";
 import { TxStatus } from "@/components/tx-status";
 import { Address, Badge, ErrorState, KV, Loading } from "@/components/ui";
 import { useCluster, explorerUrl } from "@/lib/cluster";
-import { usd, usd0, usdK, usdSmart, dayLabel, countdown } from "@/lib/format";
+import { usd, usdK, usdSmart, dayLabel, countdown } from "@/lib/format";
 import { breakEven, costOf, DEFAULT_SIZE, maxLoss, moveNeeded, parseTermId, productName } from "@/lib/model";
 import { useTransaction } from "@/lib/tx";
 import { useRoster } from "@/lib/use-roster";

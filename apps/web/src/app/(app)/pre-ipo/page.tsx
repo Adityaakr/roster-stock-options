@@ -71,7 +71,7 @@ export default function PreIpoPage() {
           <p className="body-sm" style={{ margin: "6px 0 0" }}>{data.tokens.find((t) => t.issuer === "PreStocks")?.rights.exit ?? "A DEX where liquidity depends on finding a buyer; the mark-versus-token spread is the price of no exit."} No ownership, voting or dividend rights. The mint charges a transfer fee read above; Floors wait for fee-inclusive settlement.</p>
         </div>
       </div>
-      <p className="small" style={{ marginTop: 14 }}>Issuer figures read now from rest-api.tessera.pe and prestocks.com; mint facts and verdicts from the registry run{data.generatedAt ? ` of ${new Date(data.generatedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}` : ""}. Pre-IPO tokens have no Pyth feed: the issuer's own mark prices these terms and auto-exercise is off on them.</p>
+      <p className="small" style={{ marginTop: 14 }}>Issuer figures read now from rest-api.tessera.pe and prestocks.com; mint facts and verdicts from the registry run{data.generatedAt ? ` of ${new Date(data.generatedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}` : ""}. Pre-IPO tokens have no Pyth feed: the issuer&apos;s own mark prices these terms and auto-exercise is off on them.</p>
     </div>
   );
 }

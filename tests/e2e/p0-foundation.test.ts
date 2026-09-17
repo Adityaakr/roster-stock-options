@@ -6,7 +6,7 @@ import "../../scripts/env-load";
  * whose escrow transfer has not been proven on the fork). Skips when the fork is down.
  */
 import { beforeAll, describe, expect, it } from "vitest";
-import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, createTransferCheckedInstruction, getAccount, getMint, getScaledUiAmountConfig, getTransferHook, getPermanentDelegate, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { FORK_URL, USDC_MINT, clockUnix, forkReachable, fundSol, fundToken, loadOrCreateKey, resolveXstockMint, timeTravelTo, xstockMultiplier } from "../../scripts/fork-lib";
 import { effectiveMultiplier, sessionAt } from "../../packages/core/src";

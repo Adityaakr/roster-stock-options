@@ -11,7 +11,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { Connection } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { ROSTER_PROGRAM_ID } from "../../packages/sdk/src";
-import { FORK_URL, USDC_MINT, clockUnix, forkReachable, fundSol, fundToken, loadOrCreateKey, resolveXstockMint, timeTravelTo } from "../../scripts/fork-lib";
+import { FORK_URL, USDC_MINT, clockUnix, forkReachable, fundSol, fundToken, loadOrCreateKey, timeTravelTo } from "../../scripts/fork-lib";
 import { ensureTier1Market } from "./market";
 
 // A high port: 8790 is used by another tool on some machines, and the health poll would silently hit it.

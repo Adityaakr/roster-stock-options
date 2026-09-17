@@ -1,0 +1,18 @@
+{
+  "name": "roster",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.23.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "pnpm --filter @roster/web dev",
+    "build": "pnpm --filter @roster/web build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "shots": "pnpm --filter @roster/web shots"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  },
+  "type": "module"
+}

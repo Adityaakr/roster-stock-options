@@ -1,0 +1,46 @@
+/*
+  Roster Finance design tokens. Extracted verbatim from apps/web/src/app/globals.css on 2026-09-17, which is the
+  file the app loads; this copy exists because CLAUDE.md names tokens.css as the visual authority. Change both.
+*/
+
+:root {
+  /* Aoutive palette: Main Color #FCFCFC, Almost Black #1A1A1A, Dark Gray #4D4D4D, Slate Gray #737373, Silver Gray #E2E2E2, White Smoke #F7F7F7 */
+  --paper: #fcfcfc;
+  --surface: #f7f7f7;
+  --ink: #1a1a1a;
+  --ink-2: #4d4d4d;
+  --slate: #737373;
+  --line: #e2e2e2;
+  --line-strong: #cacccc;
+  --accent: #1a1a1a;
+  --green: #1f6f4a;
+  --amber: #9a6b14;
+  --display: var(--font-display), "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --sans: var(--font-sans), "Inter", "Helvetica Neue", Arial, sans-serif;
+  --mono: var(--font-mono), "IBM Plex Mono", "SFMono-Regular", Menlo, monospace;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  /* Aliases so every var the components reference resolves; the palette stays paper and ink. */
+  --red: var(--amber);
+  --yellow: var(--amber);
+  --text: var(--ink);
+  --text-2: var(--ink-2);
+  --text-4: var(--slate);
+  --frame: 1224px;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-slate: var(--slate);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-green: var(--green);
+  --color-amber: var(--amber);
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
+  --font-display: var(--display);
+}

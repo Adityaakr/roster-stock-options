@@ -1,0 +1,10 @@
+packages:
+  - packages/*
+  - apps/*
+allowBuilds:
+  esbuild: true
+  bigint-buffer: true
+  bufferutil: true
+  utf-8-validate: true
+  sharp: true
+  unrs-resolver: false

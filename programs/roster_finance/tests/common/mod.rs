@@ -4,6 +4,8 @@
 
 #![allow(dead_code)]
 
+pub mod vault;
+
 use {
     anchor_lang::{
         prelude::{Clock, Pubkey},

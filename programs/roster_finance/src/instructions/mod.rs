@@ -9,6 +9,7 @@ pub mod init_protocol;
 pub mod settle;
 pub mod shared;
 pub mod update_market;
+pub mod vault;
 pub mod writer;
 
 pub use admin::*;
@@ -20,4 +21,5 @@ pub use exercise::*;
 pub use init_protocol::*;
 pub use settle::*;
 pub use update_market::*;
+pub use vault::*;
 pub use writer::*;

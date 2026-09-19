@@ -72,4 +72,22 @@ pub enum RosterError {
     AutoExerciseDisabled,
     #[msg("outside the auto-exercise window")]
     OutsideWindow,
+    #[msg("the vault is halted")]
+    VaultHalted,
+    #[msg("the roll time has not arrived")]
+    RollNotDue,
+    #[msg("the mark is outside the band around the last roll's mark")]
+    MarkOutOfBand,
+    #[msg("the vault has nothing queued for that epoch")]
+    NothingQueued,
+    #[msg("that epoch has not rolled yet")]
+    EpochNotRolled,
+    #[msg("the vault has no bid on this series")]
+    NoBid,
+    #[msg("the vault would exceed its cap on this series")]
+    VaultCapReached,
+    #[msg("the series expires after the next roll; the vault writes only what settles by then")]
+    ExpiryPastRoll,
+    #[msg("the vault's collateral in live series must be settled before the roll")]
+    UnsettledCollateral,
 }

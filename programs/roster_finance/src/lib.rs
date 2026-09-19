@@ -107,4 +107,42 @@ pub mod roster_finance {
     pub fn auto_exercise(ctx: Context<AutoExerciseCrank>, lots6: u64) -> Result<()> {
         instructions::auto_exercise::handle_auto_exercise(ctx, lots6)
     }
+
+    // Part 3: the supply-side vaults.
+    pub fn init_vault(ctx: Context<InitVault>, params: VaultParams) -> Result<()> {
+        handle_init_vault(ctx, params)
+    }
+    pub fn vault_deposit(ctx: Context<VaultDeposit>, raw: u64) -> Result<()> {
+        handle_vault_deposit(ctx, raw)
+    }
+    pub fn vault_request_withdraw(ctx: Context<VaultWithdrawRequest>, shares: u64) -> Result<()> {
+        handle_vault_request_withdraw(ctx, shares)
+    }
+    pub fn vault_claim(ctx: Context<VaultClaim>, epoch: u32) -> Result<()> {
+        handle_vault_claim(ctx, epoch)
+    }
+    pub fn vault_roll(ctx: Context<VaultRoll>, mark_usdc_per_lot: u64) -> Result<()> {
+        handle_vault_roll(ctx, mark_usdc_per_lot)
+    }
+    pub fn vault_quote(ctx: Context<VaultWrite>, deposit_lots6: u64, ask_lots6: u64, ask_per_lot: u64) -> Result<()> {
+        handle_vault_quote(ctx, deposit_lots6, ask_lots6, ask_per_lot)
+    }
+    pub fn vault_cancel_ask(ctx: Context<VaultBook>, seq: u64) -> Result<()> {
+        handle_vault_cancel_ask(ctx, seq)
+    }
+    pub fn vault_withdraw_unsold(ctx: Context<VaultWrite>, lots6: u64) -> Result<()> {
+        handle_vault_withdraw_unsold(ctx, lots6)
+    }
+    pub fn vault_settle(ctx: Context<VaultSettle>) -> Result<()> {
+        handle_vault_settle(ctx)
+    }
+    pub fn vault_post_bid(ctx: Context<VaultPostBid>, bid_per_lot: u64, max_lots6: u64, ttl_secs: i64) -> Result<()> {
+        handle_vault_post_bid(ctx, bid_per_lot, max_lots6, ttl_secs)
+    }
+    pub fn sell_to_vault(ctx: Context<SellToVault>, lots6: u64, min_bid_per_lot: u64) -> Result<()> {
+        handle_sell_to_vault(ctx, lots6, min_bid_per_lot)
+    }
+    pub fn vault_set_halt(ctx: Context<VaultHalt>, halted: bool, reason: u8) -> Result<()> {
+        handle_vault_set_halt(ctx, halted, reason)
+    }
 }

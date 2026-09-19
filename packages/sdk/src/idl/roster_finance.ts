@@ -1893,6 +1893,308 @@ export type RosterFinance = {
       ]
     },
     {
+      "name": "initVault",
+      "discriminator": [
+        77,
+        79,
+        85,
+        150,
+        33,
+        217,
+        52,
+        106
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "marketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "collateralMint",
+          "docs": [
+            "The vault's collateral: the underlying for covered calls, USDC for cash-secured puts. Checked in the handler."
+          ]
+        },
+        {
+          "name": "otherMint"
+        },
+        {
+          "name": "shareMint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  115,
+                  104,
+                  97,
+                  114,
+                  101,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateralAta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "collateralTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "collateralMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "otherAta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "otherTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "otherMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "shareEscrow",
+          "docs": [
+            "Queued withdrawals park their shares here until the roll burns them."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "token2022Program"
+              },
+              {
+                "kind": "account",
+                "path": "shareMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "collateralTokenProgram"
+        },
+        {
+          "name": "otherTokenProgram"
+        },
+        {
+          "name": "token2022Program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "vaultParams"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "observeHalt",
       "docs": [
         "Record an issuer pause or vault freeze on the series (permissionless; the keeper watches for it)."
@@ -2056,6 +2358,180 @@ export type RosterFinance = {
         },
         {
           "name": "askPerLot",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "sellToVault",
+      "discriminator": [
+        234,
+        0,
+        247,
+        221,
+        161,
+        35,
+        97,
+        111
+      ],
+      "accounts": [
+        {
+          "name": "holder",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "marketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "vault",
+            "series"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "bid",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  98,
+                  105,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "series"
+              }
+            ]
+          }
+        },
+        {
+          "name": "positionMint",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "holderPositionAta",
+          "writable": true
+        },
+        {
+          "name": "quoteMint"
+        },
+        {
+          "name": "vaultQuoteAta",
+          "docs": [
+            "The vault pays premium from its USDC account: `other_ata` for a covered-call vault, `collateral_ata` for a put vault."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "quoteTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "quoteMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "holderQuoteAta",
+          "writable": true
+        },
+        {
+          "name": "quoteTokenProgram"
+        },
+        {
+          "name": "token2022Program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        }
+      ],
+      "args": [
+        {
+          "name": "lots6",
+          "type": "u64"
+        },
+        {
+          "name": "minBidPerLot",
           "type": "u64"
         }
       ]
@@ -2402,6 +2878,1370 @@ export type RosterFinance = {
       ]
     },
     {
+      "name": "vaultCancelAsk",
+      "discriminator": [
+        62,
+        116,
+        229,
+        151,
+        57,
+        58,
+        221,
+        54
+      ],
+      "accounts": [
+        {
+          "name": "manager",
+          "signer": true
+        },
+        {
+          "name": "vault"
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "marketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "vault",
+            "series"
+          ]
+        },
+        {
+          "name": "series",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "seq",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "vaultClaim",
+      "discriminator": [
+        248,
+        247,
+        50,
+        35,
+        235,
+        238,
+        104,
+        183
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  112,
+                  111,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "record",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  101,
+                  112,
+                  111,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "arg",
+                "path": "epoch"
+              }
+            ]
+          }
+        },
+        {
+          "name": "shareMint",
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "collateralMint",
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "otherMint",
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "collateralAta",
+          "writable": true,
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "otherAta",
+          "writable": true,
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "shareEscrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "token2022Program"
+              },
+              {
+                "kind": "account",
+                "path": "shareMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "ownerShareAta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "token2022Program"
+              },
+              {
+                "kind": "account",
+                "path": "shareMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "ownerCollateralAta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "collateralTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "collateralMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "ownerOtherAta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "otherTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "otherMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "collateralTokenProgram"
+        },
+        {
+          "name": "otherTokenProgram"
+        },
+        {
+          "name": "token2022Program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "epoch",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "vaultDeposit",
+      "discriminator": [
+        231,
+        150,
+        41,
+        113,
+        180,
+        104,
+        162,
+        120
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  112,
+                  111,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateralMint",
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "collateralAta",
+          "writable": true,
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "ownerCollateralAta",
+          "writable": true
+        },
+        {
+          "name": "collateralTokenProgram"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "raw",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "vaultPostBid",
+      "discriminator": [
+        190,
+        255,
+        174,
+        19,
+        254,
+        0,
+        21,
+        80
+      ],
+      "accounts": [
+        {
+          "name": "manager",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault"
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "marketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "vault",
+            "series"
+          ]
+        },
+        {
+          "name": "series"
+        },
+        {
+          "name": "bid",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  98,
+                  105,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "series"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "bidPerLot",
+          "type": "u64"
+        },
+        {
+          "name": "maxLots6",
+          "type": "u64"
+        },
+        {
+          "name": "ttlSecs",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "vaultQuote",
+      "discriminator": [
+        81,
+        100,
+        197,
+        152,
+        9,
+        82,
+        51,
+        81
+      ],
+      "accounts": [
+        {
+          "name": "manager",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "marketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "vault",
+            "series"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "collateralMint",
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "collateralVault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "collateralAta",
+          "writable": true,
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "collateralTokenProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "depositLots6",
+          "type": "u64"
+        },
+        {
+          "name": "askLots6",
+          "type": "u64"
+        },
+        {
+          "name": "askPerLot",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "vaultRequestWithdraw",
+      "discriminator": [
+        101,
+        225,
+        161,
+        20,
+        123,
+        23,
+        117,
+        123
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  112,
+                  111,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "shareMint",
+          "writable": true,
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "ownerShareAta",
+          "writable": true
+        },
+        {
+          "name": "shareEscrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "token2022Program"
+              },
+              {
+                "kind": "account",
+                "path": "shareMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token2022Program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "shares",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "vaultRoll",
+      "discriminator": [
+        56,
+        132,
+        41,
+        110,
+        114,
+        76,
+        229,
+        105
+      ],
+      "accounts": [
+        {
+          "name": "cranker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "marketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  101,
+                  112,
+                  111,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "vault.epoch",
+                "account": "vault"
+              }
+            ]
+          }
+        },
+        {
+          "name": "shareMint",
+          "writable": true,
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "collateralAta",
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "otherAta",
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "shareEscrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "token2022Program"
+              },
+              {
+                "kind": "account",
+                "path": "shareMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token2022Program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "markUsdcPerLot",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "vaultSetHalt",
+      "discriminator": [
+        176,
+        18,
+        46,
+        155,
+        93,
+        224,
+        152,
+        15
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "halted",
+          "type": "bool"
+        },
+        {
+          "name": "reason",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "vaultSettle",
+      "discriminator": [
+        62,
+        112,
+        113,
+        192,
+        1,
+        207,
+        162,
+        252
+      ],
+      "accounts": [
+        {
+          "name": "cranker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "marketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "vault",
+            "series"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "underlyingMint"
+        },
+        {
+          "name": "quoteMint"
+        },
+        {
+          "name": "collateralVault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "settlementVault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "quoteVault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "vaultUnderlyingAta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "underlyingTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "underlyingMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "vaultQuoteAta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "quoteTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "quoteMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "underlyingTokenProgram"
+        },
+        {
+          "name": "quoteTokenProgram"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "vaultWithdrawUnsold",
+      "discriminator": [
+        43,
+        157,
+        185,
+        250,
+        70,
+        72,
+        51,
+        39
+      ],
+      "accounts": [
+        {
+          "name": "manager",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "marketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "vault",
+            "series"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "collateralMint",
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "collateralVault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "collateralAta",
+          "writable": true,
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "collateralTokenProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "lots6",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "withdrawFees",
       "docs": [
         "Move fees from the fee vault to the treasury's token account. Zero means everything."
@@ -2684,6 +4524,19 @@ export type RosterFinance = {
       ]
     },
     {
+      "name": "epochRecord",
+      "discriminator": [
+        193,
+        72,
+        26,
+        28,
+        161,
+        98,
+        58,
+        132
+      ]
+    },
+    {
       "name": "marketConfig",
       "discriminator": [
         119,
@@ -2721,6 +4574,45 @@ export type RosterFinance = {
         250,
         162
       ]
+    },
+    {
+      "name": "vault",
+      "discriminator": [
+        211,
+        8,
+        232,
+        43,
+        2,
+        152,
+        117,
+        119
+      ]
+    },
+    {
+      "name": "vaultBid",
+      "discriminator": [
+        231,
+        251,
+        170,
+        134,
+        7,
+        200,
+        106,
+        106
+      ]
+    },
+    {
+      "name": "vaultPosition",
+      "discriminator": [
+        122,
+        109,
+        193,
+        63,
+        69,
+        148,
+        90,
+        237
+      ]
     }
   ],
   "events": [
@@ -2751,6 +4643,19 @@ export type RosterFinance = {
       ]
     },
     {
+      "name": "bidPosted",
+      "discriminator": [
+        230,
+        56,
+        188,
+        27,
+        97,
+        61,
+        67,
+        47
+      ]
+    },
+    {
       "name": "bought",
       "discriminator": [
         193,
@@ -2761,6 +4666,19 @@ export type RosterFinance = {
         76,
         42,
         104
+      ]
+    },
+    {
+      "name": "boughtBack",
+      "discriminator": [
+        188,
+        156,
+        61,
+        154,
+        116,
+        184,
+        186,
+        21
       ]
     },
     {
@@ -2891,6 +4809,110 @@ export type RosterFinance = {
         181,
         233,
         180
+      ]
+    },
+    {
+      "name": "vaultClaimed",
+      "discriminator": [
+        232,
+        48,
+        41,
+        194,
+        218,
+        163,
+        56,
+        86
+      ]
+    },
+    {
+      "name": "vaultCreated",
+      "discriminator": [
+        117,
+        25,
+        120,
+        254,
+        75,
+        236,
+        78,
+        115
+      ]
+    },
+    {
+      "name": "vaultDeposited",
+      "discriminator": [
+        59,
+        62,
+        43,
+        200,
+        220,
+        104,
+        100,
+        67
+      ]
+    },
+    {
+      "name": "vaultHaltToggled",
+      "discriminator": [
+        246,
+        240,
+        133,
+        168,
+        213,
+        142,
+        78,
+        248
+      ]
+    },
+    {
+      "name": "vaultQuoted",
+      "discriminator": [
+        34,
+        96,
+        211,
+        251,
+        217,
+        20,
+        195,
+        160
+      ]
+    },
+    {
+      "name": "vaultRolled",
+      "discriminator": [
+        31,
+        19,
+        159,
+        213,
+        211,
+        58,
+        126,
+        183
+      ]
+    },
+    {
+      "name": "vaultSettled",
+      "discriminator": [
+        203,
+        151,
+        101,
+        220,
+        6,
+        59,
+        48,
+        30
+      ]
+    },
+    {
+      "name": "vaultWithdrawRequested",
+      "discriminator": [
+        57,
+        133,
+        22,
+        19,
+        103,
+        58,
+        113,
+        247
       ]
     },
     {
@@ -3082,6 +5104,51 @@ export type RosterFinance = {
       "code": 6034,
       "name": "outsideWindow",
       "msg": "outside the auto-exercise window"
+    },
+    {
+      "code": 6035,
+      "name": "vaultHalted",
+      "msg": "the vault is halted"
+    },
+    {
+      "code": 6036,
+      "name": "rollNotDue",
+      "msg": "the roll time has not arrived"
+    },
+    {
+      "code": 6037,
+      "name": "markOutOfBand",
+      "msg": "the mark is outside the band around the last roll's mark"
+    },
+    {
+      "code": 6038,
+      "name": "nothingQueued",
+      "msg": "the vault has nothing queued for that epoch"
+    },
+    {
+      "code": 6039,
+      "name": "epochNotRolled",
+      "msg": "that epoch has not rolled yet"
+    },
+    {
+      "code": 6040,
+      "name": "noBid",
+      "msg": "the vault has no bid on this series"
+    },
+    {
+      "code": 6041,
+      "name": "vaultCapReached",
+      "msg": "the vault would exceed its cap on this series"
+    },
+    {
+      "code": 6042,
+      "name": "expiryPastRoll",
+      "msg": "the series expires after the next roll; the vault writes only what settles by then"
+    },
+    {
+      "code": 6043,
+      "name": "unsettledCollateral",
+      "msg": "the vault's collateral in live series must be settled before the roll"
     }
   ],
   "types": [
@@ -3218,6 +5285,34 @@ export type RosterFinance = {
       }
     },
     {
+      "name": "bidPosted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "bidPerLot",
+            "type": "u64"
+          },
+          {
+            "name": "maxLots6",
+            "type": "u64"
+          },
+          {
+            "name": "expiresAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "bought",
       "type": {
         "kind": "struct",
@@ -3249,6 +5344,38 @@ export type RosterFinance = {
           {
             "name": "asksWalked",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "boughtBack",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "holder",
+            "type": "pubkey"
+          },
+          {
+            "name": "lots6",
+            "type": "u64"
+          },
+          {
+            "name": "requestedLots6",
+            "type": "u64"
+          },
+          {
+            "name": "premium",
+            "type": "u64"
           }
         ]
       }
@@ -3357,6 +5484,84 @@ export type RosterFinance = {
           {
             "name": "feedPricesUiShare",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "epochRecord",
+      "docs": [
+        "The record of one roll: what a share was worth going in and coming out, so a queued deposit or withdrawal from that",
+        "epoch settles at exactly that price whenever its owner claims it. One small account per roll, rent reclaimable."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "rolledAt",
+            "type": "i64"
+          },
+          {
+            "name": "sharesPerRaw1e12",
+            "docs": [
+              "Shares minted per raw unit of collateral queued for this epoch, × IDX_SCALE."
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "collateralPerShare1e12",
+            "docs": [
+              "Raw collateral and other-asset units paid per share withdrawn at this roll, × IDX_SCALE."
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "otherPerShare1e12",
+            "type": "u128"
+          },
+          {
+            "name": "navCollateralRaw",
+            "type": "u64"
+          },
+          {
+            "name": "navOther",
+            "type": "u64"
+          },
+          {
+            "name": "markUsdcPerLot",
+            "type": "u64"
+          },
+          {
+            "name": "totalSharesAfter",
+            "type": "u64"
+          },
+          {
+            "name": "premiumIn",
+            "type": "u64"
+          },
+          {
+            "name": "buybackOut",
+            "type": "u64"
+          },
+          {
+            "name": "assignedLots6",
+            "type": "u64"
+          },
+          {
+            "name": "pnlPerShare1e6",
+            "type": "i64"
           }
         ]
       }
@@ -4277,6 +6482,545 @@ export type RosterFinance = {
             "type": {
               "option": "pubkey"
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "vault",
+      "docs": [
+        "A vault: pooled collateral that quotes into the book through the same `quote` path as any writer. Its collateral",
+        "asset is the underlying (covered calls) or USDC (cash-secured puts); the other asset arrives through premiums and",
+        "assignment and is paid out pro rata with every withdrawal. Epochs are weekly: deposits enter and withdrawals leave",
+        "only at a roll, so nobody dilutes a week of carried risk or runs on collateral that sits behind live contracts."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "kind",
+            "type": "u8"
+          },
+          {
+            "name": "state",
+            "type": "u8"
+          },
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "collateralMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "otherMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "manager",
+            "type": "pubkey"
+          },
+          {
+            "name": "shareMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "collateralAta",
+            "type": "pubkey"
+          },
+          {
+            "name": "otherAta",
+            "type": "pubkey"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "epochStartTs",
+            "type": "i64"
+          },
+          {
+            "name": "nextRollTs",
+            "type": "i64"
+          },
+          {
+            "name": "rollIntervalSecs",
+            "type": "i64"
+          },
+          {
+            "name": "totalShares",
+            "type": "u64"
+          },
+          {
+            "name": "lockedRaw",
+            "docs": [
+              "Collateral (raw units) the vault has deposited into series slots and not yet withdrawn or settled back."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "pendingDepositRaw",
+            "docs": [
+              "Collateral (raw units) queued by depositors for the next roll, already in `collateral_ata`."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "pendingWithdrawShares",
+            "docs": [
+              "Shares queued for withdrawal at the next roll, held in the vault's own share account."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "reservedCollateralRaw",
+            "docs": [
+              "Collateral and other-asset units set aside at rolls for withdrawals not yet completed."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "reservedOther",
+            "type": "u64"
+          },
+          {
+            "name": "capPerSeriesLots6",
+            "type": "u64"
+          },
+          {
+            "name": "capTotalLots6",
+            "type": "u64"
+          },
+          {
+            "name": "spreadBps",
+            "type": "u16"
+          },
+          {
+            "name": "lastMarkUsdcPerLot",
+            "docs": [
+              "The mark the last roll valued the other asset at, micro-USDC per lot; the next roll must stay within `mark_band_bps` of it."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "markBandBps",
+            "type": "u16"
+          },
+          {
+            "name": "epochPremiumIn",
+            "docs": [
+              "This epoch so far, reset at each roll: premiums received, paid on buybacks, lots assigned."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "epochBuybackOut",
+            "type": "u64"
+          },
+          {
+            "name": "epochAssignedLots6",
+            "type": "u64"
+          },
+          {
+            "name": "navPerShare1e6",
+            "docs": [
+              "Published at the last roll: collateral per share and the epoch's P&L per share, both in raw collateral units × 1e6."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "epochPnlPerShare1e6",
+            "type": "i64"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultBid",
+      "docs": [
+        "The vault's standing bid on one series: what it pays a holder to take its own short back."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "bidPerLot",
+            "type": "u64"
+          },
+          {
+            "name": "maxLots6",
+            "type": "u64"
+          },
+          {
+            "name": "postedAt",
+            "type": "i64"
+          },
+          {
+            "name": "expiresAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "shares",
+            "type": "u64"
+          },
+          {
+            "name": "collateralRaw",
+            "type": "u64"
+          },
+          {
+            "name": "other",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "kind",
+            "type": "u8"
+          },
+          {
+            "name": "shareMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "manager",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultDeposited",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "raw",
+            "type": "u64"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultHaltToggled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "halted",
+            "type": "bool"
+          },
+          {
+            "name": "reason",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "kind",
+            "type": "u8"
+          },
+          {
+            "name": "manager",
+            "type": "pubkey"
+          },
+          {
+            "name": "rollIntervalSecs",
+            "type": "i64"
+          },
+          {
+            "name": "firstRollTs",
+            "type": "i64"
+          },
+          {
+            "name": "capPerSeriesLots6",
+            "type": "u64"
+          },
+          {
+            "name": "capTotalLots6",
+            "type": "u64"
+          },
+          {
+            "name": "spreadBps",
+            "type": "u16"
+          },
+          {
+            "name": "markBandBps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultPosition",
+      "docs": [
+        "What one depositor has queued. Live shares are the depositor's share-token balance, never stored here."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "queuedDepositRaw",
+            "type": "u64"
+          },
+          {
+            "name": "queuedDepositEpoch",
+            "type": "u32"
+          },
+          {
+            "name": "queuedWithdrawShares",
+            "type": "u64"
+          },
+          {
+            "name": "queuedWithdrawEpoch",
+            "type": "u32"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultQuoted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "depositLots6",
+            "type": "u64"
+          },
+          {
+            "name": "askLots6",
+            "type": "u64"
+          },
+          {
+            "name": "askPerLot",
+            "type": "u64"
+          },
+          {
+            "name": "seq",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultRolled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "navCollateralRaw",
+            "type": "u64"
+          },
+          {
+            "name": "navOther",
+            "type": "u64"
+          },
+          {
+            "name": "markUsdcPerLot",
+            "type": "u64"
+          },
+          {
+            "name": "sharesMinted",
+            "type": "u64"
+          },
+          {
+            "name": "sharesBurned",
+            "type": "u64"
+          },
+          {
+            "name": "totalShares",
+            "type": "u64"
+          },
+          {
+            "name": "premiumIn",
+            "type": "u64"
+          },
+          {
+            "name": "buybackOut",
+            "type": "u64"
+          },
+          {
+            "name": "assignedLots6",
+            "type": "u64"
+          },
+          {
+            "name": "pnlPerShare1e6",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "series",
+            "type": "pubkey"
+          },
+          {
+            "name": "collateralOut",
+            "type": "u64"
+          },
+          {
+            "name": "settlementOut",
+            "type": "u64"
+          },
+          {
+            "name": "premiumOut",
+            "type": "u64"
+          },
+          {
+            "name": "assignedLots6",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultWithdrawRequested",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "shares",
+            "type": "u64"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
           }
         ]
       }

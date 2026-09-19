@@ -261,3 +261,138 @@ impl AutoExercise {
     pub const SEED: &'static [u8] = b"autoex";
     pub const AUTHORITY_SEED: &'static [u8] = b"autoex_authority";
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Part 3: the supply-side vaults. A vault is one more writer in the book, owned by a PDA that a manager acts for.
+
+pub const VAULT_COVERED_CALL: u8 = 0;
+pub const VAULT_CASH_SECURED_PUT: u8 = 1;
+pub const VAULT_OPEN: u8 = 0;
+pub const VAULT_HALTED: u8 = 2;
+/// Shares carry six decimals; 1e6 shares are minted per lot of collateral at the first deposit.
+pub const SHARE_UNIT: u64 = 1_000_000;
+pub const IDX_SCALE: u128 = 1_000_000_000_000;
+
+/// A vault: pooled collateral that quotes into the book through the same `quote` path as any writer. Its collateral
+/// asset is the underlying (covered calls) or USDC (cash-secured puts); the other asset arrives through premiums and
+/// assignment and is paid out pro rata with every withdrawal. Epochs are weekly: deposits enter and withdrawals leave
+/// only at a roll, so nobody dilutes a week of carried risk or runs on collateral that sits behind live contracts.
+#[account]
+#[derive(InitSpace)]
+pub struct Vault {
+    pub bump: u8,
+    pub kind: u8,
+    pub state: u8,
+    pub market: Pubkey,
+    pub collateral_mint: Pubkey,
+    pub other_mint: Pubkey,
+    pub manager: Pubkey,
+    pub share_mint: Pubkey,
+    pub collateral_ata: Pubkey,
+    pub other_ata: Pubkey,
+    pub epoch: u32,
+    pub epoch_start_ts: i64,
+    pub next_roll_ts: i64,
+    pub roll_interval_secs: i64,
+    pub total_shares: u64,
+    /// Collateral (raw units) the vault has deposited into series slots and not yet withdrawn or settled back.
+    pub locked_raw: u64,
+    /// Collateral (raw units) queued by depositors for the next roll, already in `collateral_ata`.
+    pub pending_deposit_raw: u64,
+    /// Shares queued for withdrawal at the next roll, held in the vault's own share account.
+    pub pending_withdraw_shares: u64,
+    /// Collateral and other-asset units set aside at rolls for withdrawals not yet completed.
+    pub reserved_collateral_raw: u64,
+    pub reserved_other: u64,
+    pub cap_per_series_lots6: u64,
+    pub cap_total_lots6: u64,
+    pub spread_bps: u16,
+    /// The mark the last roll valued the other asset at, micro-USDC per lot; the next roll must stay within `mark_band_bps` of it.
+    pub last_mark_usdc_per_lot: u64,
+    pub mark_band_bps: u16,
+    /// This epoch so far, reset at each roll: premiums received, paid on buybacks, lots assigned.
+    pub epoch_premium_in: u64,
+    pub epoch_buyback_out: u64,
+    pub epoch_assigned_lots6: u64,
+    /// Published at the last roll: collateral per share and the epoch's P&L per share, both in raw collateral units × 1e6.
+    pub nav_per_share_1e6: u64,
+    pub epoch_pnl_per_share_1e6: i64,
+    pub _reserved: [u8; 64],
+}
+
+impl Vault {
+    pub const SEED: &'static [u8] = b"vault";
+    pub const SHARE_MINT: &'static [u8] = b"vshares";
+    pub fn is_covered_call(&self) -> bool {
+        self.kind == VAULT_COVERED_CALL
+    }
+    pub fn side(&self) -> Side {
+        if self.is_covered_call() { Side::Call } else { Side::Put }
+    }
+    pub fn kind_byte(&self) -> [u8; 1] {
+        [self.kind]
+    }
+}
+
+/// What one depositor has queued. Live shares are the depositor's share-token balance, never stored here.
+#[account]
+#[derive(InitSpace)]
+pub struct VaultPosition {
+    pub bump: u8,
+    pub vault: Pubkey,
+    pub owner: Pubkey,
+    pub queued_deposit_raw: u64,
+    pub queued_deposit_epoch: u32,
+    pub queued_withdraw_shares: u64,
+    pub queued_withdraw_epoch: u32,
+    pub _reserved: [u8; 32],
+}
+
+impl VaultPosition {
+    pub const SEED: &'static [u8] = b"vpos";
+}
+
+/// The record of one roll: what a share was worth going in and coming out, so a queued deposit or withdrawal from that
+/// epoch settles at exactly that price whenever its owner claims it. One small account per roll, rent reclaimable.
+#[account]
+#[derive(InitSpace)]
+pub struct EpochRecord {
+    pub bump: u8,
+    pub vault: Pubkey,
+    pub epoch: u32,
+    pub rolled_at: i64,
+    /// Shares minted per raw unit of collateral queued for this epoch, × IDX_SCALE.
+    pub shares_per_raw_1e12: u128,
+    /// Raw collateral and other-asset units paid per share withdrawn at this roll, × IDX_SCALE.
+    pub collateral_per_share_1e12: u128,
+    pub other_per_share_1e12: u128,
+    pub nav_collateral_raw: u64,
+    pub nav_other: u64,
+    pub mark_usdc_per_lot: u64,
+    pub total_shares_after: u64,
+    pub premium_in: u64,
+    pub buyback_out: u64,
+    pub assigned_lots6: u64,
+    pub pnl_per_share_1e6: i64,
+}
+
+impl EpochRecord {
+    pub const SEED: &'static [u8] = b"vepoch";
+}
+
+/// The vault's standing bid on one series: what it pays a holder to take its own short back.
+#[account]
+#[derive(InitSpace)]
+pub struct VaultBid {
+    pub bump: u8,
+    pub vault: Pubkey,
+    pub series: Pubkey,
+    pub bid_per_lot: u64,
+    pub max_lots6: u64,
+    pub posted_at: i64,
+    pub expires_at: i64,
+}
+
+impl VaultBid {
+    pub const SEED: &'static [u8] = b"vbid";
+}

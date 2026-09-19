@@ -30,3 +30,25 @@ pub struct SeriesClosed { pub series: Pubkey, pub dust_collateral: u64, pub dust
 pub struct FeesWithdrawn { pub amount: u64, pub to: Pubkey }
 #[event]
 pub struct PauseToggled { pub market: Option<Pubkey>, pub paused: bool }
+
+// Part 3: the vaults.
+#[event]
+pub struct VaultCreated { pub vault: Pubkey, pub market: Pubkey, pub kind: u8, pub share_mint: Pubkey, pub manager: Pubkey }
+#[event]
+pub struct VaultDeposited { pub vault: Pubkey, pub owner: Pubkey, pub raw: u64, pub epoch: u32 }
+#[event]
+pub struct VaultWithdrawRequested { pub vault: Pubkey, pub owner: Pubkey, pub shares: u64, pub epoch: u32 }
+#[event]
+pub struct VaultRolled { pub vault: Pubkey, pub epoch: u32, pub nav_collateral_raw: u64, pub nav_other: u64, pub mark_usdc_per_lot: u64, pub shares_minted: u64, pub shares_burned: u64, pub total_shares: u64, pub premium_in: u64, pub buyback_out: u64, pub assigned_lots6: u64, pub pnl_per_share_1e6: i64 }
+#[event]
+pub struct VaultClaimed { pub vault: Pubkey, pub owner: Pubkey, pub epoch: u32, pub shares: u64, pub collateral_raw: u64, pub other: u64 }
+#[event]
+pub struct VaultQuoted { pub vault: Pubkey, pub series: Pubkey, pub deposit_lots6: u64, pub ask_lots6: u64, pub ask_per_lot: u64, pub seq: u64 }
+#[event]
+pub struct VaultSettled { pub vault: Pubkey, pub series: Pubkey, pub collateral_out: u64, pub settlement_out: u64, pub premium_out: u64, pub assigned_lots6: u64 }
+#[event]
+pub struct BidPosted { pub vault: Pubkey, pub series: Pubkey, pub bid_per_lot: u64, pub max_lots6: u64, pub expires_at: i64 }
+#[event]
+pub struct BoughtBack { pub vault: Pubkey, pub series: Pubkey, pub holder: Pubkey, pub lots6: u64, pub requested_lots6: u64, pub premium: u64 }
+#[event]
+pub struct VaultHaltToggled { pub vault: Pubkey, pub halted: bool, pub reason: u8 }

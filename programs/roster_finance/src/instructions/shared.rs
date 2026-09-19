@@ -78,6 +78,56 @@ pub fn vault_in<'info>(
     Ok(arrived)
 }
 
+/// `vault_in` for a program-owned payer: the same transfer, signed with the payer's seeds (the vaults of Part 3).
+pub fn vault_in_signed<'info>(
+    token_program: &AccountInfo<'info>,
+    from: &InterfaceAccount<'info, TokenAccount>,
+    mint: &InterfaceAccount<'info, Mint>,
+    vault: &mut InterfaceAccount<'info, TokenAccount>,
+    authority: &AccountInfo<'info>,
+    signer_seeds: &[&[&[u8]]],
+    amount: u64,
+) -> Result<u64> {
+    if amount == 0 {
+        return Ok(0);
+    }
+    let before = vault.amount;
+    token_interface::transfer_checked(
+        CpiContext::new_with_signer(token_program.key(),
+            TransferChecked { from: from.to_account_info(), mint: mint.to_account_info(), to: vault.to_account_info(), authority: authority.clone() },
+            signer_seeds,
+        ),
+        amount,
+        mint.decimals,
+    )?;
+    vault.reload()?;
+    let arrived = vault.amount.checked_sub(before).ok_or(RosterError::Overflow)?;
+    Ok(arrived)
+}
+
+/// A transfer out of any program-owned token account, signed with its owner's seeds.
+pub fn transfer_signed<'info>(
+    token_program: &AccountInfo<'info>,
+    from: &InterfaceAccount<'info, TokenAccount>,
+    mint: &InterfaceAccount<'info, Mint>,
+    to: &InterfaceAccount<'info, TokenAccount>,
+    authority: &AccountInfo<'info>,
+    signer_seeds: &[&[&[u8]]],
+    amount: u64,
+) -> Result<()> {
+    if amount == 0 {
+        return Ok(());
+    }
+    token_interface::transfer_checked(
+        CpiContext::new_with_signer(token_program.key(),
+            TransferChecked { from: from.to_account_info(), mint: mint.to_account_info(), to: to.to_account_info(), authority: authority.clone() },
+            signer_seeds,
+        ),
+        amount,
+        mint.decimals,
+    )
+}
+
 pub fn now(clock: &Clock) -> i64 {
     clock.unix_timestamp
 }

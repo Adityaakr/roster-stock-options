@@ -47,17 +47,45 @@ pub struct SettleWriter<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handle_settle_writer(ctx: Context<SettleWriter>) -> Result<()> {
+/// What settling one writer paid out, for the caller's own accounting.
+pub struct SettleOutcome {
+    pub free_lots6: u64,
+    pub unassigned_lots6: u64,
+    pub assigned_lots6: u64,
+    pub collateral_out: u64,
+    pub settlement_out: u64,
+    pub premium_out: u64,
+}
+
+/// The accounts one settlement touches, borrowed so the same settlement serves a person and a vault.
+pub struct SettleAccounts<'a, 'info> {
+    pub market: &'a Account<'info, MarketConfig>,
+    pub series: &'a AccountLoader<'info, Series>,
+    pub writer: Pubkey,
+    pub underlying_mint: &'a InterfaceAccount<'info, Mint>,
+    pub quote_mint: &'a InterfaceAccount<'info, Mint>,
+    pub collateral_vault: &'a InterfaceAccount<'info, TokenAccount>,
+    pub settlement_vault: &'a InterfaceAccount<'info, TokenAccount>,
+    pub quote_vault: &'a InterfaceAccount<'info, TokenAccount>,
+    pub writer_underlying_ata: &'a InterfaceAccount<'info, TokenAccount>,
+    pub writer_quote_ata: &'a InterfaceAccount<'info, TokenAccount>,
+    pub underlying_token_program: &'a Interface<'info, TokenInterface>,
+    pub quote_token_program: &'a Interface<'info, TokenInterface>,
+}
+
+/// Settle one writer's slot after expiry: never-sold and unassigned collateral back, assigned lots as the other leg,
+/// premium claimable. The pro-rata share comes from `fold` on the assignment product.
+pub fn settle_core(a: SettleAccounts) -> Result<SettleOutcome> {
     let clock = Clock::get()?;
-    let series_key = ctx.accounts.series.key();
-    let series_info = ctx.accounts.series.to_account_info();
-    let mut series = ctx.accounts.series.load_mut()?;
-    require!(ctx.accounts.underlying_token_program.key() == ctx.accounts.market.token_program, RosterError::WrongTokenProgram);
-    let underlying_vault = match series.side() { Side::Call => &ctx.accounts.collateral_vault, Side::Put => &ctx.accounts.settlement_vault };
-    let halted = crate::instructions::shared::observe_halt(&mut series, &ctx.accounts.underlying_mint.to_account_info(), underlying_vault, clock.unix_timestamp);
+    let series_key = a.series.key();
+    let series_info = a.series.to_account_info();
+    let mut series = a.series.load_mut()?;
+    require!(a.underlying_token_program.key() == a.market.token_program, RosterError::WrongTokenProgram);
+    let underlying_vault = match series.side() { Side::Call => a.collateral_vault, Side::Put => a.settlement_vault };
+    let halted = crate::instructions::shared::observe_halt(&mut series, &a.underlying_mint.to_account_info(), underlying_vault, clock.unix_timestamp);
     require!(!halted, RosterError::Halted);
     require!(clock.unix_timestamp >= series.effective_expiry(crate::instructions::shared::HALT_GRACE_SECS), RosterError::NotExpired);
-    let writer = ctx.accounts.writer.key();
+    let writer = a.writer;
     let slot = series.writer_slot(&writer).ok_or(RosterError::NoWriterSlot)?;
     require!(!series.writers[slot].is_settled(), RosterError::AlreadySettled);
 
@@ -68,9 +96,8 @@ pub fn handle_settle_writer(ctx: Context<SettleWriter>) -> Result<()> {
     let assigned = w.assigned_lots6;
     let premium = w.premium_claimable;
 
-    let market = &ctx.accounts.market;
     let strike = series.strike_usdc_per_lot;
-    let raw_per_lot6 = market.raw_per_lot6();
+    let raw_per_lot6 = a.market.raw_per_lot6();
     let seeds = SeriesSeeds::of(&series);
     let side = series.side();
     drop(series);
@@ -78,28 +105,39 @@ pub fn handle_settle_writer(ctx: Context<SettleWriter>) -> Result<()> {
     // vault, so the cap only ever trims rounding dust, and the last writer can always settle (feedback finding F1).
     let (collateral_out, settlement_out) = match side {
         Side::Call => {
-            let raw = raw_for_lots6(free + unassigned, raw_per_lot6).ok_or(RosterError::Overflow)?.min(ctx.accounts.collateral_vault.amount);
-            let usdc = usdc_paid_floor(assigned, strike).ok_or(RosterError::Overflow)?.min(ctx.accounts.settlement_vault.amount);
-            vault_out(&series_info, &seeds, &ctx.accounts.underlying_token_program, &ctx.accounts.collateral_vault, &ctx.accounts.underlying_mint, &ctx.accounts.writer_underlying_ata, raw)?;
-            vault_out(&series_info, &seeds, &ctx.accounts.quote_token_program, &ctx.accounts.settlement_vault, &ctx.accounts.quote_mint, &ctx.accounts.writer_quote_ata, usdc)?;
+            let raw = raw_for_lots6(free + unassigned, raw_per_lot6).ok_or(RosterError::Overflow)?.min(a.collateral_vault.amount);
+            let usdc = usdc_paid_floor(assigned, strike).ok_or(RosterError::Overflow)?.min(a.settlement_vault.amount);
+            vault_out(&series_info, &seeds, a.underlying_token_program, a.collateral_vault, a.underlying_mint, a.writer_underlying_ata, raw)?;
+            vault_out(&series_info, &seeds, a.quote_token_program, a.settlement_vault, a.quote_mint, a.writer_quote_ata, usdc)?;
             (raw, usdc)
         }
         Side::Put => {
-            let usdc = usdc_paid_floor(free + unassigned, strike).ok_or(RosterError::Overflow)?.min(ctx.accounts.collateral_vault.amount);
-            let raw = raw_for_lots6(assigned, raw_per_lot6).ok_or(RosterError::Overflow)?.min(ctx.accounts.settlement_vault.amount);
-            vault_out(&series_info, &seeds, &ctx.accounts.quote_token_program, &ctx.accounts.collateral_vault, &ctx.accounts.quote_mint, &ctx.accounts.writer_quote_ata, usdc)?;
-            vault_out(&series_info, &seeds, &ctx.accounts.underlying_token_program, &ctx.accounts.settlement_vault, &ctx.accounts.underlying_mint, &ctx.accounts.writer_underlying_ata, raw)?;
+            let usdc = usdc_paid_floor(free + unassigned, strike).ok_or(RosterError::Overflow)?.min(a.collateral_vault.amount);
+            let raw = raw_for_lots6(assigned, raw_per_lot6).ok_or(RosterError::Overflow)?.min(a.settlement_vault.amount);
+            vault_out(&series_info, &seeds, a.quote_token_program, a.collateral_vault, a.quote_mint, a.writer_quote_ata, usdc)?;
+            vault_out(&series_info, &seeds, a.underlying_token_program, a.settlement_vault, a.underlying_mint, a.writer_underlying_ata, raw)?;
             (usdc, raw)
         }
     };
-    vault_out(&series_info, &seeds, &ctx.accounts.quote_token_program, &ctx.accounts.quote_vault, &ctx.accounts.quote_mint, &ctx.accounts.writer_quote_ata, premium)?;
+    vault_out(&series_info, &seeds, a.quote_token_program, a.quote_vault, a.quote_mint, a.writer_quote_ata, premium)?;
 
     w.settled = 1;
     w.withdrawn_lots6 = w.deposited_lots6;
     w.open_lots6 = 0;
     w.premium_claimable = 0;
-    ctx.accounts.series.load_mut()?.writers[slot] = w;
+    a.series.load_mut()?.writers[slot] = w;
     emit!(WriterSettled { series: series_key, writer, free_lots6: free, unassigned_lots6: unassigned, assigned_lots6: assigned, collateral_out, settlement_out, premium_out: premium });
+    Ok(SettleOutcome { free_lots6: free, unassigned_lots6: unassigned, assigned_lots6: assigned, collateral_out, settlement_out, premium_out: premium })
+}
+
+pub fn handle_settle_writer(ctx: Context<SettleWriter>) -> Result<()> {
+    let a = &ctx.accounts;
+    settle_core(SettleAccounts {
+        market: &a.market, series: &a.series, writer: a.writer.key(), underlying_mint: &a.underlying_mint, quote_mint: &a.quote_mint,
+        collateral_vault: &a.collateral_vault, settlement_vault: &a.settlement_vault, quote_vault: &a.quote_vault,
+        writer_underlying_ata: &a.writer_underlying_ata, writer_quote_ata: &a.writer_quote_ata,
+        underlying_token_program: &a.underlying_token_program, quote_token_program: &a.quote_token_program,
+    })?;
     Ok(())
 }
 

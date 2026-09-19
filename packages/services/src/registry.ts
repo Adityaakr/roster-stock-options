@@ -5,7 +5,7 @@
  */
 import { PublicKey } from "@solana/web3.js";
 
-import { listable, prestocksTokens, readRegistry, tesseraTokens, TIER1_SET, xstocksQuote, type PreIpoToken } from "@roster/registry";
+import { jupiterPrice, listable, prestocksTokens, readRegistry, tesseraTokens, TIER1_SET, xstocksQuote, type PreIpoToken } from "@roster/registry";
 
 export const LAUNCH_SET = TIER1_SET;
 export const XSTOCKS_API = "https://api.xstocks.fi/api/v2";
@@ -42,7 +42,7 @@ export async function launchSet(): Promise<LaunchEntry[]> {
 }
 
 /** The issuer's spot quote, the fork-only stand-in for a keyed Hermes read and the display mark elsewhere. */
-export { xstocksQuote };
+export { xstocksQuote, jupiterPrice };
 
 /**
  * Pre-IPO marks from the issuers, refreshed at most once a minute: with no Pyth feed the issuer's mark is the price

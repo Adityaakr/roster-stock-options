@@ -81,7 +81,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
           <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
             <div>
               <div className="h6">Mark</div>
-              <div className="small" style={{ marginTop: 2 }}>{m.priceSource === "hermes" ? "Pyth Hermes token feed" : m.priceSource === "xstocks" ? "xStocks issuer quote (no Pyth key on this cluster)" : m.priceSource === "tessera" ? "Tessera published mark" : m.priceSource === "prestocks" ? "PreStocks token price" : m.priceSource === "reference" ? "fork reference price" : "no feed"}, recorded every tick</div>
+              <div className="small" style={{ marginTop: 2 }}>{m.priceSource === "hermes" ? "Pyth Hermes token feed" : m.priceSource === "xstocks" ? "xStocks issuer quote (no Pyth entitlement on this cluster)" : m.priceSource === "jupiter" ? "Jupiter routed price (no Pyth entitlement, no issuer quote)" : m.priceSource === "tessera" ? "Tessera published mark" : m.priceSource === "prestocks" ? "PreStocks token price" : m.priceSource === "reference" ? "fork reference price" : "no feed"}, recorded every tick</div>
             </div>
             <div className="seg" role="group" aria-label="Window">
               {[1, 7, 30].map((d) => <button key={d} className={days === d ? "on" : ""} onClick={() => setDays(d)}>{d === 1 ? "24h" : `${d}d`}</button>)}

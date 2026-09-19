@@ -11,7 +11,7 @@ import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import * as anchorNs from "@anchor-lang/core";
 import { RosterClient } from "../packages/sdk/src";
 import { nextExpiries } from "../packages/core/src";
-import { readRegistry, xstocksQuote, REGISTRY_PATH, type RegistryEntry } from "../packages/registry/src";
+import { jupiterPrice, readRegistry, xstocksQuote, REGISTRY_PATH, type RegistryEntry } from "../packages/registry/src";
 import { FORK_URL, USDC_MINT, clockUnix, fundSol, fundToken, loadOrCreateKey, onChainMultiplier, tokenProgramFor } from "./fork-lib";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
@@ -79,12 +79,14 @@ async function main() {
 
 async function listOne(connection: Connection, c: RosterClient, e: RegistryEntry, expiries: bigint[], quoterKey: PublicKey): Promise<void> {
   const mint = new PublicKey(e.mint);
-  const perShare = e.issuerMark ? (e.issuerMark.tokenPrice ?? e.issuerMark.markPrice) : (await xstocksQuote(e.symbol)) ?? (e.underlyingSymbol ? await xstocksQuote(`${e.underlyingSymbol}x`) : null);
-  if (!perShare) throw new Error("no issuer quote to size the grid");
-  // Strikes are per lot (one raw token); the issuer quotes per UI share, and a ScaledUiAmount mint shows one token as
-  // `multiplier` shares, so the grid is sized off the per-lot forward.
+  // Strikes are per lot (one raw token); an issuer quotes per UI share, and a ScaledUiAmount mint shows one token as
+  // `multiplier` shares, so the grid is sized off the per-lot forward. Jupiter's routed price is already per token.
   const mult = await onChainMultiplier(connection, mint).catch(() => 1);
-  const quote = perShare * mult;
+  const issuerPerShare = e.issuerMark
+    ? (e.issuerMark.tokenPrice ?? e.issuerMark.markPrice)
+    : (await xstocksQuote(e.symbol).catch(() => null)) ?? (e.underlyingSymbol ? await xstocksQuote(`${e.underlyingSymbol}x`).catch(() => null) : null);
+  const quote = issuerPerShare !== null && issuerPerShare !== undefined ? issuerPerShare * mult : await jupiterPrice(e.mint).catch(() => null);
+  if (!quote) throw new Error("no issuer quote or routed price to size the grid");
   const p = marketParams(e.tier, quote);
   let m = await c.fetchMarket(mint);
   if (!m) {

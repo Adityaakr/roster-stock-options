@@ -5,6 +5,20 @@
  * AAPLx (xstocks) and AAPLon (ondo) and a page of pump tokens tagged unknown.
  */
 const JUP_TOKENS = "https://lite-api.jup.ag/tokens/v2/search";
+const JUP_PRICE = "https://lite-api.jup.ag/price/v3";
+
+/**
+ * The token's price in USD from Jupiter's price API, the routed price a buyer would actually get. Used where an
+ * issuer's own quote endpoint is unavailable (Ondo publishes none; the xStocks endpoint times out at times) and
+ * as the display mark on the fork. Verified 2026-09-19 against NVDAx.
+ */
+export async function jupiterPrice(mint: string): Promise<number | null> {
+  const res = await fetch(`${JUP_PRICE}?ids=${mint}`, { signal: AbortSignal.timeout(10_000) });
+  if (!res.ok) return null;
+  const j = (await res.json()) as Record<string, { usdPrice?: number }>;
+  const p = j[mint]?.usdPrice;
+  return typeof p === "number" && p > 0 ? p : null;
+}
 
 export type Issuer = "xStock" | "Ondo" | "Tessera" | "PreStocks" | "Other";
 

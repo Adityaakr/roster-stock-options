@@ -28,7 +28,7 @@ export interface Market {
   pausable: boolean;
   /** Token mark from the 24/7 token feed, USD per share equivalent; null when no feed answered. */
   mark: number | null;
-  priceSource: "hermes" | "reference" | "xstocks" | "tessera" | "prestocks" | "fixture" | "none";
+  priceSource: "hermes" | "reference" | "xstocks" | "jupiter" | "tessera" | "prestocks" | "fixture" | "none";
   equityMark: number | null;
   basisBps: number | null;
   multiplier: number;

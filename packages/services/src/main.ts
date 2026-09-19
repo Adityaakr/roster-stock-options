@@ -17,7 +17,7 @@ import { Hermes, HermesError, estimateVol, readMultiplier, sessionAt } from "@ro
 import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
 import { Quoter, DEFAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
-import { issuerMark, launchSet, xstocksQuote } from "./registry";
+import { issuerMark, jupiterPrice, launchSet, xstocksQuote } from "./registry";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
 const args = new Set(process.argv.slice(2));
@@ -35,7 +35,7 @@ interface MarketLive {
   meta: MarketMeta;
   price: number | null;
   priceAt: number;
-  priceSource: "hermes" | "reference" | "xstocks" | "tessera" | "prestocks" | "none";
+  priceSource: "hermes" | "reference" | "xstocks" | "jupiter" | "tessera" | "prestocks" | "none";
   wrapper: "xStock" | "Ondo" | "Tessera" | "PreStocks";
   feeBps: number;
   equityPrice: number | null;
@@ -105,6 +105,8 @@ async function main() {
       if (!market) continue;
       const feedId = Buffer.from(market.tokenFeedId).toString("hex");
       const equityFeed = Buffer.from(market.equityFeedId).toString("hex");
+      // The multiplier is read first: a routed price is per token, and the display strike divides by it.
+      const mult = await readMultiplier(connection, l.symbol, l.mint, nowTs);
       let price: number | null = null;
       let equityPrice: number | null = null;
       let priceAt = 0;
@@ -120,8 +122,14 @@ async function main() {
         const issuerFallback = async () => {
           const ref = process.env[`REFERENCE_PRICE_${l.symbol.toUpperCase()}`];
           // An Ondo wrapper has no issuer quote endpoint: the xStocks quote of the same stock stands in on the fork.
+          // Issuer quote first, then Jupiter's routed price (per token, so the multiplier is applied here) when the
+          // issuer endpoint is down or publishes none for this wrapper.
           const issuer = ref ? Number(ref) : (await xstocksQuote(l.symbol).catch(() => null)) ?? (l.underlyingSymbol ? await xstocksQuote(`${l.underlyingSymbol}x`).catch(() => null) : null);
           if (issuer) { price = issuer; priceAt = nowTs; priceSource = ref ? "reference" : "xstocks"; }
+          else {
+            const routed = await jupiterPrice(l.mint.toBase58()).catch(() => null);
+            if (routed) { price = routed / (mult.onChain || 1); priceAt = nowTs; priceSource = "jupiter"; }
+          }
         };
         try {
           const samples = await hermes.latest([feedId, equityFeed].filter((f) => !/^0+$/.test(f)));
@@ -145,7 +153,6 @@ async function main() {
       }
       // Every mark is recorded under the mint, whichever source priced it, so the app can chart a market's history.
       if (price !== null) store.recordPrice({ feed_id: `mark:${l.mint.toBase58()}`, price, conf: 0, publish_time: Math.floor(Date.now() / 1000) });
-      const mult = await readMultiplier(connection, l.symbol, l.mint, nowTs);
       const vol = await volFor(l.symbol);
       const session = sessionAt(nowTs);
       const basisBps = price !== null && equityPrice !== null && session === "regular" ? ((price - equityPrice) / equityPrice) * 10_000 : null;

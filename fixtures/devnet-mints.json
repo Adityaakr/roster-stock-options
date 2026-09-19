@@ -1,0 +1,92 @@
+{
+  "cluster": "devnet",
+  "quoteMint": "9RMTvQbXNWxLyPKucrK9eacEkg1Ur3CrKkm6cioKLnuj",
+  "quoteDecimals": 6,
+  "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+  "mints": [
+    {
+      "symbol": "NVDAx",
+      "name": "NVIDIA xStock",
+      "underlyingSymbol": "NVDA",
+      "mint": "BCCWyBT1LosEwSTyA2A2Y45hQjKpUfZ9KweQc7zchYTJ",
+      "decimals": 8,
+      "wrapper": "xStock",
+      "mainnetMint": null,
+      "multiplier": 1.001701196801074,
+      "feeBps": 0,
+      "createdAt": "2026-09-19T13:40:27.419Z"
+    },
+    {
+      "symbol": "TSLAx",
+      "name": "Tesla xStock",
+      "underlyingSymbol": "TSLA",
+      "mint": "BYeUxBFrYd8xdu1dfGvivTE44xK37hdEc5TcNynTepzs",
+      "decimals": 8,
+      "wrapper": "xStock",
+      "mainnetMint": null,
+      "multiplier": 1,
+      "feeBps": 0,
+      "createdAt": "2026-09-19T13:40:30.342Z"
+    },
+    {
+      "symbol": "SPYx",
+      "name": "SP500 xStock",
+      "underlyingSymbol": "SPY",
+      "mint": "54GjftynRBLkECdHTasuo2odVtdKg3nxfzLy77NvWp23",
+      "decimals": 8,
+      "wrapper": "xStock",
+      "mainnetMint": null,
+      "multiplier": 1.005714560286254,
+      "feeBps": 0,
+      "createdAt": "2026-09-19T13:40:33.002Z"
+    },
+    {
+      "symbol": "AAPLx",
+      "name": "Apple xStock",
+      "underlyingSymbol": "AAPL",
+      "mint": "6kpZMLRutk5QKtVYgR59QbF8ZnJVEywsWybN9MMwmUTk",
+      "decimals": 8,
+      "wrapper": "xStock",
+      "mainnetMint": null,
+      "multiplier": 1.0032690125398187,
+      "feeBps": 0,
+      "createdAt": "2026-09-19T13:40:34.644Z"
+    },
+    {
+      "symbol": "MSFTx",
+      "name": "Microsoft xStock",
+      "underlyingSymbol": "MSFT",
+      "mint": "3Se8c2eVxn2nFQ51AJvS6rif8Za6xV2x61qumfaaU2T6",
+      "decimals": 8,
+      "wrapper": "xStock",
+      "mainnetMint": null,
+      "multiplier": 1.0059033904787456,
+      "feeBps": 0,
+      "createdAt": "2026-09-19T13:40:37.336Z"
+    },
+    {
+      "symbol": "GOOGLx",
+      "name": "Alphabet xStock",
+      "underlyingSymbol": "GOOGL",
+      "mint": "GKPuySPFdNrqmH7rQTdaAnhqKrngBRNuHzeoDEUh99r",
+      "decimals": 8,
+      "wrapper": "xStock",
+      "mainnetMint": null,
+      "multiplier": 1.0023772500603487,
+      "feeBps": 0,
+      "createdAt": "2026-09-19T13:40:40.031Z"
+    },
+    {
+      "symbol": "tKalshi",
+      "name": "Kalshi",
+      "underlyingSymbol": "Kalshi",
+      "mint": "78efLmN1D6jbvhzTKZCdT2oPXuRJHCpiqvKwsUv3SRWa",
+      "decimals": 9,
+      "wrapper": "Tessera",
+      "mainnetMint": null,
+      "multiplier": 1,
+      "feeBps": 20,
+      "createdAt": "2026-09-19T13:40:42.392Z"
+    }
+  ]
+}

@@ -18,7 +18,7 @@ import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
 import { Quoter, DEFAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
 import { mapLimit } from "@roster/core";
-import { issuerMark, jupiterPrice, launchSet, xstocksQuote } from "./registry";
+import { issuerMark, jupiterPrice, launchSet, refreshSnapshots, snapshotOf, snapshotPrice, xstocksQuote } from "./registry";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
 const args = new Set(process.argv.slice(2));
@@ -39,7 +39,10 @@ interface MarketLive {
   meta: MarketMeta;
   price: number | null;
   priceAt: number;
-  priceSource: "hermes" | "reference" | "xstocks" | "jupiter" | "tessera" | "prestocks" | "none";
+  priceSource: "hermes" | "reference" | "tokens.xyz" | "xstocks" | "jupiter" | "tessera" | "prestocks" | "none";
+  /** From the Tokens API snapshot where one exists: a real 24 hour change and holder count before this cluster has a price history of its own. */
+  change24hPct: number | null;
+  holders: number | null;
   wrapper: "xStock" | "Ondo" | "Tessera" | "PreStocks";
   feeBps: number;
   equityPrice: number | null;
@@ -58,18 +61,32 @@ async function main() {
   const connection = new Connection(RPC, "confirmed");
   const genesis = await connection.getGenesisHash();
   const isFork = RPC.includes("127.0.0.1") || RPC.includes("localhost");
-  const cluster = isFork ? "fork" : process.env.NEXT_PUBLIC_CLUSTER ?? "mainnet";
+  // Devnet is a real cluster with replica mints (docs/DEVNET.md): the same code, priced from each replica's mainnet
+  // counterpart, and with every screen saying which cluster it is on.
+  const isDevnet = !isFork && (RPC.includes("devnet") || process.env.NEXT_PUBLIC_CLUSTER === "devnet");
+  const cluster = isFork ? "fork" : isDevnet ? "devnet" : process.env.NEXT_PUBLIC_CLUSTER ?? "mainnet";
   const deployer = key(process.env.DEPLOYER_KEYPAIR ?? ".keys/deployer.json");
   const quoterKey = key(process.env.QUOTER_KEYPAIR ?? ".keys/quoter.json");
   const keeperKey = key(process.env.KEEPER_KEYPAIR ?? ".keys/keeper.json");
   const reader = new RosterClient(connection, new anchor.Wallet(deployer));
-  const quoterClient = new RosterClient(connection, new anchor.Wallet(quoterKey));
-  const keeperClient = new RosterClient(connection, new anchor.Wallet(isFork ? deployer : keeperKey));
+  // Devnet runs on one funded wallet by design (docs/DEVNET.md): the deployer quotes and cranks. On mainnet the
+  // quoter holds only what the operator is willing to have quoted, and the keeper only its fee SOL.
+  const quoterClient = new RosterClient(connection, new anchor.Wallet(isDevnet ? deployer : quoterKey));
+  // One wallet holds every role on the fork, and on devnet when the operator has funded only the deployer.
+  const keeperClient = new RosterClient(connection, new anchor.Wallet(isFork || isDevnet ? deployer : keeperKey));
   const hermes = new Hermes(process.env.PYTH_CORE_API_KEY);
-  const store = new SqliteStore(process.env.INDEXER_DB ?? (isFork ? ".keys/indexer-fork.sqlite" : ".keys/indexer.sqlite"));
-  const launch = await launchSet();
+  const store = new SqliteStore(process.env.INDEXER_DB ?? `.keys/indexer-${cluster}.sqlite`);
+  const launch = await launchSet(cluster);
   const meta = new Map<string, MarketMeta>(launch.map((l) => [l.mint.toBase58(), { mint: l.mint.toBase58(), symbol: l.symbol, name: l.name }]));
   const indexer = new Indexer(connection, reader, store, meta);
+  /*
+   * Every client reads a market's series from the addresses the indexer learned from SeriesCreated, not from a
+   * program-wide scan: Alchemy's free tier, which is what a devnet deployment runs on, refuses getProgramAccounts.
+   * A series the store has not seen yet is picked up on the next events pull, seconds later.
+   */
+  for (const client of [reader, quoterClient, keeperClient]) {
+    client.seriesIndex = (market) => store.knownSeries(market.toBase58()).map((a) => new PublicKey(a));
+  }
   // QUOTER_LOTS_PER_SERIES caps the treasury's ask per series (docs/SEEDING.md sets it for the first mainnet week).
   const quoter = new Quoter(quoterClient, { ...DEFAULT_QUOTER, lotsPerSeries: BigInt(Math.round(Number(process.env.QUOTER_LOTS_PER_SERIES ?? 50) * 1e6)) });
   const keeper = new Keeper(keeperClient, deployer.publicKey, DEFAULT_KEEPER);
@@ -111,8 +128,30 @@ async function main() {
     return run;
   }
 
+  /*
+   * The mark for one market, per share, in the order the sources deserve: an issuer that publishes a mark for its own
+   * token (Tessera, PreStocks), then the Tokens API snapshot, then Jupiter's routed price, then the xStocks quote.
+   * A devnet replica is priced from `replicaOf`, the mainnet mint it stands in for, so its screen shows the market's
+   * numbers and not an invention. Routed and snapshot prices are per token, so the multiplier converts them.
+   */
+  async function markFor(l: (typeof launch)[number], multiplier: number): Promise<{ price: number; source: MarketLive["priceSource"] } | null> {
+    const ref = process.env[`REFERENCE_PRICE_${l.symbol.toUpperCase()}`];
+    if (ref && Number(ref) > 0) return { price: Number(ref), source: "reference" };
+    const im = await issuerMark(l);
+    if (im) return { price: im.price, source: im.source };
+    const priced = l.replicaOf ?? l.mint.toBase58();
+    const snap = snapshotPrice(priced);
+    if (snap) return { price: snap / (multiplier || 1), source: "tokens.xyz" };
+    const routed = await jupiterPrice(priced).catch(() => null);
+    if (routed) return { price: routed / (multiplier || 1), source: "jupiter" };
+    const quote = (await xstocksQuote(l.symbol).catch(() => null)) ?? (l.underlyingSymbol ? await xstocksQuote(`${l.underlyingSymbol}x`).catch(() => null) : null);
+    return quote ? { price: quote, source: "xstocks" } : null;
+  }
+
   async function tick(): Promise<void> {
     const nowTs = await clockUnix(connection);
+    // One batched snapshot call for every market, cached for a minute inside the registry module.
+    await refreshSnapshots(launch.map((l) => l.replicaOf ?? l.mint.toBase58()));
     await mapLimit(launch, MARKET_CONCURRENCY, async (l) => {
       const market = await reader.fetchMarket(l.mint);
       if (!market) return;
@@ -126,23 +165,16 @@ async function main() {
       let priceSource: MarketLive["priceSource"] = "none";
       const noFeed = /^0+$/.test(feedId);
       if (noFeed) {
-        // No Pyth feed exists for this wrapper: the issuer's mark is the price source, on every cluster.
-        const im = await issuerMark(l);
-        if (im) { price = im.price; priceAt = nowTs; priceSource = im.source; } else console.warn(`[oracle] ${l.symbol}: issuer mark unavailable`);
+        // No Pyth feed for this wrapper, which is every market while the key's grant excludes them: the issuer's own
+        // mark, the Tokens API snapshot and the routed price are the sources, in that order, on every cluster.
+        const m = await markFor(l, mult.onChain);
+        if (m) { price = m.price; priceAt = nowTs; priceSource = m.source; } else console.warn(`[oracle] ${l.symbol}: no mark from any source`);
       } else {
         // Without a Pyth price for the token feed the issuer's own quote stands in: on the fork the quoter may price
         // off it (a test device, refused elsewhere by the loopback rule); on a real cluster it is a display mark only.
         const issuerFallback = async () => {
-          const ref = process.env[`REFERENCE_PRICE_${l.symbol.toUpperCase()}`];
-          // An Ondo wrapper has no issuer quote endpoint: the xStocks quote of the same stock stands in on the fork.
-          // Issuer quote first, then Jupiter's routed price (per token, so the multiplier is applied here) when the
-          // issuer endpoint is down or publishes none for this wrapper.
-          const issuer = ref ? Number(ref) : (await xstocksQuote(l.symbol).catch(() => null)) ?? (l.underlyingSymbol ? await xstocksQuote(`${l.underlyingSymbol}x`).catch(() => null) : null);
-          if (issuer) { price = issuer; priceAt = nowTs; priceSource = ref ? "reference" : "xstocks"; }
-          else {
-            const routed = await jupiterPrice(l.mint.toBase58()).catch(() => null);
-            if (routed) { price = routed / (mult.onChain || 1); priceAt = nowTs; priceSource = "jupiter"; }
-          }
+          const m = await markFor(l, mult.onChain);
+          if (m) { price = m.price; priceAt = nowTs; priceSource = m.source; }
         };
         try {
           const samples = await hermes.latest([feedId, equityFeed].filter((f) => !/^0+$/.test(f)));
@@ -171,7 +203,8 @@ async function main() {
       const basisBps = price !== null && equityPrice !== null && session === "regular" ? ((price - equityPrice) / equityPrice) * 10_000 : null;
       if (basisBps !== null) store.recordBasis(l.mint.toBase58(), basisBps, nowTs);
       const paused = await keeper.mintPaused(market.mint, market.tokenProgram);
-      const state: MarketLive = { market, meta: meta.get(l.mint.toBase58())!, price, priceAt, priceSource, wrapper: l.wrapper, feeBps: l.feeBps, equityPrice, basisBps, multiplier: mult.onChain, pendingDividendMultiplier: mult.pendingMultiplier !== null && mult.pendingIsDividend && mult.pendingAt !== null && market.allowedExpiries.some((e) => e > BigInt(mult.pendingAt!)) ? mult.pendingMultiplier : null, pendingActivationTs: mult.pendingAt, inActivationWindow: mult.inWindow, vol: vol.blended, volSource: vol.source, session, paused };
+      const snap = snapshotOf(l.replicaOf ?? l.mint.toBase58());
+      const state: MarketLive = { change24hPct: snap?.change24hPct ?? null, holders: snap?.holders ?? null, market, meta: meta.get(l.mint.toBase58())!, price, priceAt, priceSource, wrapper: l.wrapper, feeBps: l.feeBps, equityPrice, basisBps, multiplier: mult.onChain, pendingDividendMultiplier: mult.pendingMultiplier !== null && mult.pendingIsDividend && mult.pendingAt !== null && market.allowedExpiries.some((e) => e > BigInt(mult.pendingAt!)) ? mult.pendingMultiplier : null, pendingActivationTs: mult.pendingAt, inActivationWindow: mult.inWindow, vol: vol.blended, volSource: vol.source, session, paused };
       live.set(l.symbol, state);
       if (!flag("--no-keeper")) {
         await keeper.rollGrid(market, nowTs, (process.env.EXTRA_EXPIRIES ?? "").split(",").filter(Boolean).map(BigInt));
@@ -179,11 +212,17 @@ async function main() {
       }
       // The quoter prices only off Hermes, or off the issuer quote on the fork; a real cluster without a key does not
       // quote. A vol that fell back to the floor is a breaker off the fork unless the operator accepts it in writing.
-      const canQuote = priceSource === "hermes" || priceSource === "tessera" || priceSource === "prestocks" || (isFork && priceSource !== "none");
-      const volOk = vol.source !== "floor" || isFork || process.env.VOL_FLOOR_OK === "1";
+      /*
+       * What the treasury is willing to quote against. Mainnet wants an oracle or the issuer of the token itself. The
+       * fork and devnet are test capital on test assets, so any real source will do, and the app prints which one
+       * priced every mark. A vol that fell back to the floor is a breaker on mainnet only, for the same reason.
+       */
+      const testCluster = isFork || isDevnet;
+      const canQuote = priceSource === "hermes" || priceSource === "tessera" || priceSource === "prestocks" || (testCluster && priceSource !== "none");
+      const volOk = vol.source !== "floor" || testCluster || process.env.VOL_FLOOR_OK === "1";
       if (!flag("--no-quoter")) {
         if (price === null || !canQuote || !volOk) {
-          await quoter.pullQuotes(market, l.symbol, nowTs, price === null ? "no price" : !canQuote ? "no priced source off the fork" : "volatility fell back to the floor");
+          await quoter.pullQuotes(market, l.symbol, nowTs, price === null ? "no price" : !canQuote ? "no oracle or issuer price on this cluster" : "volatility fell back to the floor");
         } else {
         const fresh = (await reader.fetchMarket(l.mint)) ?? market;
         // Price age against the wall clock: the chain clock can be time-travelled on a fork, publish times cannot.
@@ -206,9 +245,9 @@ async function main() {
       if (url.pathname === "/v1/roster") {
         const nowTs = await clockUnix(connection);
         const wall = Math.floor(Date.now() / 1000);
-        const markets = [...live.values()].map((m) => ({ symbol: m.meta.symbol, name: m.meta.name, wrapper: m.wrapper, feeBps: m.feeBps, mint: m.market.mint.toBase58(), sparkline: store.priceHistory(`mark:${m.market.mint.toBase58()}`, wall - 86_400).map((p) => [p.publish_time, p.price] as [number, number]).filter((_, i, a) => i % Math.max(1, Math.floor(a.length / 120)) === 0), market: m.market.address.toBase58(), decimals: m.market.decimals, tier: m.market.tier, listed: m.market.listed, paused: m.market.paused || m.paused, hasTransferFee: m.market.hasTransferFee, hasPermanentDelegate: m.market.hasPermanentDelegate, pausable: m.market.pausable, hookProgram: m.market.hookProgram.toBase58(), allowedExpiries: m.market.allowedExpiries.map(String), strikeStep: m.market.strikeStep.toString(), minLots6: m.market.minLots6.toString(), maxLots6: m.market.maxLots6.toString(), maxLiveSeries: m.market.maxLiveSeries, liveSeries: m.market.liveSeries, price: m.price, priceAt: m.priceAt, priceSource: m.priceSource, equityPrice: m.equityPrice, basisBps: m.basisBps, multiplier: m.multiplier, pendingActivationTs: m.pendingActivationTs, inActivationWindow: m.inActivationWindow, vol: m.vol, volSource: m.volSource, series: store.series(m.market.address.toBase58()).map((s) => ({ ...s, asks: JSON.parse(s.asks_json), writers: JSON.parse(s.writers_json), asks_json: undefined, writers_json: undefined })) }));
+        const markets = [...live.values()].map((m) => ({ symbol: m.meta.symbol, name: m.meta.name, wrapper: m.wrapper, feeBps: m.feeBps, mint: m.market.mint.toBase58(), sparkline: store.priceHistory(`mark:${m.market.mint.toBase58()}`, wall - 86_400).map((p) => [p.publish_time, p.price] as [number, number]).filter((_, i, a) => i % Math.max(1, Math.floor(a.length / 120)) === 0), market: m.market.address.toBase58(), decimals: m.market.decimals, tier: m.market.tier, listed: m.market.listed, paused: m.market.paused || m.paused, hasTransferFee: m.market.hasTransferFee, hasPermanentDelegate: m.market.hasPermanentDelegate, pausable: m.market.pausable, hookProgram: m.market.hookProgram.toBase58(), allowedExpiries: m.market.allowedExpiries.map(String), strikeStep: m.market.strikeStep.toString(), minLots6: m.market.minLots6.toString(), maxLots6: m.market.maxLots6.toString(), maxLiveSeries: m.market.maxLiveSeries, liveSeries: m.market.liveSeries, price: m.price, priceAt: m.priceAt, priceSource: m.priceSource, change24hPct: m.change24hPct, holders: m.holders, equityPrice: m.equityPrice, basisBps: m.basisBps, multiplier: m.multiplier, pendingActivationTs: m.pendingActivationTs, inActivationWindow: m.inActivationWindow, vol: m.vol, volSource: m.volSource, series: store.series(m.market.address.toBase58()).map((s) => ({ ...s, asks: JSON.parse(s.asks_json), writers: JSON.parse(s.writers_json), asks_json: undefined, writers_json: undefined })) }));
         const protocol = await reader.fetchProtocol().catch(() => null);
-        return json(200, { cluster, programDeployed: true, program: ROSTER_PROGRAM_ID.toBase58(), nowTs, session: sessionAt(nowTs), feeBps: protocol?.feeBps ?? null, keeperFeeUsdc: protocol?.keeperFeeUsdc.toString() ?? null, graceSecs: protocol?.graceSecs.toString() ?? null, treasury: protocol?.treasury.toBase58() ?? null, quoter: quoterKey.publicKey.toBase58(), blocked, hermesKeyed: hermes.keyed, markets, quoterLog: quoter.log.slice(-40), keeperLog: keeper.log.slice(-40) });
+        return json(200, { cluster, programDeployed: true, program: ROSTER_PROGRAM_ID.toBase58(), nowTs, session: sessionAt(nowTs), feeBps: protocol?.feeBps ?? null, keeperFeeUsdc: protocol?.keeperFeeUsdc.toString() ?? null, graceSecs: protocol?.graceSecs.toString() ?? null, treasury: protocol?.treasury.toBase58() ?? null, quoter: quoterClient.wallet.toBase58(), blocked, hermesKeyed: hermes.keyed, markets, quoterLog: quoter.log.slice(-40), keeperLog: keeper.log.slice(-40) });
       }
       const prot = url.pathname.match(/^\/v1\/protection\/([1-9A-HJ-NP-Za-km-z]+)$/);
       if (prot) {
@@ -259,6 +298,9 @@ async function main() {
   server.on("error", (e) => { console.error(`[services] cannot listen on ${PORT}: ${(e as Error).message}`); process.exit(1); });
   server.listen(PORT, "127.0.0.1", () => console.log(`[services] http://127.0.0.1:${PORT}`));
 
+  // Events first: the series index is built from them, and a tick that runs before the first pull would see a market
+  // with no series and try to create the ones that already exist.
+  await pullEvents();
   await tick();
   if (flag("--once")) {
     server.close();

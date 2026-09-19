@@ -11,14 +11,20 @@ import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import * as anchorNs from "@anchor-lang/core";
 import { RosterClient } from "../packages/sdk/src";
 import { nextExpiries } from "../packages/core/src";
-import { jupiterPrice, readRegistry, xstocksQuote, REGISTRY_PATH, type RegistryEntry } from "../packages/registry/src";
+import { jupiterPrice, readRegistry, registryPathFor, xstocksQuote, REGISTRY_PATH, type RegistryEntry } from "../packages/registry/src";
 import { FORK_URL, USDC_MINT, clockUnix, fundSol, fundToken, loadOrCreateKey, onChainMultiplier, tokenProgramFor } from "./fork-lib";
+import { DEVNET_RPC, devnetMints, mintToOwner, quoteMintOf } from "./devnet-lib";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
 const LOT = 1_000_000n;
 const USDC = 1_000_000n;
-const RPC = process.env.RPC_URL ?? FORK_URL;
 const args = new Set(process.argv.slice(2));
+/* Devnet lists replica mints against a quote mint we control (docs/DEVNET.md); everything downstream is the same code. */
+const DEVNET = args.has("--devnet");
+const RPC = DEVNET ? DEVNET_RPC : process.env.RPC_URL ?? FORK_URL;
+const REGISTRY = DEVNET ? registryPathFor("devnet") : REGISTRY_PATH;
+const MINTS = DEVNET ? devnetMints() : null;
+const QUOTE = MINTS ? quoteMintOf(MINTS) : { mint: USDC_MINT, program: TOKEN_PROGRAM_ID, decimals: 6 };
 
 /** Per-tier grid and caps (Part 2 section 2): the treasury quotes Tier 1 both sides at three sizes, Tier 2 the nearest expiry. */
 function marketParams(tier: number, quote: number) {
@@ -31,7 +37,9 @@ function marketParams(tier: number, quote: number) {
     maxStrike: hi * USDC,
     // (expiries quoted + 1) x 3 strikes x 2 sides: an expired grid keeps its slots until close, one grace after expiry,
     // so the next expiry needs room while the old one waits (feedback finding, docs/BUILD_LOG.md M8.1).
-    maxLiveSeries: tier === 1 ? 18 : tier === 2 ? 12 : 6,
+    // Each live series costs about 0.045 SOL of rent (docs/RENT.md), reclaimed at close. Devnet runs on a faucet
+    // balance, so its caps are the smallest that still show both sides at two expiries.
+    maxLiveSeries: DEVNET ? (tier === 1 ? 4 : 2) : tier === 1 ? 18 : tier === 2 ? 12 : 6,
     minLots6: LOT / 100n,
     maxLots6: (tier === 1 ? 10_000n : 2_000n) * LOT,
     maxWriterLots6: (tier === 1 ? 5_000n : 1_000n) * LOT
@@ -39,17 +47,19 @@ function marketParams(tier: number, quote: number) {
 }
 
 async function main() {
-  const registry = readRegistry();
-  if (!registry) throw new Error(`${REGISTRY_PATH} missing: run pnpm tsx scripts/eligibility.ts first`);
+  const registry = readRegistry(REGISTRY);
+  if (!registry) throw new Error(`${REGISTRY} missing: run ${DEVNET ? "pnpm devnet:registry" : "pnpm registry"} first`);
   const connection = new Connection(RPC, "confirmed");
   const deployer = loadOrCreateKey("deployer");
   const keeper = loadOrCreateKey("keeper");
   const quoter = loadOrCreateKey("quoter");
-  await fundSol(deployer.publicKey, 100e9);
-  await fundSol(quoter.publicKey, 100e9);
+  if (!DEVNET) {
+    await fundSol(deployer.publicKey, 100e9);
+    await fundSol(quoter.publicKey, 100e9);
+  }
   const c = new RosterClient(connection, new anchor.Wallet(deployer));
   if (!(await connection.getAccountInfo(c.protocol))) {
-    await c.send(await c.initProtocol(USDC_MINT, { pauseAuthority: keeper.publicKey, treasury: deployer.publicKey, feeBps: 10, integratorShareBps: 3000, keeperFeeUsdc: 2n * USDC, graceSecs: 3600n }));
+    await c.send(await c.initProtocol(QUOTE.mint, { pauseAuthority: keeper.publicKey, treasury: deployer.publicKey, feeBps: 10, integratorShareBps: 3000, keeperFeeUsdc: 2n * USDC, graceSecs: 3600n }));
     console.log("protocol initialised");
   }
   const now = await clockUnix(connection);
@@ -73,7 +83,7 @@ async function main() {
       console.error(`${e.symbol}: ${(err as Error).message.split("\n")[0]}`);
     }
   }
-  writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2));
+  writeFileSync(REGISTRY, JSON.stringify(registry, null, 2));
   console.log(`registry updated: ${registry.entries.filter((x) => x.escrowProof).length} proven`);
 }
 
@@ -107,8 +117,14 @@ async function listOne(connection: Connection, c: RosterClient, e: RegistryEntry
   const decimals = e.inspection.decimals;
   const lot = 10n ** BigInt(decimals);
   const program = tokenProgramFor(m.tokenProgram);
-  await fundToken(connection, c.provider.wallet.payer!, mint, program, 10n * lot);
-  await fundToken(connection, c.provider.wallet.payer!, USDC_MINT, TOKEN_PROGRAM_ID, 10_000n * USDC);
+  const payer = c.provider.wallet.payer!;
+  if (DEVNET) {
+    await mintToOwner(connection, payer, mint, program, payer.publicKey, 10n * lot);
+    await mintToOwner(connection, payer, QUOTE.mint, QUOTE.program, payer.publicKey, 10_000n * USDC);
+  } else {
+    await fundToken(connection, payer, mint, program, 10n * lot);
+    await fundToken(connection, payer, USDC_MINT, TOKEN_PROGRAM_ID, 10_000n * USDC);
+  }
   const strike = BigInt(Math.round(quote / (Number(p.strikeStep) / 1e6))) * p.strikeStep;
   const clamped = strike < p.minStrike ? p.minStrike : strike > p.maxStrike ? p.maxStrike : strike;
   // A market at its live-series cap (the quoter fills the grid) proves the escrow on one of its live call series.

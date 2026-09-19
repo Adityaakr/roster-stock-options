@@ -1,0 +1,425 @@
+{
+  "generatedAt": "2026-09-19T13:57:22.702Z",
+  "cluster": "devnet",
+  "entries": [
+    {
+      "symbol": "NVDAx",
+      "name": "NVIDIA xStock (devnet replica)",
+      "underlyingSymbol": "NVDA",
+      "isin": null,
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/NVDAx.png",
+      "mint": "BCCWyBT1LosEwSTyA2A2Y45hQjKpUfZ9KweQc7zchYTJ",
+      "tier": 1,
+      "wrapper": "xStock",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 221.96358893314675,
+        "tokenPrice": 221.96358893314675,
+        "holders": null,
+        "source": "tokens.xyz mainnet snapshot"
+      },
+      "inspection": {
+        "mint": "BCCWyBT1LosEwSTyA2A2Y45hQjKpUfZ9KweQc7zchYTJ",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "202000000000",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.001701196801074,
+          "newMultiplier": 1.001701196801074,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "8bcxoJepbrwXuLTCbFCVtrkamatSGGWf5EXksXSSBHJk",
+        "quote": "4tDDKARQgFVE7a5JEKd4t832uru7C8gv636at1QgSTFozePftW5wPNLF2tFQi97YRZMhzFXemPLN3bnq1tveThF4",
+        "withdraw": "3wBpXaYqFdWF4faTKP6Nco51QxTXJ5eZrQRKfBvFxewgW1iP1X448UAQPAaY21Nkx17YhzuSKzX9LL8Aco87881n",
+        "provenAt": "2026-09-19T13:50:44.042Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh"
+    },
+    {
+      "symbol": "TSLAx",
+      "name": "Tesla xStock (devnet replica)",
+      "underlyingSymbol": "TSLA",
+      "isin": null,
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/TSLAx.png",
+      "mint": "BYeUxBFrYd8xdu1dfGvivTE44xK37hdEc5TcNynTepzs",
+      "tier": 1,
+      "wrapper": "xStock",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 363.6268065460802,
+        "tokenPrice": 363.6268065460802,
+        "holders": null,
+        "source": "tokens.xyz mainnet snapshot"
+      },
+      "inspection": {
+        "mint": "BYeUxBFrYd8xdu1dfGvivTE44xK37hdEc5TcNynTepzs",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "202000000000",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "9bTTUuAdjQRwJm93bfFDq67Fnp1EJKiz85GcEjHyaQZf",
+        "quote": "63u6tDj2TVqESHoQStyK7i41nCUobomBZoAhhupQ4EZLSvfCfLtB3W3GyQph7GXQhtXV3a9g1JjrxnfCTHjkoFgV",
+        "withdraw": "3n9TT2Mb8wfgUHgi3fCnfkvWVJ836Rr8mJUQNhsnfhbvnFBj13qTdPdY5XTzzR1tNGv8o6n4d7BvG3vncrdewZ3G",
+        "provenAt": "2026-09-19T13:50:59.188Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB"
+    },
+    {
+      "symbol": "SPYx",
+      "name": "SP500 xStock (devnet replica)",
+      "underlyingSymbol": "SPY",
+      "isin": null,
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/SPYx.png",
+      "mint": "54GjftynRBLkECdHTasuo2odVtdKg3nxfzLy77NvWp23",
+      "tier": 1,
+      "wrapper": "xStock",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 761.4573366037041,
+        "tokenPrice": 761.4573366037041,
+        "holders": null,
+        "source": "tokens.xyz mainnet snapshot"
+      },
+      "inspection": {
+        "mint": "54GjftynRBLkECdHTasuo2odVtdKg3nxfzLy77NvWp23",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "202000000000",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.005714560286254,
+          "newMultiplier": 1.005714560286254,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "FHrhCwNakY8tjdSggCCNgkBCooTdW5nsFfozCFFFF1uB",
+        "quote": "2Ef1JmbuHQ4RLXN3D3oz6RwjKHoLbw7wHkEzfeeLWfzWLQqyUp2g5f1zdf7AtExThmxdFG6spqFofNbu8QH5EJzk",
+        "withdraw": "62eXpzvzxvidSZByXTrdHhm4hB685ntvso3VXuawkrKppQhv3J1Kjgns6ASBXV91HMgyzPsGTCRXaXZtnnU3vAfR",
+        "provenAt": "2026-09-19T13:51:12.815Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W"
+    },
+    {
+      "symbol": "AAPLx",
+      "name": "Apple xStock (devnet replica)",
+      "underlyingSymbol": "AAPL",
+      "isin": null,
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/AAPLx.png",
+      "mint": "6kpZMLRutk5QKtVYgR59QbF8ZnJVEywsWybN9MMwmUTk",
+      "tier": 2,
+      "wrapper": "xStock",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 334.58901101558115,
+        "tokenPrice": 334.58901101558115,
+        "holders": null,
+        "source": "tokens.xyz mainnet snapshot"
+      },
+      "inspection": {
+        "mint": "6kpZMLRutk5QKtVYgR59QbF8ZnJVEywsWybN9MMwmUTk",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "202000000000",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.0032690125398187,
+          "newMultiplier": 1.0032690125398187,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "3iaJdjRZW8DHX3GU294aXRxuUdLsx4XMcb9j3Cq5RDTW",
+        "quote": "2uBHguJ4cgca5gCWYaT9PBCsfGh4wwq4pCFAH7u5krnvcBv5w4dzSESiTG6xaMmSWaNqqY8gWrc2PAbZ2P8AUNkr",
+        "withdraw": "3oA2AEbofpMPR3AYMAKAbJ141mELWy42EiUBEJ2uCTGFuKU8Px5AeNR6V2QyGibn7TBp6pRgJAA3NeVymg6S62S1",
+        "provenAt": "2026-09-19T13:51:27.336Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp"
+    },
+    {
+      "symbol": "MSFTx",
+      "name": "Microsoft xStock (devnet replica)",
+      "underlyingSymbol": "MSFT",
+      "isin": null,
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/MSFTx.png",
+      "mint": "3Se8c2eVxn2nFQ51AJvS6rif8Za6xV2x61qumfaaU2T6",
+      "tier": 2,
+      "wrapper": "xStock",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 494.35866538983447,
+        "tokenPrice": 494.35866538983447,
+        "holders": null,
+        "source": "tokens.xyz mainnet snapshot"
+      },
+      "inspection": {
+        "mint": "3Se8c2eVxn2nFQ51AJvS6rif8Za6xV2x61qumfaaU2T6",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "202000000000",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.0059033904787456,
+          "newMultiplier": 1.0059033904787456,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "8QA92vHqqocEBHVBN9dp6x5s5xa7PZ63b6DagnwfKPPC",
+        "quote": "L6v9AZT1CfDXsde7u2H7LKdQ5uxsjZQteXWLB1G39LMM6L33zuYqW44Diw3ZHTC9FhaH2YFGZAZXZuHVLm2JnSK",
+        "withdraw": "4CCb61L2LEP2gFkv7MChnZV5cDXKjiFWpzwUvdKm2pWD3UiLiKHUpuuoZSPsJhAYAyjmcCQi7N6144QD9ArKQLu1",
+        "provenAt": "2026-09-19T13:51:42.401Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX"
+    },
+    {
+      "symbol": "GOOGLx",
+      "name": "Alphabet xStock (devnet replica)",
+      "underlyingSymbol": "GOOGL",
+      "isin": null,
+      "logo": "https://xstocks-metadata.backed.fi/logos/tokens/GOOGLx.png",
+      "mint": "GKPuySPFdNrqmH7rQTdaAnhqKrngBRNuHzeoDEUh99r",
+      "tier": 2,
+      "wrapper": "xStock",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 348.4070646738677,
+        "tokenPrice": 348.4070646738677,
+        "holders": null,
+        "source": "tokens.xyz mainnet snapshot"
+      },
+      "inspection": {
+        "mint": "GKPuySPFdNrqmH7rQTdaAnhqKrngBRNuHzeoDEUh99r",
+        "tokenProgram": "token-2022",
+        "decimals": 8,
+        "supply": "202000000000",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": null,
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1.0023772500603487,
+          "newMultiplier": 1.0023772500603487,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible",
+        "reason": "issuer holds a permanent delegate; pausable by the issuer"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "8P3m3yhd2XGDMCjVKjmbGeRJq72WUJ8r7zT1TQENac4Z",
+        "quote": "4L3DSP8WT1BjoQofYCBgsH4dCseVzN1aKP62fADMAn5Y4jGDpEJoKTvwSPxV3yeYNWzD1YU5kCasD8jRTbdbT3aJ",
+        "withdraw": "2Aiy5B43QyZRhyQNCGwALrEt6coWGjmJrHMnHvF4V2QPbFSELYFBx4oHB3i3GFx149sEovHPXksxWcJo8mxz9Tb2",
+        "provenAt": "2026-09-19T13:51:55.796Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN"
+    },
+    {
+      "symbol": "tKalshi",
+      "name": "Kalshi (devnet replica)",
+      "underlyingSymbol": "Kalshi",
+      "isin": null,
+      "logo": null,
+      "mint": "78efLmN1D6jbvhzTKZCdT2oPXuRJHCpiqvKwsUv3SRWa",
+      "tier": 2,
+      "wrapper": "Tessera",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 413.8,
+        "tokenPrice": 413.8,
+        "holders": 2605,
+        "source": "tessera mainnet mark"
+      },
+      "inspection": {
+        "mint": "78efLmN1D6jbvhzTKZCdT2oPXuRJHCpiqvKwsUv3SRWa",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "2010000000000",
+        "extensions": [
+          "MetadataPointer",
+          "TransferFeeConfig",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": null,
+        "transferHook": null,
+        "transferFee": {
+          "bps": 20,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": null,
+        "defaultAccountState": null,
+        "scaledUiAmount": null,
+        "verdict": "eligible_with_fee",
+        "reason": "20 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "67zni68V5r5g3hFNzAAysVQAq4Ejm5Jinqttgs3Emqen",
+        "quote": "5R2b9FoRphjPhzLHKdYMyv4LjFWoUHTbHYMz2ZHzWarfjqCXrAQgajmZCwqH8v86KMxEVKCJirU2s1mvs9eohdjr",
+        "withdraw": "3jc34zupEMTMU1fitAH9mU9e7BfEXpjZJ2dRUXHdoCr4SmkY4S8NF2j5c1r3cUVaotN4qk3LJ9rr4GXnBWnMwmyU",
+        "provenAt": "2026-09-19T13:52:12.548Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ"
+    }
+  ]
+}

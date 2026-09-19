@@ -15,17 +15,19 @@ import "./env-load";
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import {
   AccountState, ExtensionType, LENGTH_SIZE, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, TYPE_SIZE, createInitializeDefaultAccountStateInstruction,
   createInitializeMetadataPointerInstruction, createInitializeMint2Instruction, createInitializePausableConfigInstruction,
   createInitializePermanentDelegateInstruction, createInitializeScaledUiAmountConfigInstruction, createInitializeTransferFeeConfigInstruction,
-  createInitializeTransferHookInstruction, createMint, getMintLen,
+  createInitializeTransferHookInstruction, getMintLen,
 } from "@solana/spl-token";
 import { createInitializeInstruction, pack, type TokenMetadata } from "@solana/spl-token-metadata";
+import { sendRawAndConfirm } from "../packages/sdk/src";
 import { loadOrCreateKey, xstockMultiplier } from "./fork-lib";
 
 const RPC = process.env.DEVNET_RPC_URL ?? "https://api.devnet.solana.com";
+const QUOTE_DECIMALS = 6;
 const OUT = resolve(process.cwd(), "fixtures/devnet-mints.json");
 
 /** One replica per market we want live on devnet: the launch set plus one fee mint for First Print. */
@@ -53,6 +55,15 @@ export interface DevnetMint {
   createdAt: string;
 }
 export interface DevnetMints { cluster: "devnet"; quoteMint: string; quoteDecimals: number; authority: string; mints: DevnetMint[] }
+
+/** Poll the signature rather than trust the provider's block height: devnet transactions here land after web3 gives up. */
+async function send(conn: Connection, tx: Transaction, signers: Keypair[]): Promise<string> {
+  const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash("confirmed");
+  tx.recentBlockhash = blockhash;
+  tx.feePayer = signers[0]!.publicKey;
+  tx.sign(...signers);
+  return sendRawAndConfirm(conn, tx.serialize(), lastValidBlockHeight, "confirmed");
+}
 
 function read(): DevnetMints | null {
   return existsSync(OUT) ? (JSON.parse(readFileSync(OUT, "utf8")) as DevnetMints) : null;
@@ -89,7 +100,7 @@ async function createXstockReplica(conn: Connection, payer: Keypair, spec: { sym
     createInitializeMint2Instruction(mint.publicKey, decimals, payer.publicKey, null, TOKEN_2022_PROGRAM_ID),
     createInitializeInstruction({ programId: TOKEN_2022_PROGRAM_ID, mint: mint.publicKey, metadata: mint.publicKey, name: metadata.name, symbol: metadata.symbol, uri: metadata.uri, mintAuthority: payer.publicKey, updateAuthority: payer.publicKey }),
   );
-  await sendAndConfirmTransaction(conn, tx, [payer, mint], { commitment: "confirmed" });
+  await send(conn, tx, [payer, mint]);
   return mint.publicKey;
 }
 
@@ -107,7 +118,7 @@ async function createFeeReplica(conn: Connection, payer: Keypair, spec: { symbol
     createInitializeMint2Instruction(mint.publicKey, decimals, payer.publicKey, null, TOKEN_2022_PROGRAM_ID),
     createInitializeInstruction({ programId: TOKEN_2022_PROGRAM_ID, mint: mint.publicKey, metadata: mint.publicKey, name: metadata.name, symbol: metadata.symbol, uri: metadata.uri, mintAuthority: payer.publicKey, updateAuthority: payer.publicKey }),
   );
-  await sendAndConfirmTransaction(conn, tx, [payer, mint], { commitment: "confirmed" });
+  await send(conn, tx, [payer, mint]);
   return mint.publicKey;
 }
 
@@ -124,8 +135,13 @@ async function main(): Promise<void> {
 
   // The quote mint: plain SPL Token with six decimals, as USDC is, and ours to mint so the faucet can hand it out.
   if (!file.quoteMint || !(await alive(file.quoteMint))) {
-    const usdc = await createMint(conn, payer, payer.publicKey, null, 6, undefined, { commitment: "confirmed" }, TOKEN_PROGRAM_ID);
-    file.quoteMint = usdc.toBase58();
+    const usdc = Keypair.generate();
+    const lamports = await conn.getMinimumBalanceForRentExemption(82);
+    await send(conn, new Transaction().add(
+      SystemProgram.createAccount({ fromPubkey: payer.publicKey, newAccountPubkey: usdc.publicKey, space: 82, lamports, programId: TOKEN_PROGRAM_ID }),
+      createInitializeMint2Instruction(usdc.publicKey, QUOTE_DECIMALS, payer.publicKey, null, TOKEN_PROGRAM_ID),
+    ), [payer, usdc]);
+    file.quoteMint = usdc.publicKey.toBase58();
     console.log(`[devnet] quote mint ${file.quoteMint}`);
     write(file);
   }

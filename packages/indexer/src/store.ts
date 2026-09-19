@@ -75,6 +75,9 @@ export interface Store {
   deleteSeriesNotIn(market: string, keep: string[]): void;
   series(market?: string): SeriesRow[];
   seriesByAddress(address: string): SeriesRow | null;
+  /** Every series address this market has ever had, learned from its own SeriesCreated events. */
+  knownSeries(market: string): string[];
+  rememberSeries(address: string, market: string): void;
   insertEvent(e: EventRow): boolean;
   events(filter?: { name?: string | undefined; series?: string | undefined; wallet?: string | undefined; limit?: number | undefined }): EventRow[];
   /** Every signature already read, with or without events, so a re-listed one is never fetched twice. */
@@ -109,6 +112,8 @@ create table if not exists events (
 create index if not exists events_name on events(name);
 create table if not exists prices (feed_id text, price real, conf real, publish_time integer, primary key (feed_id, publish_time));
 create table if not exists basis (mint text, bps real, at integer, primary key (mint, at));
+create table if not exists known_series (address text primary key, market text not null);
+create index if not exists known_series_market on known_series(market);
 create table if not exists kv (key text primary key, value text);
 create table if not exists signatures (signature text primary key, slot integer not null);
 `;
@@ -156,6 +161,12 @@ export class SqliteStore implements Store {
     const sql = `select * from events ${where.length ? "where " + where.join(" and ") : ""} order by slot desc, ix_index desc limit ?`;
     args.push(filter.limit ?? 200);
     return this.db.prepare(sql).all(...args) as unknown as EventRow[];
+  }
+  knownSeries(market: string): string[] {
+    return (this.db.prepare("select address from known_series where market = ?").all(market) as unknown as { address: string }[]).map((r) => r.address);
+  }
+  rememberSeries(address: string, market: string): void {
+    this.db.prepare("insert or ignore into known_series (address, market) values (?, ?)").run(address, market);
   }
   hasSignature(sig: string): boolean {
     return !!this.db.prepare("select 1 from signatures where signature = ?").get(sig);

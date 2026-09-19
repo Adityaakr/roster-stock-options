@@ -171,6 +171,12 @@ export class Indexer {
         // The parser hands back camelCase names; store the IDL's PascalCase so the API matches the program's event names.
         const name = ev.name.charAt(0).toUpperCase() + ev.name.slice(1);
         if (this.store.insertEvent({ signature: s.signature, ix_index: i, slot: s.slot, block_time: blockTime, name, data_json: JSON.stringify(data) })) added += 1;
+        // A series address is learned here, from the event that created it, so the services never need a program-wide
+        // account scan: the RPC tiers that matter refuse `getProgramAccounts` outright.
+        if (name === "SeriesCreated") {
+          const d = data as { series?: unknown; market?: unknown };
+          if (typeof d.series === "string" && typeof d.market === "string") this.store.rememberSeries(d.series, d.market);
+        }
         i += 1;
       }
       if (tx.meta?.err) {

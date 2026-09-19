@@ -206,9 +206,39 @@ export class RosterClient {
   }
 
   /** Every series of a market (memcmp on the market key at offset 8, after the discriminator). */
+  /*
+   * Every series of a market. A program-wide scan is the obvious way and the wrong one: the RPC tiers most operators
+   * run on refuse `getProgramAccounts` outright, and a scan grows with the whole protocol rather than with the market.
+   * So a caller that knows the addresses (the indexer learns them from each SeriesCreated event) hands them over
+   * through `seriesIndex`, and this reads exactly those accounts. The scan stays as the fallback for callers that
+   * have no index, and a refused scan says so plainly.
+   */
+  seriesIndex: ((market: PublicKey) => Promise<PublicKey[]> | PublicKey[]) | null = null;
+
   async fetchSeriesForMarket(market: PublicKey): Promise<SeriesState[]> {
-    const all = await this.program.account.series.all([{ memcmp: { offset: 8, bytes: market.toBase58() } }]);
-    return all.map((x) => this.decodeSeries(x.publicKey, x.account));
+    if (this.seriesIndex) return this.fetchSeriesMany(await this.seriesIndex(market));
+    try {
+      const all = await this.program.account.series.all([{ memcmp: { offset: 8, bytes: market.toBase58() } }]);
+      return all.map((x) => this.decodeSeries(x.publicKey, x.account));
+    } catch (e) {
+      const why = (e as Error).message ?? "";
+      if (/getProgramAccounts/i.test(why)) throw new Error(`this RPC refuses getProgramAccounts (${why.split("\n")[0]}); give the client a seriesIndex or use an RPC that allows scans`);
+      throw e;
+    }
+  }
+
+  /** Read named series accounts in batches of a hundred; addresses that no longer exist are simply absent. */
+  async fetchSeriesMany(addresses: PublicKey[]): Promise<SeriesState[]> {
+    const out: SeriesState[] = [];
+    for (let i = 0; i < addresses.length; i += 100) {
+      const chunk = addresses.slice(i, i + 100);
+      const infos = await this.provider.connection.getMultipleAccountsInfo(chunk, "confirmed");
+      infos.forEach((info, j) => {
+        if (!info) return;
+        out.push(this.decodeSeries(chunk[j]!, this.program.coder.accounts.decode("series", info.data)));
+      });
+    }
+    return out;
   }
 
   // ---------- builders (unsigned transactions) ----------

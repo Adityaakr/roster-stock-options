@@ -30,6 +30,8 @@ export interface RegistryEntry {
   feeds: ResolvedFeeds;
   /** The escrow round trip on the fork: series created, one lot quoted, withdrawn. Signatures when proven. */
   escrowProof: { series: string; quote: string; withdraw: string; provenAt: string } | null;
+  /** Devnet only: the mainnet mint this replica stands in for, and where its mark comes from (docs/DEVNET.md). */
+  replicaOf?: string | null;
   issuerHalted: boolean;
 }
 
@@ -51,6 +53,11 @@ function repoRoot(from = process.cwd()): string {
   return from;
 }
 export const REGISTRY_PATH = resolve(repoRoot(), "fixtures/registry/registry.json");
+
+/** One registry per cluster: devnet lists replica mints (docs/DEVNET.md), and the two must never be mixed up. */
+export function registryPathFor(cluster: string): string {
+  return cluster === "devnet" ? resolve(repoRoot(), "fixtures/registry/registry.devnet.json") : REGISTRY_PATH;
+}
 
 export function readRegistry(path = REGISTRY_PATH): RegistryFile | null {
   if (!existsSync(path)) return null;

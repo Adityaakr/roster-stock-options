@@ -15,6 +15,8 @@ export default defineConfig({
     { name: "1280", testMatch: /shots\.spec\.ts/, dependencies: ["frames"], use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } } },
     { name: "390", testMatch: /shots\.spec\.ts/, dependencies: ["frames"], use: { ...devices["iPhone 12"], viewport: { width: 390, height: 844 } } },
     // The M4 flow on the fork: burner wallet, buy, write, exercise, release. Skips itself when the fork or the services are down.
-    { name: "flow", testMatch: /(flow|protected-buy)\.spec\.ts/, use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } } }
+    { name: "flow", testMatch: /(flow|protected-buy)\.spec\.ts/, use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } } },
+    // The same journey on devnet, funded by the app's faucet rather than a cheatcode. Skips itself off devnet.
+    { name: "devnet", testMatch: /devnet\.spec\.ts/, use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } } }
   ]
 });

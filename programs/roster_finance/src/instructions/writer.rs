@@ -7,14 +7,16 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::{
     error::RosterError,
-    events::{AskCancelled, AskPosted, CollateralWithdrawn, PremiumClaimed},
-    instructions::shared::{vault_in, vault_out, SeriesSeeds},
+    events::{CollateralWithdrawn, PremiumClaimed},
+    instructions::{
+        book::{self, collateral_mint_for},
+        shared::{vault_in, vault_out, SeriesSeeds},
+    },
     math::{free_lots6, raw_for_lots6, usdc_owed_ceil, usdc_paid_floor},
-    state::{Ask, MarketConfig, Protocol, Series, Side, MAX_ASKS},
+    state::{MarketConfig, Protocol, Series, Side},
 };
 
-/// Resident asks one writer may hold in a series, so a single key cannot occupy the whole list (adversary 5c).
-pub const MAX_ASKS_PER_WRITER: usize = 4;
+pub use book::MAX_ASKS_PER_WRITER;
 
 #[derive(Accounts)]
 pub struct WriterCollateral<'info> {
@@ -34,33 +36,12 @@ pub struct WriterCollateral<'info> {
     pub collateral_token_program: Interface<'info, TokenInterface>,
 }
 
-fn collateral_mint_for(series: &Series, market: &MarketConfig) -> Pubkey {
-    match series.side() {
-        Side::Call => market.mint,
-        Side::Put => market.quote_mint,
-    }
-}
-
 /// Collateral units for `lots6`: raw underlying for a call, micro-USDC (ceil) for a put.
 fn collateral_amount(series: &Series, market: &MarketConfig, lots6: u64, ceil: bool) -> Result<u64> {
     match series.side() {
         Side::Call => raw_for_lots6(lots6, market.raw_per_lot6()).ok_or(RosterError::Overflow.into()),
         Side::Put => (if ceil { usdc_owed_ceil(lots6, series.strike_usdc_per_lot) } else { usdc_paid_floor(lots6, series.strike_usdc_per_lot) }).ok_or(RosterError::Overflow.into()),
     }
-}
-
-fn find_or_claim_slot(series: &mut Series, writer: &Pubkey) -> Result<usize> {
-    if let Some(i) = series.writer_slot(writer) {
-        return Ok(i);
-    }
-    let i = series.writers.iter().position(|w| w.is_recyclable()).ok_or(RosterError::WriterSlotsFull)?;
-    series.writers[i] = Default::default();
-    series.writers[i].writer = *writer;
-    let p = series.p();
-    series.writers[i].set_p_snap(p);
-    series.writers[i].scale_snap = series.scale;
-    series.writers[i].epoch_snap = series.epoch;
-    Ok(i)
 }
 
 /// Deposit `deposit_lots6` of collateral (may be zero) and post an ask for `ask_lots6` at `ask_per_lot` micro-USDC
@@ -79,51 +60,16 @@ pub fn handle_quote(ctx: Context<WriterCollateral>, deposit_lots6: u64, ask_lots
     require!(ask_per_lot > 0 && ask_lots6 >= market.min_lots6 && ask_lots6 <= market.max_lots6, RosterError::SizeOutOfRange);
 
     let writer = ctx.accounts.writer.key();
-    let slot = find_or_claim_slot(&mut series, &writer)?;
+    let slot = book::find_or_claim_slot(&mut series, &writer)?;
 
     // Deposit, crediting what actually arrived (transfer-fee mints deliver less than sent).
     if deposit_lots6 > 0 {
         let amount = collateral_amount(&series, market, deposit_lots6, true)?;
         let arrived = vault_in(&ctx.accounts.collateral_token_program, &ctx.accounts.writer_collateral_ata, &ctx.accounts.collateral_mint, &mut ctx.accounts.collateral_vault, &ctx.accounts.writer, amount)?;
-        let credited = match series.side() {
-            Side::Call => arrived / market.raw_per_lot6(),
-            Side::Put => {
-                require!(arrived == amount, RosterError::WrongAccount);
-                deposit_lots6
-            }
-        };
-        let w = &mut series.writers[slot];
-        w.deposited_lots6 = w.deposited_lots6.checked_add(credited).ok_or(RosterError::Overflow)?;
-        require!(w.deposited_lots6 - w.withdrawn_lots6 <= market.max_writer_lots6, RosterError::WriterCapReached);
+        book::credit_deposit(&mut series, market, slot, arrived, deposit_lots6, amount)?;
     }
 
-    require!(free_lots6(&series, slot) >= ask_lots6, RosterError::InsufficientFreeCollateral);
-    let mine = series.asks[..series.asks_len as usize].iter().filter(|a| a.writer_slot as usize == slot).count();
-    require!(mine < MAX_ASKS_PER_WRITER, RosterError::AskRejected);
-
-    // Sorted insert by (ask_per_lot, seq); evict the worst when full.
-    let len = series.asks_len as usize;
-    let mut evicted_seq = 0u64;
-    let mut len = len;
-    if len == MAX_ASKS {
-        let worst = series.asks[len - 1];
-        require!(ask_per_lot < worst.ask_per_lot, RosterError::AskRejected);
-        evicted_seq = worst.seq;
-        len -= 1;
-    }
-    series.seq += 1;
-    let seq = series.seq;
-    let new = Ask { writer_slot: slot as u8, remaining_lots6: ask_lots6, ask_per_lot, seq, _pad: [0; 7] };
-    let pos = series.asks[..len].iter().position(|a| ask_per_lot < a.ask_per_lot).unwrap_or(len);
-    let mut i = len;
-    while i > pos {
-        series.asks[i] = series.asks[i - 1];
-        i -= 1;
-    }
-    series.asks[pos] = new;
-    series.asks_len = (len + 1) as u8;
-
-    emit!(AskPosted { series: series_key, writer, lots6: ask_lots6, ask_per_lot, seq, evicted_seq });
+    book::post_ask(&mut series, series_key, market, slot, ask_lots6, ask_per_lot)?;
     Ok(())
 }
 
@@ -138,16 +84,7 @@ pub fn handle_cancel_ask(ctx: Context<WriterOnly>, seq: u64) -> Result<()> {
     let writer = ctx.accounts.writer.key();
     let series_key = ctx.accounts.series.key();
     let mut series = ctx.accounts.series.load_mut()?;
-    let slot = series.writer_slot(&writer).ok_or(RosterError::NoWriterSlot)?;
-    let len = series.asks_len as usize;
-    let pos = series.asks[..len].iter().position(|a| a.seq == seq && a.writer_slot as usize == slot).ok_or(RosterError::AskNotFound)?;
-    for i in pos..len - 1 {
-        series.asks[i] = series.asks[i + 1];
-    }
-    series.asks[len - 1] = Default::default();
-    series.asks_len = (len - 1) as u8;
-    emit!(AskCancelled { series: series_key, writer, seq });
-    Ok(())
+    book::cancel_ask(&mut series, series_key, &writer, seq)
 }
 
 /// Withdraw never-sold collateral. Bounded by `free`, which is scanned from the ask list on the spot.

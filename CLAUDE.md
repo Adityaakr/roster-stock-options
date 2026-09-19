@@ -608,3 +608,130 @@ Everything in Part 2 section 1 remains. Add two:
 ## Kickoff addition
 
 > A Part 2 addendum has been appended to `CLAUDE.md`. Read it with Part 2. In `docs/RECONCILIATION.md`, add a section mapping every phase to either the September 23 submission build or the deferred set per addendum section B, and flag anything already built that the addendum changes (lazy series creation, ask-list bounds, dust policy, fee vaults). Then continue under the operating contract.
+
+---
+
+# Roster Finance: Part 3, the supply side
+
+Append to `CLAUDE.md` after Part 2 and the Part 2 addendum. This ADDS to Part 2; it deletes nothing. The on-chain ask book stays exactly as built.
+
+Read section 1 before touching code. The reasoning is the specification.
+
+---
+
+## 1. Why this change
+
+The ask book as built is correct: every fill is against collateral already locked in the series vault, assignment is pooled per series so exercise never routes to a specific writer, and the `32`-ask list with an `8`-ask walk keeps compute and account size bounded. None of that changes.
+
+The unsolved problem is who posts asks. PsyOptions built a fully collateralized, physically settled, order-book options venue on Solana, won the first Solana x Serum hackathon, raised `$3.5M` from Alameda, CMS, LedgerPrime and Wintermute, and shut the product down. The founder's account: not enough demand, not enough on-chain volume. Opyn abandoned its order-book v1. Zeta launched options and pivoted entirely to perps. The book was never the failure. The empty book was.
+
+The model that reliably attracted capital was the vault: Ribbon, Friktion, Katana, Thetanuts, Dopex. "I hold NVDAx, pay me for it" is a proposition depositors accept; "post an ask at the `$190` strike for Friday" is not. Hegic proved the other half: a pool that always quotes guarantees a buyer a counterparty on day one, though its fixed implied-volatility parameter sold options cheap into volatility spikes and hurt its liquidity providers.
+
+So: add a vault that quotes into the book we already have. If no external makers appear, the vault is the whole book and the venue behaves like a pool. When makers do appear, they undercut the vault and we get real price discovery, which a pool alone can never provide.
+
+**The constraint that shapes the vault.** Lyra and Premia run capital-efficient pools because they hedge the pool's delta on a perp venue. There is no single-name tokenized-stock perp on Solana, so our writers are structurally unhedged. That leaves exactly two safe positions: a covered call, where the writer already owns the stock and at worst sells at the strike, and a cash-secured put, where the writer already holds the USDC and at worst buys at the strike. This is forced, not chosen.
+
+**The second problem, which matters more.** The book has no bids. A buyer's only exits are exercise or expiry, and exercising a call requires the full strike in USDC: realizing `$130` of profit on a `$50` contract needs `$1,800` of capital the holder probably does not have. Without a bid, a winning position cannot be taken off. The vault quotes both sides and closes this.
+
+---
+
+## 2. What is being built
+
+Three additions. No deletions.
+
+**Covered Call vault.** Depositors deposit the underlying. The vault posts asks on call series across the term grid, out of the money, through the existing `quote` instruction. Premiums accrue to depositors. Worst case for a depositor: tokens sold at the strike, premium kept.
+
+**Cash-Secured Put vault.** Depositors deposit USDC. The vault posts asks on put series below spot. Worst case: they own the underlying at a price they chose, premium kept.
+
+**Two-sided quoting (the bid side).** A new instruction, `sell_to_vault(series, raw_qty, min_premium)`: a position-token holder sells back to the vault at the vault's posted bid. The vault burns the returned position tokens against its own sold inventory, releasing the matching collateral, and pays the bid in premium currency. The vault buys back only up to its own `sold_raw` in that series, so it can never end up net long its own contracts. If a holder's position came from an external writer, the vault still buys it; it simply reduces its own short and the external writer's position is unaffected because assignment is already pooled.
+
+Vault shares are Token-2022 tokens so positions stay composable.
+
+**Nothing is special-cased.** The vault posts, cancels and gets evicted exactly like any other writer. If `32` external asks undercut it and it is evicted, its collateral becomes withdrawable and the quoter re-posts at the next refresh or records that the series is at capacity. Write a test for the vault being evicted.
+
+---
+
+## 3. Pricing
+
+Computed off-chain by the quoter, posted on-chain as the vault's ask and bid, refreshed on a schedule and on material moves. Every input is logged with every quote decision.
+
+**Base.** Realised volatility per underlying from Pyth Benchmarks, blended over `7` and `30` day windows, with a configured floor so the vault never sells at an absurd vol. Black-Scholes as the reference model. Document the implementation and its assumptions in `docs/PRICING.md`, including the known mismatch between a continuously traded token and an underlying that trades about `19%` of the week.
+
+**Utilization skew.** The more of a series the vault has sold, the higher its ask. Computed on the vault's own `sold_raw` against its per-series cap, not on total series volume, because the vault prices its own risk and an external writer's sales are not its exposure. Convex curve, rising steeply toward the cap. At the cap the vault stops quoting asks and the UI shows "vault at capacity", which is correct behaviour and not an error. External writers can still fill the book above it.
+
+This mechanism does three jobs: price discovery without needing external makers, protection against one-directional flow, and no manual repricing ever. It is also the direct fix for what hurt Hegic.
+
+**Session multiplier.** The underlying is closed roughly `81%` of the week and the vault's real risk differs by session, so the price does: `1.0` regular, `1.4` pre and post, `1.8` overnight, `2.2` fully closed. Derived from Pyth's published market hours per underlying. No crypto options venue has a reason to build this because crypto never closes. Surface it in the product, do not bury it in config.
+
+**Bid.** Ask minus a configured spread, widened by the same session multiplier, floored at intrinsic value so the vault never bids below what the contract is worth if exercised immediately. Bid size is capped at the vault's own `sold_raw` in that series.
+
+**Activation guard.** xStocks multipliers activate at `00:30` UTC the day after ex-date, with a recommended pause of about `15` minutes either side. The quoter pauses both sides on that underlying and the app shows the banner.
+
+**Circuit breakers.** Stop quoting a market when the token-versus-share basis exceeds a threshold, when Hermes is stale beyond a threshold, when the mint is paused or frozen, or when the vault's epoch drawdown exceeds a limit. Each breaker logs its trigger and appears on the status page. Breakers stop the vault, never the book: external writers and all exercises continue.
+
+---
+
+## 4. Epochs
+
+Weekly cycles, borrowed from Ribbon because the failure modes they prevent are real.
+
+- Deposits queue and enter at the start of the next epoch, so a depositor cannot arrive after premiums were collected and dilute everyone who carried the week's risk.
+- Withdrawals queue and settle at the end of the current epoch, so there is no run while collateral sits behind live contracts.
+- At each roll: settle expired series, release unexercised collateral, compute epoch P&L per share, process both queues, post the next grid.
+- Share price is `(collateral + settlement proceeds + premiums received − premiums paid on buybacks − assignments) / shares`, computed once per roll and published.
+
+Both queues and the exact time of the next roll are visible in the UI. A depositor must never discover the queue after depositing.
+
+---
+
+## 5. Edge cases, each with a required test
+
+**Vault evicted from the book.** `32` cheaper asks push the vault out. Test: collateral becomes withdrawable, the quoter detects it, no accounting is lost.
+
+**Buyback beyond the vault's short.** Test: a request to sell back more than the vault's `sold_raw` in that series fills partially to the cap and says so.
+
+**Buyback then assignment.** The vault buys back `5` contracts, then a different holder exercises `5`. Test: collateral accounting is exact and the vault is never over-released.
+
+**Multiplier activation mid-epoch.** Raw-amount denomination means live contracts are unaffected; the vault's collateral in share terms shifts. Test: payoffs unchanged, vault share accounting correct.
+
+**Pin risk.** A contract finishing fractionally in the money costs more to auto-exercise than it returns. The crank requires moneyness above the keeper fee plus a buffer. Test: a position one cent in the money is not auto-exercised and the UI says why.
+
+**Exercise into a thin spot book.** Cap position size as a fraction of measured spot depth, refreshed hourly, disclosed in the ticket. Test: a request above the cap is rejected with a clear message.
+
+**Basis blowout.** Test: simulate a `500` bp basis and assert vault quoting halts while the book and exercises continue.
+
+**Mint freeze or pause.** Exercise cannot complete and no program can route around it. Test: freeze the mint on the fork, assert a clean legible failure, never a silent revert. Document as an explicit contract limitation.
+
+**Stale price.** Staleness and confidence checks belong on `quote` and `sell_to_vault`, never on `exercise`. Test: exercise succeeds with every Pyth account stale or absent.
+
+**Auto-exercise delegate.** Scoped to the position token, active only after the expiry grace window, revocable in Manage. Test: revoke, assert the crank cannot act.
+
+**Epoch roll with an open assignment.** Test: a series exercised on the last day settles into that epoch's P&L, not the next.
+
+**Dust.** Rounding always against the party being paid; residue stays in the vault and is swept at `close_series`. Test: three depositors with prime-numbered shares, partial assignment, all withdraw, nobody exceeds entitlement, vault ends empty or dust-only.
+
+---
+
+## 6. Honesty requirements, non-negotiable
+
+The vaults are structurally short volatility with no hedge available. They will have losing epochs.
+
+- Never call them yield. They are paid risk, disclosed on the deposit screen with three adverse scenarios in real numbers.
+- Publish per-epoch P&L per vault from the first epoch, including losing ones, on the roster page and in the indexer API. Every vault protocol that obscured its drawdowns lost trust when the drawdown came anyway.
+- Cap exposure small at launch, raise only against published performance.
+- The README's prior-art section names PsyOptions, Hegic and Ribbon, states what each got wrong, and states which of their risks this design still carries.
+
+---
+
+## 7. Phase amendments
+
+- **P1** unchanged. The ask book, series, position mint, exercise, settle and release stay as built.
+- **P2** builds the two vaults, the epoch roll, the pricing model, `sell_to_vault` and the breakers, in that order. Done when both vaults survive a time-travelled weekend unattended, roll twice, quote both sides, and publish a correct P&L including one deliberately engineered losing epoch.
+- **P3** adds vault deposit and withdraw with queue timing, capacity and live per-epoch P&L, and a sell button on every open position in Manage showing the vault's live bid.
+- Roadmap, not in the submission build: resting bids from external buyers, which is a second book plus a bid vault.
+
+---
+
+## Kickoff message
+
+> A Part 3 has been appended to `CLAUDE.md`. Read section 1 first and confirm in `docs/RECONCILIATION.md` that nothing in the existing ask book is being removed. Then record: the two vault accounts and their instructions; how the vault posts through the existing `quote` path with no special-casing; the `sell_to_vault` instruction and its collateral accounting against the vault's own `sold_raw`; the pricing module's inputs and where each is logged; the epoch state machine; and each edge case from section 5 mapped to a named test. Then continue the build under the operating contract, starting with the Covered Call vault, and stop only at a stop condition or a missing external input.

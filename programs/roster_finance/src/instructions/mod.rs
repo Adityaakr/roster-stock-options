@@ -1,5 +1,6 @@
 pub mod admin;
 pub mod auto_exercise;
+pub mod book;
 pub mod buy;
 pub mod create_market;
 pub mod create_series;

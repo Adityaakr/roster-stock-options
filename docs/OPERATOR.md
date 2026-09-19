@@ -29,7 +29,7 @@ The external inputs the build cannot obtain on its own (Part 2 section 1). Secre
 | Fee schedule | 10 bps taker, 30% of it to an integrator when a referrer is present | `set_fee_schedule` at deploy |
 | Geo policy | block US, UK, Canada, Australia at minimum (mirrors the wrappers) | `apps/web` geo gate config |
 | Legal entity and contact | placeholder text "Roster Finance" and no address until supplied; the terms page says so | `apps/web` docs pages |
-| Ondo wrappers | excluded, shown as `restricted_wrapper` with the allowlist reason | registry verdicts |
+| Ondo wrappers | **listed at Tier 3**, no treasury capital: the mints carry no live allowlisting hook on chain and the escrow round trip is proven on the fork (`docs/BUILD_LOG.md` M8.4). Part 2's default of excluding them rested on a premise the chain does not bear out; promoting any of them to Tier 2 is yours to decide | registry verdicts |
 | Cut line (addendum B) | submission build = P0, P1, P2, P3, P4, P7 (Tier 1 and 2), P6; P5 at small size; everything else deferred and absent from the UI | this file |
 
 ## Stop rule

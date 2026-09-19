@@ -68,7 +68,7 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
         <Stat k="Holders" v={token.holders === null ? "n/a" : token.holders.toLocaleString("en-US")} s={token.holders === null ? "not published by the issuer" : "wallets, per the issuer"} />
       </div>
 
-      <div className="grid-2" style={{ gridTemplateColumns: "minmax(0, 1.7fr) minmax(0, 1fr)", marginBottom: 16 }}>
+      <div className="grid-2 split-left" style={{ marginBottom: 16 }}>
         <div className="card">
           <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
             <div>

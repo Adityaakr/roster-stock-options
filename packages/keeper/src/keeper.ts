@@ -8,7 +8,7 @@ import type { PublicKey } from "@solana/web3.js";
 import { ExtensionType, getAccount, getAssociatedTokenAddressSync, getExtensionData, getMint, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import type { RosterClient} from "@roster/sdk";
 import { type MarketState, type SeriesState, autoExercisePda } from "@roster/sdk";
-import { nextExpiries } from "@roster/core";
+import { limiter, mapLimit, nextExpiries } from "@roster/core";
 
 export interface KeeperLogLine {
   at: number;
@@ -25,6 +25,13 @@ export interface KeeperConfig {
 
 export const DEFAULT_KEEPER: KeeperConfig = { expiryWeekdays: [5], expiriesAhead: 2 };
 
+/* A whole grid can expire on the same Friday, so the cranks fan out across series and writers. The ceiling that
+ * matters is the last one: cranks are never urgent and a person's transaction is, so the keeper holds at most this
+ * many builds and sends in flight across every market, and a crank that loses the race simply runs on the next tick. */
+const SERIES_CONCURRENCY = 4;
+const WRITER_CONCURRENCY = 4;
+const SENDS_IN_FLIGHT = Number(process.env.KEEPER_SENDS_IN_FLIGHT ?? 6);
+
 /** The program's own error line when there is one, else the first line of the RPC message. */
 function reason(e: unknown): string {
   const m = (e as Error).message ?? String(e);
@@ -36,6 +43,8 @@ function reason(e: unknown): string {
 
 export class Keeper {
   readonly log: KeeperLogLine[] = [];
+  /** Shared by every crank of every market: the fan-out below is wide, the traffic it puts on the RPC is not. */
+  private readonly gate = limiter(SENDS_IN_FLIGHT);
   constructor(private readonly client: RosterClient, private readonly treasury: PublicKey, private readonly cfg: KeeperConfig = DEFAULT_KEEPER) {}
 
   private say(line: KeeperLogLine): void {
@@ -65,32 +74,31 @@ export class Keeper {
     const graceSecs = (await this.client.fetchProtocol()).graceSecs;
     let sent = 0;
     const all = await this.client.fetchSeriesForMarket(m.address);
-    for (const s of all) {
+    await mapLimit(all, SERIES_CONCURRENCY, async (s) => {
       if (mintPaused && !s.halted) {
         try {
-          await this.client.send(await this.client.observeHalt(m, s));
+          await this.gate(async () => this.client.send(await this.client.observeHalt(m, s)));
           sent += 1;
           this.say({ at: nowTs, action: "observe_halt", target: s.address.toBase58(), detail: "issuer pause recorded" });
         } catch (e) {
           this.say({ at: nowTs, action: "skip", target: s.address.toBase58(), detail: `observe_halt failed: ${reason(e)}` });
         }
       }
-      if (BigInt(nowTs) < s.expiryTs) continue;
-      for (const w of s.writers) {
-        if (w.settled) continue;
+      if (BigInt(nowTs) < s.expiryTs) return;
+      await mapLimit(s.writers.filter((w) => !w.settled), WRITER_CONCURRENCY, async (w) => {
         try {
-          await this.client.send(await this.client.settleWriter(m, s, w.writer));
+          await this.gate(async () => this.client.send(await this.client.settleWriter(m, s, w.writer)));
           sent += 1;
           this.say({ at: nowTs, action: "settle", target: s.address.toBase58(), detail: `writer ${w.writer.toBase58().slice(0, 8)}` });
         } catch (e) {
           this.say({ at: nowTs, action: "skip", target: s.address.toBase58(), detail: `settle ${w.writer.toBase58().slice(0, 8)} failed: ${reason(e)}` });
         }
-      }
+      });
       if (BigInt(nowTs) >= s.expiryTs + graceSecs) {
         const fresh = await this.client.fetchSeries(s.address);
         if (fresh && fresh.writers.every((w) => w.settled || (w.soldLots6 === 0n && w.depositedLots6 === w.withdrawnLots6 && w.premiumClaimable === 0n))) {
           try {
-            await this.client.send(await this.client.closeSeries(m, fresh, this.treasury));
+            await this.gate(async () => this.client.send(await this.client.closeSeries(m, fresh, this.treasury)));
             sent += 1;
             this.say({ at: nowTs, action: "close", target: s.address.toBase58(), detail: "rent reclaimed" });
           } catch (e) {
@@ -98,7 +106,7 @@ export class Keeper {
           }
         }
       }
-    }
+    });
     return sent;
   }
 

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, getAccount, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
-import { FORK_URL, USDC_MINT, forkReachable, fundSol, fundTokenFor, resolveXstockMint } from "../../../scripts/fork-lib";
+import { FORK_URL, USDC_MINT, forkReachable, fundSol, fundTokenFor, resolveXstockMint, servicesWarm } from "../../../scripts/fork-lib";
 
 /*
  * M7 done-criterion: one Protected Buy round-trips on the fork. The burner wallet holds USDC only; after the one
@@ -20,7 +20,7 @@ async function connectBurner(page: Page): Promise<PublicKey> {
 test("a Protected Buy delivers the tokens and the floor in one transaction", async ({ page }) => {
   test.setTimeout(300_000);
   const up = await forkReachable();
-  const services = await fetch("http://127.0.0.1:8787/v1/health").then((r) => r.ok).catch(() => false);
+  const services = await servicesWarm();
   test.skip(!up || !services, "fork or services not running");
   await page.goto("/buy?m=NVDAx");
   await expect(page.getByRole("heading", { level: 1, name: "Protected Buy" })).toBeVisible();

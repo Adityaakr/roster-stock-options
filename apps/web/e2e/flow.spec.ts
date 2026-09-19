@@ -1,7 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { FORK_URL, USDC_MINT, clockUnix, forkReachable, fundSol, fundTokenFor, resolveXstockMint, timeTravelTo } from "../../../scripts/fork-lib";
+import { FORK_URL, USDC_MINT, clockUnix, forkReachable, fundSol, fundTokenFor, resolveXstockMint, servicesWarm, timeTravelTo } from "../../../scripts/fork-lib";
 
 /*
  * M4 done-criterion (docs/02-roadmap.md): a person buys a Gap, buys a Floor, writes a Floor, exercises, and sees the
@@ -9,6 +9,11 @@ import { FORK_URL, USDC_MINT, clockUnix, forkReachable, fundSol, fundTokenFor, r
  * cheatcodes; every other step is the UI. Needs the fork, the program, the services (:8787) and next dev (:3000).
  */
 const connection = new Connection(FORK_URL, "confirmed");
+
+/** The first term in the grid that someone can actually buy: an unquoted strike is a row with no premium. */
+function quotedRow(page: Page): Locator {
+  return page.getByTestId("term-row").filter({ hasNotText: "not fillable" }).filter({ hasNotText: "no ask resident" }).first();
+}
 
 async function connectBurner(page: Page): Promise<PublicKey> {
   await page.getByRole("button", { name: /connect wallet/i }).first().click();
@@ -38,7 +43,7 @@ test.describe.configure({ mode: "serial" });
 test("buy a Gap, buy a Floor, write a Floor, exercise, see the release", async ({ page }) => {
   test.setTimeout(600_000);
   const up = await forkReachable();
-  const services = await fetch("http://127.0.0.1:8787/v1/health").then((r) => r.ok).catch(() => false);
+  const services = await servicesWarm();
   test.skip(!up || !services, "fork or services not running");
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -51,7 +56,7 @@ test("buy a Gap, buy a Floor, write a Floor, exercise, see the release", async (
   await fund(wallet);
 
   // Act: a Gap at the nearest expiry, size 2, one transaction.
-  await page.getByTestId("term-row").first().click();
+  await quotedRow(page).click();
   await expect(page.getByRole("heading", { level: 1, name: /Gap at/ })).toBeVisible();
   await page.getByTestId("size").fill("2");
   await expect(page.getByTestId("total")).not.toHaveText("n/a");
@@ -63,7 +68,7 @@ test("buy a Gap, buy a Floor, write a Floor, exercise, see the release", async (
   await page.getByRole("link", { name: "Markets" }).first().click();
   await page.getByRole("link", { name: /^NVDAx$/ }).first().click();
   await page.getByRole("tab", { name: /Floor · exit/ }).click();
-  await page.getByTestId("term-row").first().click();
+  await quotedRow(page).click();
   await expect(page.getByRole("heading", { level: 1, name: /Floor at/ })).toBeVisible();
   await page.getByTestId("size").fill("2");
   await page.getByTestId("buy").click();

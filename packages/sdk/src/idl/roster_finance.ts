@@ -789,7 +789,11 @@ export type RosterFinance = {
           "writable": true
         },
         {
-          "name": "underlyingMint"
+          "name": "underlyingMint",
+          "docs": [
+            "Mutable because a fee mint receives the vault's withheld fees before the vault can be closed."
+          ],
+          "writable": true
         },
         {
           "name": "quoteMint"

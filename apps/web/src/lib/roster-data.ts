@@ -144,7 +144,13 @@ async function fromServices(r: ServicesRoster, selected: string | undefined, fre
   const nowTs = r.nowTs;
   let termsByMarket = r.markets.map((m) => ({ m, terms: m.series.map((s) => liveTerm(m, s)) }));
   let markets = termsByMarket.map(({ m, terms }) => liveMarket(m, nowTs, terms)).sort((a, b) => b.depthUsdc - a.depthUsdc || a.tier - b.tier);
-  const pick = markets.find((m) => m.symbol.toLowerCase() === selected?.toLowerCase()) ?? markets[0];
+  // Without an explicit `?m=`, the page opens on the deepest listed stock that is actually quoted: a market with no
+  // resident ask, or a pre-IPO token that happens to hold the most collateral, is a poor first impression and a worse
+  // worked example. Anything explicitly asked for still wins.
+  const pick = markets.find((m) => m.symbol.toLowerCase() === selected?.toLowerCase())
+    ?? markets.find((m) => m.wrapperTier === "xStock" && m.bestAsk !== null)
+    ?? markets.find((m) => m.bestAsk !== null)
+    ?? markets[0];
   if (fresh && pick) {
     // Right after a transaction the indexer's snapshot can be a tick behind; read the chosen market's series from chain.
     const m = r.markets.find((x) => x.symbol === pick.symbol);

@@ -81,7 +81,7 @@ function UnderwriteInner() {
         </div>
         <Badge>{sym} · {market.name}</Badge>
       </div>
-      <div className="grid-2" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.4fr)" }}>
+      <div className="grid-2 split-right">
         <div className="card pad">
           <Tabs value={side} onChange={(v) => { setSide(v as Side); setTermId(null); setAsk(null); tx.reset(); }} items={[{ id: "put", label: "Write Floors · get paid to buy lower" }, { id: "call", label: "Write Gaps · get paid to sell higher" }]} />
           <label className="lbl" style={{ marginTop: 16 }}>Term</label>

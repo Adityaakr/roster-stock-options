@@ -67,7 +67,7 @@ export default function ActPage({ params }: { params: Promise<{ term: string }> 
         </div>
       </div>
 
-      <div className="grid-2" style={{ gridTemplateColumns: "minmax(0, 1.6fr) minmax(0, 1fr)" }}>
+      <div className="grid-2 split-left">
         <div className="card">
           <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
             <div>

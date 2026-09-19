@@ -7,11 +7,12 @@ import "../../scripts/env-load";
  */
 import { beforeAll, describe, expect, it } from "vitest";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddressSync, getMint, getTransferFeeConfig, calculateEpochFee } from "@solana/spl-token";
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddressSync, getMint, getTransferFeeAmount, getTransferFeeConfig, calculateEpochFee } from "@solana/spl-token";
 import * as anchorNs from "@anchor-lang/core";
 import { RosterClient, ROSTER_PROGRAM_ID, type MarketState, type SeriesState } from "../../packages/sdk/src";
 import { readRegistry } from "../../packages/registry/src";
-import { FORK_URL, USDC_MINT, clockUnix, forkReachable, fundSol, fundToken, loadOrCreateKey } from "../../scripts/fork-lib";
+import { nextExpiries } from "../../packages/core/src";
+import { FORK_URL, USDC_MINT, clockUnix, forkReachable, fundSol, fundToken, loadOrCreateKey, timeTravelTo } from "../../scripts/fork-lib";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
 const LOT = 1_000_000n;
@@ -50,6 +51,14 @@ describe.skipIf(!ready)("First Print: a tKalshi Gap round-trips with the transfe
     await fundToken(connection, bob, USDC_MINT, TOKEN_PROGRAM_ID, 100_000n * USDC);
     market = (await client(deployer).fetchMarket(mint))!;
     expect(market.hasTransferFee).toBe(true);
+    // The fork's clock is shared and this file travels through an expiry; if the grid the keeper rolled is now in the
+    // past, roll it here rather than depending on the keeper's next pass.
+    const now = BigInt(await clockUnix(connection));
+    if (!market.allowedExpiries.some((e) => e > now)) {
+      const c = client(deployer);
+      await c.send(await c.updateMarket(mint, { allowedExpiries: nextExpiries(Number(now), 2, [5]).map(BigInt) }));
+      market = (await c.fetchMarket(mint))!;
+    }
   }, 120_000);
 
   it("creates a Gap at the nearest expiry (Floors are refused on a fee mint)", async () => {
@@ -92,6 +101,30 @@ describe.skipIf(!ready)("First Print: a tKalshi Gap round-trips with the transfe
     const owed = (lots * series.strikeUsdcPerLot + LOT - 1n) / LOT;
     expect(usdcBefore - (await bal(getAssociatedTokenAddressSync(USDC_MINT, bob.publicKey), TOKEN_PROGRAM_ID))).toBe(owed);
   }, 120_000);
+
+  it("closes after expiry: the fee the mint withheld in the vault is harvested, so the rent comes back", async () => {
+    const c = client(deployer);
+    const grace = (await c.fetchProtocol()).graceSecs;
+    await timeTravelTo(Number(series.expiryTs + grace) + 5);
+    series = (await c.fetchSeries(series.address))!;
+    await c.send(await c.settleWriter(market, series, alice.publicKey));
+    series = (await c.fetchSeries(series.address))!;
+
+    // Every transfer into the vault left part of itself behind as a withheld fee, which Token-2022 refuses to let an
+    // account carry into its own closure; close_series harvests it to the mint first.
+    const vault = await getAccount(connection, series.collateralVault, "confirmed", TOKEN_2022_PROGRAM_ID);
+    const withheld = getTransferFeeAmount(vault)!.withheldAmount;
+    expect(withheld).toBeGreaterThan(0n);
+    const mintWithheldBefore = getTransferFeeConfig((await getMint(connection, mint, "confirmed", TOKEN_2022_PROGRAM_ID)))!.withheldAmount;
+    const rentBefore = await connection.getBalance(series.rentPayer);
+
+    await c.send(await c.closeSeries(market, series, deployer.publicKey));
+    expect(await connection.getAccountInfo(series.address)).toBeNull();
+    expect(await connection.getAccountInfo(series.collateralVault)).toBeNull();
+    expect(await connection.getBalance(series.rentPayer)).toBeGreaterThan(rentBefore);
+    const mintWithheldAfter = getTransferFeeConfig((await getMint(connection, mint, "confirmed", TOKEN_2022_PROGRAM_ID)))!.withheldAmount;
+    expect(mintWithheldAfter - mintWithheldBefore).toBe(withheld);
+  }, 180_000);
 });
 
 if (!ready) {

@@ -17,6 +17,7 @@ import { Hermes, HermesError, estimateVol, readMultiplier, sessionAt } from "@ro
 import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
 import { Quoter, DEFAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
+import { mapLimit } from "@roster/core";
 import { issuerMark, jupiterPrice, launchSet, xstocksQuote } from "./registry";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
@@ -25,6 +26,9 @@ const flag = (name: string) => args.has(name);
 const RPC = process.env.FORK_RPC_URL ?? process.env.RPC_URL ?? "http://127.0.0.1:8899";
 const PORT = Number(process.env.SERVICES_PORT ?? 8787);
 const TICK_MS = Number(process.env.SERVICES_TICK_MS ?? 15_000);
+/* Markets priced and cranked at once. A tick that walks four hundred markets one at a time is a tick that settles a
+ * Friday's expiries minutes late; each market's accounts are disjoint, so the pass fans out. */
+const MARKET_CONCURRENCY = Number(process.env.SERVICES_MARKET_CONCURRENCY ?? 4);
 
 function key(path: string): Keypair {
   return Keypair.fromSecretKey(new Uint8Array(JSON.parse(readFileSync(path, "utf8"))));
@@ -84,25 +88,34 @@ async function main() {
   console.log(`[services] cluster=${cluster} genesis=${genesis.slice(0, 8)} program=${ROSTER_PROGRAM_ID.toBase58()} hermes=${hermes.keyed ? "keyed" : "NO KEY"} markets=${launch.map((l) => l.symbol).join(",")}`);
 
   // Events are pulled on their own short loop as well as at the end of each tick: a tick that reprices every series
-  // can take a minute, and a receipt should not wait for it.
-  let pulling = false;
-  async function pullEvents(): Promise<void> {
-    if (pulling) return;
-    pulling = true;
-    try {
-      await indexer.pullEvents();
-    } catch (e) {
-      console.warn(`[indexer] events: ${(e as Error).message}`);
-    } finally {
-      pulling = false;
-    }
+  // can take a minute, and a receipt should not wait for it. One pull at a time, and a caller arriving mid-pull waits
+  // for that one instead of skipping the read: the positions endpoint pulls before it answers, so two people
+  // refreshing at once both see the finished scan.
+  let pulling: Promise<void> | null = null;
+  function pullEvents(): Promise<void> {
+    if (pulling) return pulling;
+    const run = (async () => {
+      try {
+        const started = Date.now();
+        const added = await indexer.pullEvents();
+        const took = Date.now() - started;
+        // Indexer lag is what a person feels as "my receipt has not arrived": say it whenever a pull is slow.
+        if (took > 2_000) console.log(`[indexer] pull ${added} events in ${took} ms`);
+      } catch (e) {
+        console.warn(`[indexer] events: ${(e as Error).message}`);
+      } finally {
+        pulling = null;
+      }
+    })();
+    pulling = run;
+    return run;
   }
 
   async function tick(): Promise<void> {
     const nowTs = await clockUnix(connection);
-    for (const l of launch) {
+    await mapLimit(launch, MARKET_CONCURRENCY, async (l) => {
       const market = await reader.fetchMarket(l.mint);
-      if (!market) continue;
+      if (!market) return;
       const feedId = Buffer.from(market.tokenFeedId).toString("hex");
       const equityFeed = Buffer.from(market.equityFeedId).toString("hex");
       // The multiplier is read first: a routed price is per token, and the display strike divides by it.
@@ -179,7 +192,7 @@ async function main() {
         }
       }
       await indexer.snapshotMarket((await reader.fetchMarket(l.mint)) ?? market);
-    }
+    });
     await pullEvents();
     lastTick = Date.now();
     if (blocked) console.warn(`[services] blocked on ${blocked}: the quoter cannot price (docs/OPERATOR.md)`);
@@ -207,6 +220,9 @@ async function main() {
       const pos = url.pathname.match(/^\/v1\/positions\/([1-9A-HJ-NP-Za-km-z]+)$/);
       if (pos) {
         const wallet = new PublicKey(pos[1]!);
+        // Read the chain's events before answering: a person who just signed reloads within seconds, and their own
+        // receipt arriving on the indexer's next scheduled pull is the difference between "done" and "did it work?".
+        await pullEvents();
         const { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } = await import("@solana/spl-token");
         const { autoExercisePda } = await import("@roster/sdk");
         const rows = store.series();

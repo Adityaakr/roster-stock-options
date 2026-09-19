@@ -783,7 +783,11 @@
           "writable": true
         },
         {
-          "name": "underlying_mint"
+          "name": "underlying_mint",
+          "docs": [
+            "Mutable because a fee mint receives the vault's withheld fees before the vault can be closed."
+          ],
+          "writable": true
         },
         {
           "name": "quote_mint"

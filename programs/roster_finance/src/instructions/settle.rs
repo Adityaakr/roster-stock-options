@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_2022::Token2022,
+    token_2022_extensions::transfer_fee::{harvest_withheld_tokens_to_mint, HarvestWithheldTokensToMint},
     token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
 };
 
@@ -118,7 +119,8 @@ pub struct CloseSeries<'info> {
     /// CHECK: receives the rent; must be the account that paid it.
     #[account(mut, address = series.load()?.rent_payer @ RosterError::WrongRentReceiver)]
     pub rent_receiver: UncheckedAccount<'info>,
-    #[account(address = market.mint @ RosterError::WrongAccount)]
+    /// Mutable because a fee mint receives the vault's withheld fees before the vault can be closed.
+    #[account(mut, address = market.mint @ RosterError::WrongAccount)]
     pub underlying_mint: Box<InterfaceAccount<'info, Mint>>,
     #[account(address = market.quote_mint @ RosterError::WrongQuoteMint)]
     pub quote_mint: Box<InterfaceAccount<'info, Mint>>,
@@ -165,6 +167,22 @@ pub fn handle_close_series(ctx: Context<CloseSeries>) -> Result<()> {
     vault_out(&series_info, &seeds, &ctx.accounts.underlying_token_program, underlying_vault, &ctx.accounts.underlying_mint, &ctx.accounts.treasury_underlying_ata, underlying_vault.amount)?;
     vault_out(&series_info, &seeds, &ctx.accounts.quote_token_program, usdc_vault, &ctx.accounts.quote_mint, &ctx.accounts.fee_vault, usdc_vault.amount)?;
     vault_out(&series_info, &seeds, &ctx.accounts.quote_token_program, &ctx.accounts.quote_vault, &ctx.accounts.quote_mint, &ctx.accounts.fee_vault, ctx.accounts.quote_vault.amount)?;
+
+    // A fee mint withholds part of every transfer in the receiving account, and Token-2022 refuses to close an
+    // account that still holds withheld fees. Harvesting them to the mint is permissionless and belongs to the
+    // issuer, not to us: without it a First Print series could never give its rent back.
+    if ctx.accounts.market.has_transfer_fee {
+        harvest_withheld_tokens_to_mint(
+            CpiContext::new(
+                ctx.accounts.token_2022_program.key(),
+                HarvestWithheldTokensToMint {
+                    token_program_id: ctx.accounts.token_2022_program.to_account_info(),
+                    mint: ctx.accounts.underlying_mint.to_account_info(),
+                },
+            ),
+            vec![underlying_vault.to_account_info()],
+        )?;
+    }
 
     let sd = seeds.seeds();
     let signer: &[&[&[u8]]] = &[&sd];

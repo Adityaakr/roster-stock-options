@@ -37,7 +37,7 @@ export default async function Landing() {
       <HoursStrip />
       <Examples data={d} />
       <Products />
-      <Workflow data={d} />
+      <Workflow />
       <Difference coverage={`${d.markets.length} listed market${d.markets.length === 1 ? "" : "s"}, ${d.markets.filter((m) => m.tier === 1).length} quoted by the treasury`} />
       <RosterProof data={d} />
       <WhatThisIsNot />

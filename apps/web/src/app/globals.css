@@ -335,7 +335,7 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 809px) {
-  .shell { grid-template-columns: minmax(0, 1fr); }
+  .shell { grid-template-columns: minmax(0, 1fr); overflow-x: hidden; }
   .sidebar { position: static; min-width: 0; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 16px; gap: 12px; }
   .sidebar nav { display: flex; overflow-x: auto; gap: 2px; min-width: 0; max-width: 100%; }
   .sidebar nav .contents { display: contents; }
@@ -387,7 +387,7 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .wcard.active { background: #fff; border-color: var(--line); }
 .wcard.active .t { color: var(--ink); } .wcard.active .d { color: var(--ink-2); }
 .wimages { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #fff; }
-.artline { font-size: 12px; color: var(--ink-2); padding: 10px 14px; border-top: 1px solid var(--line); background: var(--surface); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.artline { font-size: 12px; color: var(--ink-2); padding: 10px 14px; border-top: 1px solid var(--line); background: var(--surface); white-space: normal; }
 
 /* Automation accordion */
 .atab { display: grid; grid-template-columns: 392px minmax(0, 1fr); gap: 64px; align-items: center; border-top: 1px solid var(--line); padding-right: 45px; }
@@ -669,10 +669,47 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .seg button.on { background: var(--ink); color: var(--paper); }
 .mlist { overflow-x: auto; }
 .mlist .mtable thead th { position: sticky; top: 0; background: var(--paper); z-index: 1; }
-.mtable td { padding: 12px; }
+.mtable td { padding: 11px 10px; }
+.mtable th { padding: 10px; }
 .depth { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
 .depth-bar { display: block; height: 6px; background: var(--surface); border-radius: 2px; overflow: hidden; }
 .depth-bar i { display: block; height: 100%; background: var(--ink); }
 .depth .mono { font-size: 13px; white-space: nowrap; }
 .term-pick { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; font-size: 13px; color: var(--ink); }
 .term-pick:hover { background: var(--surface); }
+
+/* Payoff chart: the plot, its labels and the readout that follows the expected price. */
+.pchart { position: relative; width: 100%; }
+.pchart svg { display: block; width: 100%; }
+.pchart-tag { position: absolute; font-size: 12px; line-height: 1; color: var(--slate); background: var(--paper); padding: 3px 6px; border-radius: 3px; white-space: nowrap; pointer-events: none; }
+.pchart-tag b { font-weight: 500; color: var(--ink-2); }
+.pchart-tag.top { top: 6px; }
+.pchart-tag.bottom { bottom: 6px; }
+.pchart-tag.floor { right: 6px; transform: translateY(-140%); color: var(--amber); }
+.pchart-tag.floor b { color: var(--amber); }
+.pchart-tip { position: absolute; display: grid; gap: 2px; background: var(--paper); border: 1px solid var(--line-strong); border-radius: 4px; padding: 6px 8px; font-size: 12px; line-height: 1.25; white-space: nowrap; pointer-events: none; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
+.pchart-tip b { font-weight: 500; }
+.pchart-tip.center { transform: translate(-50%, -115%); }
+.pchart-tip.start { transform: translate(0, -115%); }
+.pchart-tip.end { transform: translate(-100%, -115%); }
+.pchart-tip.below.center { transform: translate(-50%, 15%); }
+.pchart-tip.below.start { transform: translate(0, 15%); }
+.pchart-tip.below.end { transform: translate(-100%, 15%); }
+
+/* Market list at desktop width: the table fits 1280 without a scrollbar; the softer columns fold away first. */
+@media (max-width: 1439px) { .mtable th.col-vol, .mtable td.col-vol { display: none; } }
+@media (max-width: 1339px) { .mtable th.col-spark, .mtable td.col-spark { display: none; } }
+@media (max-width: 1199px) { .mtable th.col-basis, .mtable td.col-basis { display: none; } }
+
+/* Two-column app layouts: the weighting holds on a wide screen and collapses to one column on a narrow one, so an
+   inline template can never leave a card off the side of a phone. */
+.grid-2.split-left { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+.grid-2.split-right { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
+@media (max-width: 1023px) { .grid-2, .grid-2.split-left, .grid-2.split-right { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 809px) { .grid-3, .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 419px) { .grid-3, .grid-4 { grid-template-columns: minmax(0, 1fr); } }
+/* The payoff chart gives its labels less room on a phone. */
+@media (max-width: 559px) { .pchart-tag, .pchart-tip { font-size: 11px; } .pchart-tag.bottom { bottom: 2px; } .pchart-tag.top { top: 2px; } }
+
+/* The expected-price slider: label, track and value on one line, wrapping to two on a phone so the value is never cut. */
+@media (max-width: 559px) { .pslider { flex-wrap: wrap; } .pslider input[type="range"] { order: 3; flex: 1 1 100%; } }

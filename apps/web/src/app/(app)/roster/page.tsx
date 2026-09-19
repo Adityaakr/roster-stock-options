@@ -96,7 +96,7 @@ function RosterInner() {
         </table>
       </div>
 
-      <div className="grid-2" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.4fr)" }}>
+      <div className="grid-2 split-right">
         <div className="card">
           <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
             <div className="h6">Reserved capital on {sym}</div>

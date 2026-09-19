@@ -60,17 +60,17 @@ export function MarketList({ markets, selected, compact = false, hrefFor, maxHei
         ) : null}
       </div>
       <div className="card mlist" style={maxHeight ? { maxHeight, overflowY: "auto" } : undefined}>
-        <table className="table mtable" style={{ minWidth: compact ? 640 : 860 }}>
+        <table className="table mtable" style={{ minWidth: compact ? 600 : 760 }}>
           <thead>
             <tr>
               <th>Market</th>
               <th className="num">Mark</th>
               <th className="num" title="Over the marks recorded on this cluster, up to a day">Change</th>
-              {!compact ? <th>Recorded</th> : null}
+              {!compact ? <th className="col-spark">Recorded</th> : null}
               <th className="num">Best ask</th>
-              <th style={{ minWidth: 180 }}>Executable depth</th>
-              {!compact ? <th className="num">Volatility</th> : null}
-              <th className="num">Basis</th>
+              <th style={{ minWidth: 150 }}>Executable depth</th>
+              {!compact ? <th className="num col-vol">Volatility</th> : null}
+              <th className="num col-basis">Basis</th>
               <th>Tier</th>
             </tr>
           </thead>
@@ -86,19 +86,19 @@ export function MarketList({ markets, selected, compact = false, hrefFor, maxHei
                         {m.paused ? <Badge tone="amber" dot>paused</Badge> : null}
                         {m.pendingActivationTs ? <Badge tone="amber">activation pending</Badge> : null}
                       </div>
-                      <div className="small muted" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}{!compact && m.wrappersOfUnderlying > 1 ? <> · <span title={`${m.wrappersOfUnderlying} wrappers of ${m.underlyingSymbol} on Solana`}>{m.wrapperTier === "xStock" ? "xStocks" : m.wrapperTier}, 1 of {m.wrappersOfUnderlying}</span></> : null}</div>
+                      <div className="small muted" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}{!compact && m.wrappersOfUnderlying > 1 ? <> · <span title={`${m.underlyingSymbol} has ${m.wrappersOfUnderlying} wrappers on Solana; this one is issued by ${m.wrapperTier === "xStock" ? "xStocks" : m.wrapperTier}`}>{m.wrapperTier === "xStock" ? "xStocks" : m.wrapperTier}, {m.wrappersOfUnderlying} wrappers</span></> : null}</div>
                     </div>
                   </div>
                 </td>
                 <td className="num">{m.mark === null ? <span className="muted">no feed</span> : `$${usd(m.mark)}`}</td>
                 <td className={`num ${m.changePct === null ? "muted" : m.changePct >= 0 ? "up" : "down"}`}>{m.changePct === null ? "–" : `${m.changePct >= 0 ? "+" : "−"}${Math.abs(m.changePct).toFixed(2)}%`}</td>
-                {!compact ? <td><Sparkline points={m.sparkline} /></td> : null}
+                {!compact ? <td className="col-spark"><Sparkline points={m.sparkline} /></td> : null}
                 <td className="num">{m.bestAsk === null ? <span className="muted">none</span> : `$${usd(m.bestAsk)}`}</td>
                 <td>
                   <div className="depth"><span className="depth-bar"><i style={{ width: `${Math.max(2, (m.depthUsdc / maxDepth) * 100)}%` }} /></span><span className="mono">${usd0(m.depthUsdc)}</span></div>
                 </td>
-                {!compact ? <td className="num">{(m.vol * 100).toFixed(0)}% <span className="small muted">{m.volSource === "fixture" ? "fixture" : m.volSource.includes("floor") ? "floor" : "realised"}</span></td> : null}
-                <td className="num">{m.basisBps === null ? <span className="muted">n/a</span> : `${m.basisBps >= 0 ? "+" : ""}${m.basisBps} bps`}</td>
+                {!compact ? <td className="num col-vol">{(m.vol * 100).toFixed(0)}% <span className="small muted">{m.volSource === "fixture" ? "fixture" : m.volSource.includes("floor") ? "floor" : "realised"}</span></td> : null}
+                <td className="num col-basis">{m.basisBps === null ? <span className="muted">n/a</span> : `${m.basisBps >= 0 ? "+" : ""}${m.basisBps} bps`}</td>
                 <td><Badge tone={m.tier === 1 ? "green" : m.tier === 2 ? "blue" : undefined}>{TIER_LABEL[m.tier]}</Badge></td>
               </tr>
             ))}

@@ -7,7 +7,6 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CountUp, MountReveal, PixelMask, Reveal, Roll, ScrollColorText, SlideIn, Ticker, WordReveal } from "@/components/motion";
 import { DiscoverTable } from "@/components/discover-table";
 import { MarketList } from "@/components/market-list";
-import { usd, usd0, dayLabel } from "@/lib/format";
 import type { RosterData, Tier } from "@/lib/model";
 import { SOURCES } from "./sources";
 import { Sketch } from "./sketches";
@@ -99,18 +98,16 @@ export function BrandStrip() {
 }
 
 /* 3. Workflow: discover, act, manage, commit, with the product screens swapping on the right. */
-export function Workflow({ data }: { data: RosterData }) {
+export function Workflow() {
   const [i, setI] = useState(0);
   const reduce = useReducedMotion();
-  const near = data.expiries[0] ?? data.nowTs;
-  const call = data.terms.find((t) => t.side === "call" && t.strike === 180 && t.expiryTs === near);
-  const put = data.terms.find((t) => t.side === "put" && t.strike === 180 && t.expiryTs === near);
   const steps = [
-    { t: "Discover", d: "Every live term on NVDAx: expiry, premium, break-even, max loss at your size, and the move you need. No wallet needed.", art: `${data.terms.filter((t) => t.expiryTs === near).length} terms through ${dayLabel(near)} · mark $${usd(data.underlying.mark)} · ${data.session === "regular" ? "regular session" : "equity market closed, token feed live"}` },
-    { t: "Act", d: "Drag the payoff slider, see the executable quote at your size and the escrow that backs it, sign once.", art: call ? `Gap $${usd0(call.strike)} · premium $${usd(call.ask)} per share · break-even $${usd(call.strike + call.ask)} · max loss pinned` : "quote pending" },
-    { t: "Manage", d: "What you own, what it is worth now, how long until expiry, and exactly what exercising requires. Exercise any time.", art: call ? `10 NVDAx Gap · exercise: pay $${usd0(call.strike * 10)} USDC, receive 10 NVDAx · auto-exercise after expiry minus grace if in the money` : "position pending" },
-    { t: "Commit", d: "Get paid to take the other side. Lock USDC or NVDAx, collect the premium, keep it or get assigned at the strike.", art: put ? `Floor $${usd0(put.strike)} · lock $${usd0(put.strike * 20)} · collect $${usd0(put.ask * 20)} · effective buy $${usd(put.strike - put.ask)}` : "ask pending" }
+    { t: "Discover", d: "Every listed market by executable depth, then every live term on the one you pick: expiry, premium, break-even and the max loss at your size. No wallet needed.", art: "market list, mark and depth per name, the term grid" },
+    { t: "Act", d: "Drag the payoff slider, see the executable quote at your size and the escrow that backs it, sign once.", art: "payoff with the max loss pinned, the quote, the escrow accounts" },
+    { t: "Manage", d: "What you own, what it is worth now, how long until expiry, and exactly what exercising requires. Exercise any time.", art: "positions across markets, exercise terms in plain words, receipts" },
+    { t: "Commit", d: "Get paid to take the other side. Lock USDC or the token, collect the premium, keep it or get assigned at the strike.", art: "what you lock, what you collect, the loss at three adverse prices" }
   ];
+
   return (
     <Sec id="works" className="works">
       <div className="two" style={{ display: "grid", gridTemplateColumns: "minmax(0, 586px) minmax(0, 512px)", justifyContent: "space-between", gap: 90, padding: "80px 30px", alignItems: "center" }}>
@@ -133,7 +130,7 @@ export function Workflow({ data }: { data: RosterData }) {
         <div className="wimages">
           <AnimatePresence initial={false} mode="wait">
             <motion.div key={i} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "linear" }} style={{ position: "relative" }}>
-              <Image src={IMG.workflow[i] ?? IMG.workflow[0]!} alt={steps[i]?.t ?? ""} width={1040} height={780} unoptimized style={{ width: "100%", height: 400, objectFit: "cover", objectPosition: "top left", display: "block" }} />
+              <Image src={IMG.workflow[i] ?? IMG.workflow[0]!} alt={steps[i]?.t ?? ""} width={1040} height={780} unoptimized style={{ width: "100%", height: 400, objectFit: "contain", objectPosition: "top left", background: "var(--paper)", display: "block" }} />
               <div className="artline mono">{steps[i]?.art}</div>
             </motion.div>
           </AnimatePresence>
@@ -399,11 +396,11 @@ export function WhatThisIsNot() {
 /* 9. Risk and honesty: two ruled columns, built from the reference's diptych. */
 export function Risk({ data }: { data: RosterData }) {
   const live: [string, string, boolean][] = [
-    ["Fully collateralized, American exercise, physical settlement", "by design", true],
-    [`Gap and Floor on ${data.underlying.symbol}, two expiries, three strikes a side`, data.programDeployed ? "live" : "P1 to P3", data.programDeployed],
-    ["Commit: the write side, disclosed as paid risk", data.programDeployed ? "live" : "P2 to P3", data.programDeployed],
-    ["Protected Buy: swap plus floor in one transaction", "P4", false],
-    ["First Print: Tessera and PreStocks funded exits", "P4", false]
+    ["Fully collateralized, American exercise, physical settlement", "always", true],
+    [`Gap and Floor across ${data.markets.length} listed market${data.markets.length === 1 ? "" : "s"}`, data.programDeployed ? "live" : "not yet", data.programDeployed],
+    ["Commit: the write side, disclosed as paid risk", data.programDeployed ? "live" : "not yet", data.programDeployed],
+    ["Protected Buy: a swap and a floor in one transaction", data.programDeployed ? "live" : "not yet", data.programDeployed],
+    ["First Print: Tessera and PreStocks funded exits", data.programDeployed ? "live" : "not yet", data.programDeployed]
   ];
   const not = [
     "Chain halts, token freezes, pauses or transfer restrictions on the underlying mint",

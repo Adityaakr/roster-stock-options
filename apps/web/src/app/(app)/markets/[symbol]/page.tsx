@@ -76,7 +76,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
         </div>
       </div>
 
-      <div className="grid-2" style={{ gridTemplateColumns: "minmax(0, 1.7fr) minmax(0, 1fr)", marginBottom: 16 }}>
+      <div className="grid-2 split-left" style={{ marginBottom: 16 }}>
         <div className="card">
           <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
             <div>
@@ -128,7 +128,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
         </div>
       </div>
 
-      <div className="grid-2" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", marginBottom: 16 }}>
+      <div className="grid-2" style={{ marginBottom: 16 }}>
         <div className="card pad">
           <div className="h6">Depth by expiry</div>
           <div className="small" style={{ margin: "2px 0 14px" }}>USDC notional fillable now on each expiry&apos;s terms.</div>
@@ -183,7 +183,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
         </div>
       ) : null}
 
-      <div className="grid-2" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", marginBottom: 16 }}>
+      <div className="grid-2" style={{ marginBottom: 16 }}>
         <div className="card pad">
           <div className="h6">The wrapper</div>
           <div className="small" style={{ margin: "2px 0 12px" }}>Read from the mint. What the issuer can do to this token, and so to a contract on it.</div>

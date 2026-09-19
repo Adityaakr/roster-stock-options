@@ -125,3 +125,9 @@ export async function clockUnix(connection: Connection): Promise<number> {
   // Clock: slot u64, epoch_start_timestamp i64, epoch u64, leader_schedule_epoch u64, unix_timestamp i64
   return Number(info.data.readBigInt64LE(32));
 }
+
+/** The services answer /v1/health from the moment they listen; they can only serve a market after a pass has run. */
+export async function servicesWarm(url = "http://127.0.0.1:8787"): Promise<boolean> {
+  const health = await fetch(`${url}/v1/health`).then((r) => (r.ok ? (r.json() as Promise<{ lastTick?: number }>) : null)).catch(() => null);
+  return !!health && !!health.lastTick;
+}

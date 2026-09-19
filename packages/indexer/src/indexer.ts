@@ -6,11 +6,12 @@
  */
 import * as anchorNs from "@anchor-lang/core";
 import type { Connection} from "@solana/web3.js";
-import { PublicKey, type ConfirmedSignatureInfo } from "@solana/web3.js";
+import { PublicKey, type ConfirmedSignatureInfo, type VersionedTransactionResponse } from "@solana/web3.js";
 import { getAccount } from "@solana/spl-token";
 import BN from "bn.js";
 import type { RosterClient} from "@roster/sdk";
 import { type MarketState, type SeriesState } from "@roster/sdk";
+import { mapLimit } from "@roster/core";
 import type { Store, SeriesRow, MarketRow } from "./store";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
@@ -70,6 +71,9 @@ function plain(v: unknown): unknown {
   if (v && typeof v === "object") return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, plain(x)]));
   return v;
 }
+
+/** Transaction reads in flight during one pull: enough to keep up with a crank fleet, few enough to leave the RPC alone. */
+const TX_FETCH_CONCURRENCY = 8;
 
 export class Indexer {
   private parser: InstanceType<typeof anchor.EventParser>;
@@ -144,9 +148,16 @@ export class Indexer {
       before = page[page.length - 1]!.signature;
     }
     let added = 0;
-    // Oldest first so events land in the order they happened.
-    for (const s of sigs.reverse()) {
-      const tx = await this.connection.getTransaction(s.signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+    // Oldest first so events land in the order they happened. The transactions are fetched a few at a time and then
+    // read in order: a keeper pass settling a whole Friday's expiries can put hundreds of signatures in one pull, and
+    // one round trip after another is what makes a person's own receipt arrive minutes after their transaction did.
+    const ordered = sigs.reverse();
+    const fetched = new Array<VersionedTransactionResponse | null>(ordered.length);
+    await mapLimit(ordered.map((_, i) => i), TX_FETCH_CONCURRENCY, async (i) => {
+      fetched[i] = await this.connection.getTransaction(ordered[i]!.signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+    });
+    for (const [at, s] of ordered.entries()) {
+      const tx = fetched[at];
       // Not served yet (RPC lag): leave it unread so the next pull tries again.
       if (!tx) continue;
       const logs = tx.meta?.logMessages ?? [];

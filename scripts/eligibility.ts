@@ -38,6 +38,8 @@ async function main() {
     if (asset.underlyingSymbol) {
       for (const w of await discoverWrappers(asset.underlyingSymbol).catch((e) => { console.warn(`${asset.symbol}: wrapper discovery: ${(e as Error).message}`); return []; })) {
         if (w.mint === asset.mint || entries.some((x) => x.mint === w.mint)) continue;
+        // A registry entry names its issuer; a wrapper from an issuer we do not model is discovered but not listed.
+        if (w.issuer === "Other") { console.log(`${w.symbol.padEnd(7)} ${w.mint} skipped: issuer not modelled`); continue; }
         const wi = await inspectMint(connection, new PublicKey(w.mint));
         const wf = await resolveFeeds(w.symbol, asset.underlyingSymbol).catch(() => ({ tokenFeed: null, equityFeed: null }));
         entries.push({ symbol: w.symbol, name: w.name, underlyingSymbol: asset.underlyingSymbol, isin: asset.isin, logo: null, mint: w.mint, tier: 3, wrapper: w.issuer, holders: w.holders, issuerMark: null, inspection: wi, feeds: wf, escrowProof: proofs.get(w.mint) ?? null, issuerHalted: false });

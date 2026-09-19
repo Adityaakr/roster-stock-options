@@ -387,7 +387,6 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .wcard.active { background: #fff; border-color: var(--line); }
 .wcard.active .t { color: var(--ink); } .wcard.active .d { color: var(--ink-2); }
 .wimages { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #fff; }
-.artline { font-size: 12px; color: var(--ink-2); padding: 10px 14px; border-top: 1px solid var(--line); background: var(--surface); white-space: normal; }
 
 /* Automation accordion */
 .atab { display: grid; grid-template-columns: 392px minmax(0, 1fr); gap: 64px; align-items: center; border-top: 1px solid var(--line); padding-right: 45px; }

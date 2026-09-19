@@ -102,10 +102,10 @@ export function Workflow() {
   const [i, setI] = useState(0);
   const reduce = useReducedMotion();
   const steps = [
-    { t: "Discover", d: "Every listed market by executable depth, then every live term on the one you pick: expiry, premium, break-even and the max loss at your size. No wallet needed.", art: "market list, mark and depth per name, the term grid" },
-    { t: "Act", d: "Drag the payoff slider, see the executable quote at your size and the escrow that backs it, sign once.", art: "payoff with the max loss pinned, the quote, the escrow accounts" },
-    { t: "Manage", d: "What you own, what it is worth now, how long until expiry, and exactly what exercising requires. Exercise any time.", art: "positions across markets, exercise terms in plain words, receipts" },
-    { t: "Commit", d: "Get paid to take the other side. Lock USDC or the token, collect the premium, keep it or get assigned at the strike.", art: "what you lock, what you collect, the loss at three adverse prices" }
+    { t: "Discover", d: "Every listed market by executable depth, then every live term on the one you pick: expiry, premium, break-even and the max loss at your size. No wallet needed." },
+    { t: "Act", d: "Drag the payoff slider, see the executable quote at your size and the escrow that backs it, sign once." },
+    { t: "Manage", d: "What you own, what it is worth now, how long until expiry, and exactly what exercising requires. Exercise any time." },
+    { t: "Commit", d: "Get paid to take the other side. Lock USDC or the token, collect the premium, keep it or get assigned at the strike." }
   ];
 
   return (
@@ -131,7 +131,6 @@ export function Workflow() {
           <AnimatePresence initial={false} mode="wait">
             <motion.div key={i} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "linear" }} style={{ position: "relative" }}>
               <Image src={IMG.workflow[i] ?? IMG.workflow[0]!} alt={steps[i]?.t ?? ""} width={1040} height={780} unoptimized style={{ width: "100%", height: 400, objectFit: "contain", objectPosition: "top left", background: "var(--paper)", display: "block" }} />
-              <div className="artline mono">{steps[i]?.art}</div>
             </motion.div>
           </AnimatePresence>
         </div>

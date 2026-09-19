@@ -712,3 +712,33 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 
 /* The expected-price slider: label, track and value on one line, wrapping to two on a phone so the value is never cut. */
 @media (max-width: 559px) { .pslider { flex-wrap: wrap; } .pslider input[type="range"] { order: 3; flex: 1 1 100%; } }
+
+/* Wallet modal: the adapter's own markup, in the design's paper, ink and hairlines. The library stylesheet provides
+   the overlay, centring, fade and close mechanics; everything visual is overridden here so the modal reads as a card
+   of this app and not a dark widget dropped into it. */
+.wallet-adapter-modal-overlay { background: rgba(26, 26, 26, 0.45); }
+.wallet-adapter-modal-wrapper {
+  background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18); font-family: var(--sans); max-width: 400px; padding: 24px 24px 20px;
+}
+.wallet-adapter-modal-title { font-family: var(--display); font-weight: 500; font-size: 20px; line-height: 1.2; color: var(--ink); padding: 8px 24px 20px; letter-spacing: -0.01em; }
+.wallet-adapter-modal-button-close { background: var(--surface); border: 1px solid var(--line); border-radius: 9999px; top: 16px; right: 16px; }
+.wallet-adapter-modal-button-close svg { fill: var(--ink-2); }
+.wallet-adapter-modal-button-close:hover { background: var(--line); }
+.wallet-adapter-modal-list { margin: 0; padding: 0; }
+.wallet-adapter-modal-list li + li { margin-top: 6px; }
+.wallet-adapter-modal-list .wallet-adapter-button {
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; height: 48px;
+  font-family: var(--sans); font-weight: 500; font-size: 14px; padding: 0 14px; width: 100%; justify-content: flex-start;
+}
+.wallet-adapter-modal-list .wallet-adapter-button:hover:not([disabled]) { background: var(--paper); border-color: var(--line-strong); }
+.wallet-adapter-modal-list .wallet-adapter-button-start-icon { width: 24px; height: 24px; margin-right: 12px; }
+.wallet-adapter-modal-list .wallet-adapter-button-start-icon img { border-radius: 6px; }
+.wallet-adapter-modal-list .wallet-adapter-button span { color: var(--slate); font-size: 12px; font-weight: 400; }
+.wallet-adapter-modal-list-more { color: var(--ink-2); font-family: var(--sans); font-size: 13px; padding: 12px 0 0; }
+.wallet-adapter-modal-list-more svg { fill: var(--ink-2); }
+.wallet-adapter-modal-middle { padding: 16px 0 0; }
+.wallet-adapter-modal-middle h1, .wallet-adapter-modal-middle .wallet-adapter-modal-title { padding: 0 0 12px; }
+.wallet-adapter-modal-middle-button { background: var(--ink); color: var(--paper); border-radius: 8px; font-family: var(--sans); font-weight: 500; font-size: 14px; height: 44px; margin-top: 12px; }
+.wallet-adapter-modal-middle-button:hover { background: var(--ink-2); }
+.wallet-adapter-modal-middle svg, .wallet-adapter-modal-middle path { fill: var(--ink-2); }

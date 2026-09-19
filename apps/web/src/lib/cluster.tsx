@@ -12,7 +12,13 @@ export interface ClusterInfo {
 }
 
 const Ctx = createContext<ClusterInfo | null>(null);
-const fallback: ClusterInfo = { cluster: "fixture", label: "Fixture", programDeployed: false, rpcReachable: true, explorer: null };
+const LABEL: Record<ClusterInfo["cluster"], string> = { fixture: "Fixture", fork: "Mainnet fork", devnet: "Devnet", mainnet: "Mainnet" };
+/*
+ * The first paint knows the cluster from the build, so the header never flashes "Fixture" and "program not deployed"
+ * on a live deployment while `/api/cluster` is still in flight. What the server reports then replaces it.
+ */
+const built = (process.env.NEXT_PUBLIC_CLUSTER as ClusterInfo["cluster"] | undefined) ?? "fixture";
+const fallback: ClusterInfo = { cluster: built, label: LABEL[built] ?? "Fixture", programDeployed: built !== "fixture", rpcReachable: true, explorer: null };
 
 export function ClusterProvider({ children }: { children: ReactNode }) {
   const [info, setInfo] = useState<ClusterInfo>(fallback);

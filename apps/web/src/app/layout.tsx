@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Inter, Space_Grotesk } from "next/font/google";
+// The wallet modal ships its own stylesheet for the mechanics (overlay, centring, fade); globals.css restyles it in the design tokens.
+import "@solana/wallet-adapter-react-ui/styles.css";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 

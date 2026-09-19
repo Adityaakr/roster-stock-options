@@ -25,13 +25,30 @@ interface DevnetMint { symbol: string; mint: string; decimals: number }
 interface DevnetMints { cluster: string; quoteMint: string; quoteDecimals: number; mints: DevnetMint[] }
 
 function mints(): DevnetMints | null {
+  const inline = process.env.DEVNET_MINTS_JSON;
+  if (inline && inline.trim()) {
+    try {
+      return JSON.parse(inline) as DevnetMints;
+    } catch {
+      return null;
+    }
+  }
   const p = resolve(process.cwd(), "../../fixtures/devnet-mints.json");
   const local = resolve(process.cwd(), "fixtures/devnet-mints.json");
   const file = existsSync(p) ? p : existsSync(local) ? local : null;
   return file ? (JSON.parse(readFileSync(file, "utf8")) as DevnetMints) : null;
 }
 
+/** The mint authority: the secret key from the environment on a host, or the deployer file on a laptop. */
 function authority(): Keypair | null {
+  const inline = process.env.DEPLOYER_SECRET_KEY;
+  if (inline && inline.trim()) {
+    try {
+      return Keypair.fromSecretKey(new Uint8Array(JSON.parse(inline.trim()) as number[]));
+    } catch {
+      return null;
+    }
+  }
   const path = process.env.DEPLOYER_KEYPAIR ?? "../../.keys/deployer.json";
   const p = resolve(process.cwd(), path);
   if (!existsSync(p)) return null;

@@ -9,7 +9,6 @@ import "../../../scripts/env-load";
  * test. On any other cluster the quoter stays blocked on the key. Real data only outside test fixtures (CLAUDE.md 0).
  */
 import { createServer } from "node:http";
-import { readFileSync } from "node:fs";
 import { Connection, Keypair, PublicKey, type AccountInfo } from "@solana/web3.js";
 import * as anchorNs from "@anchor-lang/core";
 import { RosterClient, ROSTER_PROGRAM_ID, type MarketState } from "@roster/sdk";
@@ -17,21 +16,26 @@ import { Hermes, HermesError, estimateVol, readMultiplier, sessionAt } from "@ro
 import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
 import { Quoter, DEFAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
-import { mapLimit } from "@roster/core";
+import { loadSecretKey, mapLimit } from "@roster/core";
 import { issuerMark, jupiterPrice, launchSet, refreshSnapshots, snapshotOf, snapshotPrice, xstocksQuote } from "./registry";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
 const args = new Set(process.argv.slice(2));
 const flag = (name: string) => args.has(name);
 const RPC = process.env.FORK_RPC_URL ?? process.env.RPC_URL ?? "http://127.0.0.1:8899";
-const PORT = Number(process.env.SERVICES_PORT ?? 8787);
+const PORT = Number(process.env.PORT ?? process.env.SERVICES_PORT ?? 8787);
+/* A host hands the process a port and reaches it from outside; a laptop keeps it on loopback. */
+const BIND = process.env.SERVICES_BIND ?? (process.env.PORT ? "0.0.0.0" : "127.0.0.1");
 const TICK_MS = Number(process.env.SERVICES_TICK_MS ?? 15_000);
 /* Markets priced and cranked at once. A tick that walks four hundred markets one at a time is a tick that settles a
  * Friday's expiries minutes late; each market's accounts are disjoint, so the pass fans out. */
 const MARKET_CONCURRENCY = Number(process.env.SERVICES_MARKET_CONCURRENCY ?? 4);
 
-function key(path: string): Keypair {
-  return Keypair.fromSecretKey(new Uint8Array(JSON.parse(readFileSync(path, "utf8"))));
+/** A role's key from the environment on a host, or from .keys on a laptop; a missing one is named, never guessed. */
+function key(role: "DEPLOYER" | "KEEPER" | "QUOTER", fallbackPath: string): Keypair {
+  const secret = loadSecretKey(role, fallbackPath);
+  if (!secret) throw new Error(`no key for ${role}: set ${role}_SECRET_KEY (the 64 byte array) or put a keypair at ${fallbackPath}`);
+  return Keypair.fromSecretKey(secret);
 }
 
 interface MarketLive {
@@ -67,9 +71,9 @@ async function main() {
   // counterpart, and with every screen saying which cluster it is on.
   const isDevnet = !isFork && (RPC.includes("devnet") || process.env.NEXT_PUBLIC_CLUSTER === "devnet");
   const cluster = isFork ? "fork" : isDevnet ? "devnet" : process.env.NEXT_PUBLIC_CLUSTER ?? "mainnet";
-  const deployer = key(process.env.DEPLOYER_KEYPAIR ?? ".keys/deployer.json");
-  const quoterKey = key(process.env.QUOTER_KEYPAIR ?? ".keys/quoter.json");
-  const keeperKey = key(process.env.KEEPER_KEYPAIR ?? ".keys/keeper.json");
+  const deployer = key("DEPLOYER", ".keys/deployer.json");
+  const quoterKey = key("QUOTER", ".keys/quoter.json");
+  const keeperKey = key("KEEPER", ".keys/keeper.json");
   const reader = new RosterClient(connection, new anchor.Wallet(deployer));
   // Devnet runs on one funded wallet by design (docs/DEVNET.md): the deployer quotes and cranks. On mainnet the
   // quoter holds only what the operator is willing to have quoted, and the keeper only its fee SOL.
@@ -297,8 +301,8 @@ async function main() {
       json(500, { error: (e as Error).message });
     }
   });
-  server.on("error", (e) => { console.error(`[services] cannot listen on ${PORT}: ${(e as Error).message}`); process.exit(1); });
-  server.listen(PORT, "127.0.0.1", () => console.log(`[services] http://127.0.0.1:${PORT}`));
+  server.on("error", (e) => { console.error(`[services] cannot listen on ${BIND}:${PORT}: ${(e as Error).message}`); process.exit(1); });
+  server.listen(PORT, BIND, () => console.log(`[services] http://${BIND}:${PORT}`));
 
   // Events first: the series index is built from them, and a tick that runs before the first pull would see a market
   // with no series and try to create the ones that already exist.

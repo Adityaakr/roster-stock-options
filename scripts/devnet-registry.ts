@@ -50,7 +50,7 @@ async function main(): Promise<void> {
     const asset = mainnetMint && tokensApiKeyed() ? await resolveAsset(mainnetMint).catch(() => null) : null;
     entries.push({
       symbol: m.symbol,
-      name: `${m.name} (devnet replica)`,
+      name: m.name,
       underlyingSymbol: m.underlyingSymbol,
       isin: null,
       logo: snap?.logo ?? null,

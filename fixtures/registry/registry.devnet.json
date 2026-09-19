@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-19T13:57:22.702Z",
+  "generatedAt": "2026-09-19T18:58:49.464Z",
   "cluster": "devnet",
   "entries": [
     {
       "symbol": "NVDAx",
-      "name": "NVIDIA xStock (devnet replica)",
+      "name": "NVIDIA xStock",
       "underlyingSymbol": "NVDA",
       "isin": null,
       "logo": "https://xstocks-metadata.backed.fi/logos/tokens/NVDAx.png",
@@ -13,8 +13,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 221.96358893314675,
-        "tokenPrice": 221.96358893314675,
+        "markPrice": 222.0933514809791,
+        "tokenPrice": 222.0933514809791,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -22,7 +22,7 @@
         "mint": "BCCWyBT1LosEwSTyA2A2Y45hQjKpUfZ9KweQc7zchYTJ",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "202000000000",
+        "supply": "224500000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -65,7 +65,7 @@
     },
     {
       "symbol": "TSLAx",
-      "name": "Tesla xStock (devnet replica)",
+      "name": "Tesla xStock",
       "underlyingSymbol": "TSLA",
       "isin": null,
       "logo": "https://xstocks-metadata.backed.fi/logos/tokens/TSLAx.png",
@@ -74,8 +74,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 363.6268065460802,
-        "tokenPrice": 363.6268065460802,
+        "markPrice": 364.7110956322487,
+        "tokenPrice": 364.7110956322487,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -83,7 +83,7 @@
         "mint": "BYeUxBFrYd8xdu1dfGvivTE44xK37hdEc5TcNynTepzs",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "202000000000",
+        "supply": "224500000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -126,7 +126,7 @@
     },
     {
       "symbol": "SPYx",
-      "name": "SP500 xStock (devnet replica)",
+      "name": "SP500 xStock",
       "underlyingSymbol": "SPY",
       "isin": null,
       "logo": "https://xstocks-metadata.backed.fi/logos/tokens/SPYx.png",
@@ -135,8 +135,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 761.4573366037041,
-        "tokenPrice": 761.4573366037041,
+        "markPrice": 764.8319351958457,
+        "tokenPrice": 764.8319351958457,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -144,7 +144,7 @@
         "mint": "54GjftynRBLkECdHTasuo2odVtdKg3nxfzLy77NvWp23",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "202000000000",
+        "supply": "224500000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -187,7 +187,7 @@
     },
     {
       "symbol": "AAPLx",
-      "name": "Apple xStock (devnet replica)",
+      "name": "Apple xStock",
       "underlyingSymbol": "AAPL",
       "isin": null,
       "logo": "https://xstocks-metadata.backed.fi/logos/tokens/AAPLx.png",
@@ -196,8 +196,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 334.58901101558115,
-        "tokenPrice": 334.58901101558115,
+        "markPrice": 334.540662623454,
+        "tokenPrice": 334.540662623454,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -205,7 +205,7 @@
         "mint": "6kpZMLRutk5QKtVYgR59QbF8ZnJVEywsWybN9MMwmUTk",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "202000000000",
+        "supply": "224500000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -248,7 +248,7 @@
     },
     {
       "symbol": "MSFTx",
-      "name": "Microsoft xStock (devnet replica)",
+      "name": "Microsoft xStock",
       "underlyingSymbol": "MSFT",
       "isin": null,
       "logo": "https://xstocks-metadata.backed.fi/logos/tokens/MSFTx.png",
@@ -257,8 +257,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 494.35866538983447,
-        "tokenPrice": 494.35866538983447,
+        "markPrice": 493.944504331877,
+        "tokenPrice": 493.944504331877,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -266,7 +266,7 @@
         "mint": "3Se8c2eVxn2nFQ51AJvS6rif8Za6xV2x61qumfaaU2T6",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "202000000000",
+        "supply": "224500000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -309,7 +309,7 @@
     },
     {
       "symbol": "GOOGLx",
-      "name": "Alphabet xStock (devnet replica)",
+      "name": "Alphabet xStock",
       "underlyingSymbol": "GOOGL",
       "isin": null,
       "logo": "https://xstocks-metadata.backed.fi/logos/tokens/GOOGLx.png",
@@ -318,8 +318,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 348.4070646738677,
-        "tokenPrice": 348.4070646738677,
+        "markPrice": 349.6575913452984,
+        "tokenPrice": 349.6575913452984,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -327,7 +327,7 @@
         "mint": "GKPuySPFdNrqmH7rQTdaAnhqKrngBRNuHzeoDEUh99r",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "202000000000",
+        "supply": "224500000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -370,7 +370,7 @@
     },
     {
       "symbol": "tKalshi",
-      "name": "Kalshi (devnet replica)",
+      "name": "Kalshi",
       "underlyingSymbol": "Kalshi",
       "isin": null,
       "logo": null,
@@ -388,7 +388,7 @@
         "mint": "78efLmN1D6jbvhzTKZCdT2oPXuRJHCpiqvKwsUv3SRWa",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "2010000000000",
+        "supply": "2235000000000",
         "extensions": [
           "MetadataPointer",
           "TransferFeeConfig",

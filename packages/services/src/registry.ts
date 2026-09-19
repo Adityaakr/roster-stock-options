@@ -22,6 +22,9 @@ export interface LaunchEntry {
   feeBps: number;
   /** Devnet only: the mainnet mint whose price this replica takes (docs/DEVNET.md). Null everywhere else. */
   replicaOf: string | null;
+  /** The issuer's logo where the registry has one, and how many wrappers of the same stock the registry knows. */
+  logo: string | null;
+  wrappersOfUnderlying: number;
 }
 
 /**
@@ -31,13 +34,21 @@ export interface LaunchEntry {
 export async function launchSet(cluster = "fork"): Promise<LaunchEntry[]> {
   const symbols = process.env.LAUNCH_SYMBOLS?.split(",").map((s) => s.trim()).filter(Boolean);
   const reg = readRegistry(registryPathFor(cluster));
-  if (reg && !symbols) return listable(reg).map((e) => ({ symbol: e.symbol, name: e.name, mint: new PublicKey(e.mint), decimals: e.inspection.decimals, tier: e.tier, wrapper: e.wrapper, underlyingSymbol: e.underlyingSymbol, feeBps: e.inspection.transferFee?.bps ?? 0, replicaOf: e.replicaOf ?? null }));
+  // The app used to read the registry file itself, which is the wrong place for it to live: the file belongs to a
+  // cluster, and a deployment may not ship it at all. The services know which registry they are running, so the
+  // issuer's logo and the wrapper count travel with the market.
+  const wrappers = new Map<string, number>();
+  for (const e of reg?.entries ?? []) if (e.underlyingSymbol) wrappers.set(e.underlyingSymbol, (wrappers.get(e.underlyingSymbol) ?? 0) + 1);
+  const logoOf = (e: { mint: string; logo: string | null; underlyingSymbol: string | null }) =>
+    e.logo ?? (reg?.entries ?? []).find((x) => x.underlyingSymbol && x.underlyingSymbol === e.underlyingSymbol && x.logo)?.logo ?? null;
+  const countOf = (underlying: string | null) => (underlying ? wrappers.get(underlying) ?? 1 : 1);
+  if (reg && !symbols) return listable(reg).map((e) => ({ symbol: e.symbol, name: e.name, mint: new PublicKey(e.mint), decimals: e.inspection.decimals, tier: e.tier, wrapper: e.wrapper, underlyingSymbol: e.underlyingSymbol, feeBps: e.inspection.transferFee?.bps ?? 0, replicaOf: e.replicaOf ?? null, logo: logoOf(e), wrappersOfUnderlying: countOf(e.underlyingSymbol) }));
   const wanted = symbols ?? LAUNCH_SET;
   const fromRegistry = reg ? new Map(reg.entries.map((e) => [e.symbol, e])) : new Map();
   const out: LaunchEntry[] = [];
   for (const s of wanted) {
     const r = fromRegistry.get(s);
-    if (r) out.push({ symbol: r.symbol, name: r.name, mint: new PublicKey(r.mint), decimals: r.inspection.decimals, tier: r.tier, wrapper: r.wrapper, underlyingSymbol: r.underlyingSymbol, feeBps: r.inspection.transferFee?.bps ?? 0, replicaOf: r.replicaOf ?? null });
+    if (r) out.push({ symbol: r.symbol, name: r.name, mint: new PublicKey(r.mint), decimals: r.inspection.decimals, tier: r.tier, wrapper: r.wrapper, underlyingSymbol: r.underlyingSymbol, feeBps: r.inspection.transferFee?.bps ?? 0, replicaOf: r.replicaOf ?? null, logo: logoOf(r), wrappersOfUnderlying: countOf(r.underlyingSymbol) });
     else out.push(...(await resolveLaunchSet([s])));
   }
   return out;
@@ -104,7 +115,7 @@ export async function resolveLaunchSet(symbols: string[]): Promise<LaunchEntry[]
       console.warn(`[registry] ${symbol}: no Solana deployment, skipped`);
       continue;
     }
-    out.push({ symbol, name: j.name ?? symbol, mint: new PublicKey(dep.address), decimals: dep.decimals ?? 8, tier: TIER1_SET.includes(symbol) ? 1 : 2, wrapper: "xStock", underlyingSymbol: j.underlyingSymbol ?? null, feeBps: 0, replicaOf: null });
+    out.push({ symbol, name: j.name ?? symbol, mint: new PublicKey(dep.address), decimals: dep.decimals ?? 8, tier: TIER1_SET.includes(symbol) ? 1 : 2, wrapper: "xStock", underlyingSymbol: j.underlyingSymbol ?? null, feeBps: 0, replicaOf: null, logo: null, wrappersOfUnderlying: 1 });
   }
   return out;
 }

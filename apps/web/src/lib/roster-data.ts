@@ -4,6 +4,11 @@ import { services, servicesReachable, type ServicesMarket, type ServicesRoster, 
 import { freshSeries } from "./tx-server";
 import { readRegistry } from "@roster/registry";
 
+/*
+ * The registry the app can see is the one on this machine, which is the mainnet one: a devnet market's mint is not in
+ * it, and a deployment may ship no registry at all. So the services send the logo, the stock and the wrapper count
+ * with every market, and this file is only the fallback for a cluster running without them.
+ */
 const REG = readRegistry()?.entries ?? [];
 const LOGOS = new Map(REG.map((e) => [e.mint, e.logo ?? REG.find((x) => x.underlyingSymbol === e.underlyingSymbol && x.logo)?.logo ?? null]));
 const UNDERLYING = new Map(REG.map((e) => [e.mint, e.underlyingSymbol]));
@@ -95,9 +100,9 @@ function liveMarket(m: ServicesMarket, nowTs: number, terms: Term[]): Market {
     minLots6: m.minLots6,
     depthUsdc,
     bestAsk: asks.length ? Math.min(...asks) : null,
-    logo: LOGOS.get(m.mint) ?? null,
-    underlyingSymbol: UNDERLYING.get(m.mint) ?? null,
-    wrappersOfUnderlying: WRAPPERS.get(UNDERLYING.get(m.mint) ?? "") ?? 1,
+    logo: m.logo ?? LOGOS.get(m.mint) ?? null,
+    underlyingSymbol: m.underlyingSymbol ?? UNDERLYING.get(m.mint) ?? null,
+    wrappersOfUnderlying: m.wrappersOfUnderlying ?? WRAPPERS.get(UNDERLYING.get(m.mint) ?? "") ?? 1,
     sparkline: m.sparkline ?? [],
     changePct: m.sparkline && m.sparkline.length >= 2 && m.sparkline[0]![1] > 0 ? ((m.sparkline[m.sparkline.length - 1]![1] - m.sparkline[0]![1]) / m.sparkline[0]![1]) * 100 : null
   };

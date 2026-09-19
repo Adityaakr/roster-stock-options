@@ -72,7 +72,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
             {m.replicaOf ? (
               <p className="small muted" style={{ margin: "4px 0 0" }}>
                 A devnet token with the same extensions as the mainnet mint, priced from it:{" "}
-                <Address value={m.replicaOf} href={`https://solscan.io/token/${m.replicaOf}`} /> — the issuer&apos;s own token is not on devnet.
+                <Address value={m.replicaOf} href={`https://solscan.io/token/${m.replicaOf}`} />. The issuer&apos;s own token is not on devnet.
               </p>
             ) : null}
           </div>

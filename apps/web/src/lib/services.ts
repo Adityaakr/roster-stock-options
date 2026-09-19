@@ -22,6 +22,10 @@ export interface ServicesMarket {
   minLots6: string; maxLots6: string; maxLiveSeries: number; liveSeries: number; price: number | null; priceAt: number; priceSource: "hermes" | "reference" | "tokens.xyz" | "xstocks" | "jupiter" | "tessera" | "prestocks" | "none";
   /** Devnet only: the mainnet mint this market's token replicates and takes its price from. */
   replicaOf?: string | null;
+  /** The issuer's logo, the stock behind the wrapper and how many wrappers of it exist, from the cluster's registry. */
+  logo?: string | null;
+  underlyingSymbol?: string | null;
+  wrappersOfUnderlying?: number;
   change24hPct?: number | null;
   holders?: number | null;
   equityPrice: number | null; basisBps: number | null; multiplier: number; pendingActivationTs: number | null; inActivationWindow: boolean; vol: number; volSource: string;

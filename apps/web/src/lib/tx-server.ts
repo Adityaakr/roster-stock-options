@@ -158,7 +158,9 @@ export async function buildTransaction(body: unknown): Promise<BuildResponse> {
  */
 export async function freshSeries<T extends { address: string; asks: unknown[]; writers: unknown[]; total_sold_lots6: string; total_exercised_lots6: string; unassigned_lots6: string; halted: number }>(market: string, rows: T[]): Promise<T[]> {
   const client = new RosterClient(connection(), readOnlyWallet(PublicKey.default));
-  const live = await client.fetchSeriesForMarket(new PublicKey(market));
+  // The rows name every series this market has, so the accounts are read by address. A program-wide scan would be
+  // both wasteful and refused: the RPC tiers most deployments run on do not serve `getProgramAccounts`.
+  const live = await client.fetchSeriesMany(rows.map((r) => new PublicKey(r.address)));
   const byAddr = new Map(live.map((s) => [s.address.toBase58(), s]));
   return rows.map((row) => {
     const s = byAddr.get(row.address);

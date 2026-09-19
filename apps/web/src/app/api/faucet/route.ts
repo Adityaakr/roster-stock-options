@@ -80,6 +80,12 @@ export async function POST(req: Request) {
   const want = Math.round(SOL_EACH * LAMPORTS_PER_SOL);
   if (balance < want) batches[0]!.add(SystemProgram.transfer({ fromPubkey: payer.publicKey, toPubkey: owner, lamports: want - balance }));
 
+  // A faucet that has run dry should say so, not hand back a simulation error: the operator tops it up, the visitor
+  // waits. The reserve covers the account rent this call is about to pay plus the lamports it hands over.
+  const reserve = Math.round((SOL_EACH + 0.03) * LAMPORTS_PER_SOL);
+  const treasury = await connection.getBalance(payer.publicKey, "confirmed").catch(() => 0);
+  if (treasury < reserve) return NextResponse.json({ error: "the devnet faucet is empty; the operator has been asked to top it up" }, { status: 503 });
+
   const signatures: string[] = [];
   try {
     for (const tx of batches) {

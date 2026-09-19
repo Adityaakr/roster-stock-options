@@ -28,7 +28,9 @@ export interface Market {
   pausable: boolean;
   /** Token mark from the 24/7 token feed, USD per share equivalent; null when no feed answered. */
   mark: number | null;
-  priceSource: "hermes" | "reference" | "xstocks" | "jupiter" | "tessera" | "prestocks" | "fixture" | "none";
+  priceSource: "hermes" | "reference" | "tokens.xyz" | "xstocks" | "jupiter" | "tessera" | "prestocks" | "fixture" | "none";
+  /** Devnet only: the mainnet mint whose price and behaviour this market's replica token stands in for. */
+  replicaOf: string | null;
   equityMark: number | null;
   basisBps: number | null;
   multiplier: number;

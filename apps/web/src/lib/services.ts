@@ -19,7 +19,11 @@ export interface ServicesSeries {
 export interface ServicesMarket {
   symbol: string; name: string; wrapper: "xStock" | "Ondo" | "Tessera" | "PreStocks"; feeBps: number; mint: string; sparkline?: [number, number][]; market: string; decimals: number; tier: number; listed: boolean; paused: boolean;
   hasTransferFee: boolean; hasPermanentDelegate: boolean; pausable: boolean; hookProgram: string; allowedExpiries: string[]; strikeStep: string;
-  minLots6: string; maxLots6: string; maxLiveSeries: number; liveSeries: number; price: number | null; priceAt: number; priceSource: "hermes" | "reference" | "xstocks" | "jupiter" | "tessera" | "prestocks" | "none";
+  minLots6: string; maxLots6: string; maxLiveSeries: number; liveSeries: number; price: number | null; priceAt: number; priceSource: "hermes" | "reference" | "tokens.xyz" | "xstocks" | "jupiter" | "tessera" | "prestocks" | "none";
+  /** Devnet only: the mainnet mint this market's token replicates and takes its price from. */
+  replicaOf?: string | null;
+  change24hPct?: number | null;
+  holders?: number | null;
   equityPrice: number | null; basisBps: number | null; multiplier: number; pendingActivationTs: number | null; inActivationWindow: boolean; vol: number; volSource: string;
   series: ServicesSeries[];
 }

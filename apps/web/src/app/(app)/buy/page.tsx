@@ -40,8 +40,12 @@ function BuyInner() {
   const [swapError, setSwapError] = useState<string | null>(null);
   const mint = data?.underlying.mint ?? null;
 
+  // A swap needs a market to route through, and a devnet replica has none: nothing is fetched there, and the desk
+  // says so rather than showing a failed request. The floor on its own is still one click away.
+  const noRoute = cluster.cluster === "devnet";
+
   useEffect(() => {
-    if (!mint || usdcIn <= 0) return;
+    if (!mint || usdcIn <= 0 || noRoute) return;
     const h = setTimeout(() => {
       setSwapError(null);
       fetch(`/api/swap-quote?mint=${mint}&usdc=${Math.round(usdcIn * 1e6)}`, { cache: "no-store" })
@@ -50,7 +54,7 @@ function BuyInner() {
         .catch((e: unknown) => { setSwap(null); setSwapError(e instanceof Error ? e.message : String(e)); });
     }, 350);
     return () => clearTimeout(h);
-  }, [mint, usdcIn]);
+  }, [mint, usdcIn, noRoute]);
 
   if (error) return <ErrorState message={`Could not read the terms: ${error}`} next="Reload the page." />;
   if (!data) return <Loading what="the desk" />;
@@ -91,7 +95,7 @@ function BuyInner() {
         <label className="lbl">USDC to spend</label>
         <input className="field mono" type="number" min={1} step={1} value={usdcIn} onChange={(e) => setUsdcIn(Math.max(1, Math.floor(Number(e.target.value) || 1)))} style={{ maxWidth: 240 }} aria-label="USDC to spend" data-testid="usdc-in" />
         <div className="small" style={{ marginTop: 8 }}>
-          {swapError ? <span className="down">Jupiter quote unavailable: {swapError}</span> : swap && tokens !== null ? <>Jupiter quotes <b className="mono ink">{tokens.toFixed(4)} {u.symbol}</b> via {swap.route}, at least <b className="mono ink">{minTokens!.toFixed(4)}</b> after {swap.slippageBps} bps slippage{Number(swap.priceImpactPct) > 0 ? `, ${(Number(swap.priceImpactPct) * 100).toFixed(2)}% price impact` : ""}.</> : "Fetching a Jupiter quote…"}
+          {noRoute ? <span className="muted">A swap needs a market to route through, and a devnet replica has none. The floor below is live; the desk trades on mainnet, and the fork tape shows it round-tripping.</span> : swapError ? <span className="down">Jupiter quote unavailable: {swapError}</span> : swap && tokens !== null ? <>Jupiter quotes <b className="mono ink">{tokens.toFixed(4)} {u.symbol}</b> via {swap.route}, at least <b className="mono ink">{minTokens!.toFixed(4)}</b> after {swap.slippageBps} bps slippage{Number(swap.priceImpactPct) > 0 ? `, ${(Number(swap.priceImpactPct) * 100).toFixed(2)}% price impact` : ""}.</> : "Fetching a Jupiter quote…"}
         </div>
       </div>
       <div className="grid-2">

@@ -63,3 +63,24 @@ accounts, and transaction fees. The public RPC faucet refuses airdrops to this a
     pnpm services              # quoter, keeper, indexer, REST, against devnet
 
 The app reads the services; `NEXT_PUBLIC_CLUSTER=devnet` puts the label in the header and points the wallet at devnet.
+
+## What is live on devnet, 2026-09-20
+
+| | |
+| --- | --- |
+| Program | `FJUdsdmxAp3zAwZBg3ai34xzeCBDobnH1XDarvVa7uFV`, deployed and upgradeable by the deployer key |
+| Markets | NVDAx, TSLAx, SPYx, AAPLx, MSFTx, GOOGLx and a tKalshi fee replica, each created on chain with its grid and each escrow-proven (deposit into the vault and back, signatures in the registry) |
+| Marks | the Tokens API snapshot of the mainnet counterpart, Tessera for the pre-IPO replica; 24 hour change and holder counts come from the same call |
+| Maker | the treasury quotes every Tier 1 and Tier 2 grid term it has capital for, and its asks are resident on chain |
+| Faucet | `/api/faucet`, devnet only: 25 of every token, 25,000 quote tokens and 0.01 SOL, in batched transactions, once per wallet per ten minutes |
+| Wallets | any Wallet Standard wallet on devnet, plus a throwaway burner for people with no extension |
+| Verified | the browser drives the whole journey with no terminal and no cheatcode: fund from the faucet, buy a Gap, buy a Floor, write a Floor, exercise, see the receipt (`--project=devnet`) |
+
+**Not on devnet, and why.** Protected Buy needs a swap route and a replica has no market to route through, so the desk
+says that instead of showing a broken quote. Auto-exercise needs a verifiable on-chain price and no free Pyth read
+exists; exercise is American, so holders lose the convenience and nothing else. The release leg of the journey needs
+an expiry to pass, which the fork tests by travelling in time and devnet cannot.
+
+**Rent.** Each live series costs about 0.045 SOL, returned by `close_series` after expiry. The devnet caps are 4 live
+series per Tier 1 market and 2 per Tier 2, about 0.9 SOL for the whole grid. The faucet spends 0.01 SOL and the token
+account rent per new wallet, so roughly fifty testers per SOL.

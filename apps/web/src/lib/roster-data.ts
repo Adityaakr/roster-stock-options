@@ -81,6 +81,7 @@ function liveMarket(m: ServicesMarket, nowTs: number, terms: Term[]): Market {
     pausable: m.pausable,
     mark: m.price,
     priceSource: m.priceSource,
+    replicaOf: m.replicaOf ?? null,
     equityMark: m.equityPrice,
     basisBps: m.basisBps === null ? null : Math.round(m.basisBps),
     multiplier: m.multiplier || 1,
@@ -265,7 +266,7 @@ function fixture(): RosterData {
   const terms = fixtureTerms(expiries);
   const market: Market = {
     symbol: "NVDAx", name: "Nvidia xStock", mint: null, address: null, decimals: 8, tier: 1, listed: true, paused: false, wrapperTier: "xStock",
-    feeBps: 0, hasTransferFee: false, hasPermanentDelegate: true, pausable: true, mark: FIXTURE_MARK, priceSource: "fixture", equityMark: equityOpen ? 182.08 : null,
+    feeBps: 0, hasTransferFee: false, hasPermanentDelegate: true, pausable: true, mark: FIXTURE_MARK, priceSource: "fixture", replicaOf: null, equityMark: equityOpen ? 182.08 : null,
     basisBps: equityOpen ? 12 : null, multiplier: 1, pendingActivationTs: null, inActivationWindow: false, vol: 0.35, volSource: "fixture", expiries,
     liveSeries: terms.length, maxLiveSeries: 12, minLots6: "10000", depthUsdc: terms.reduce((a, t) => a + t.capacity * t.strike, 0), bestAsk: 0.6, logo: null, underlyingSymbol: "NVDA", wrappersOfUnderlying: 1, sparkline: [], changePct: null
   };

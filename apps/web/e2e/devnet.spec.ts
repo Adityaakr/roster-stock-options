@@ -71,11 +71,19 @@ test("devnet: fund a wallet from the faucet, buy a Gap, buy a Floor, write and e
   // Commit: write a Floor of the same size the faucet handed out.
   await page.getByRole("link", { name: "Underwrite" }).first().click();
   await expect(page.getByRole("heading", { level: 1, name: "Underwrite" })).toBeVisible();
+  const termSelect = page.getByTestId("term");
+  const written = await termSelect.inputValue();
   await page.getByTestId("write-size").fill("1");
   await page.getByTestId("write-ask").fill("1.00");
   await page.getByTestId("write").click();
   await waitDone(page);
-  await expect(page.getByTestId("my-slot")).toBeVisible({ timeout: 60_000 });
+  // The slot appears once the indexer has read the deposit back; the term selection is restored first, because a
+  // reload can land on a different term and the slot belongs to the one that was written.
+  await expect.poll(async () => {
+    await termSelect.selectOption(written).catch(() => undefined);
+    await page.waitForTimeout(2_000);
+    return await page.getByTestId("my-slot").isVisible().catch(() => false);
+  }, { timeout: 120_000, intervals: [5_000] }).toBe(true);
 
   // Manage: exercise part of the Gap and see the receipt the indexer read back from the chain.
   await page.getByRole("link", { name: "Positions" }).first().click();

@@ -674,8 +674,11 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .depth-bar { display: block; height: 6px; background: var(--surface); border-radius: 2px; overflow: hidden; }
 .depth-bar i { display: block; height: 100%; background: var(--ink); }
 .depth .mono { font-size: 13px; white-space: nowrap; }
-.term-pick { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; font-size: 13px; color: var(--ink); }
-.term-pick:hover { background: var(--surface); }
+.term-pick { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; font-size: 13px; color: var(--ink); }
+.term-pick > span:first-child { min-width: 0; }
+.term-pick:hover { background: var(--surface); border-color: var(--line-strong); }
+.term-pick b { font-weight: 500; }
+.term-pick .pick-go { display: inline-block; padding: 4px 10px; white-space: nowrap; border-radius: 4px; background: var(--ink); color: var(--paper); font-family: var(--sans); font-size: 12px; }
 
 /* Payoff chart: the plot, its labels and the readout that follows the expected price. */
 .pchart { position: relative; width: 100%; }

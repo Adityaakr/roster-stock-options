@@ -18,7 +18,7 @@ for (const [w, h] of [[1280, 900], [390, 844]] as const) {
     expect(box.y + box.height).toBeLessThanOrEqual(h);
     expect(box.x).toBeGreaterThanOrEqual(0);
     // The topmost element at the modal's centre is the modal, not the app's header or nav.
-    const top = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest(".wallet-adapter-modal-wrapper") !== null, [box.x + box.width / 2, box.y + 20]);
+    const top = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest(".wallet-adapter-modal-wrapper") !== null, { x: box.x + box.width / 2, y: box.y + 20 });
     expect(top).toBe(true);
     await expect(page.getByRole("button", { name: /burner wallet/i })).toBeVisible();
     await page.screenshot({ path: `e2e/screenshots/wallet-modal-${w}.png` });

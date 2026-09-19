@@ -68,7 +68,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
               {m.replicaOf ? <Badge tone="amber">devnet replica</Badge> : null}
               <Badge tone={data.session === "regular" ? "green" : "amber"} dot>{SESSION_LABEL[data.session]}</Badge>
             </div>
-            <p className="body-sm" style={{ margin: "4px 0 0" }}>{m.name} · {m.liveSeries} of {m.maxLiveSeries} series live · {live.length} underwriter{live.length === 1 ? "" : "s"} quoting</p>
+            <p className="body-sm" style={{ margin: "4px 0 0" }}>{m.name} · {m.liveSeries > m.maxLiveSeries ? `${m.liveSeries} series live` : `${m.liveSeries} of ${m.maxLiveSeries} series live`} · {live.length} underwriter{live.length === 1 ? "" : "s"} quoting</p>
             {m.replicaOf ? (
               <p className="small muted" style={{ margin: "4px 0 0" }}>
                 A devnet token with the same extensions as the mainnet mint, priced from it:{" "}
@@ -113,10 +113,11 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
             </div>
           </div>
           <div className="card pad">
-            <div className="h6">Cheapest live terms</div>
+            <div className="h6">Trade now</div>
+            <div className="small muted" style={{ marginTop: 2 }}>The cheapest live term each side. Every other strike is in the grid below.</div>
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-              {bestGap[0] ? <Link className="term-pick" href={`/trade/${bestGap[0].id}`}><span>Gap ${usdK(bestGap[0].strike)} · {dayLabel(bestGap[0].expiryTs)}</span><span className="mono">${usd(bestGap[0].ladder[0]!.ask!)} / share</span></Link> : <div className="small muted">No Gap quoted right now.</div>}
-              {bestFloor[0] ? <Link className="term-pick" href={`/trade/${bestFloor[0].id}`}><span>Floor ${usdK(bestFloor[0].strike)} · {dayLabel(bestFloor[0].expiryTs)}</span><span className="mono">${usd(bestFloor[0].ladder[0]!.ask!)} / share</span></Link> : <div className="small muted">{m.hasTransferFee ? "Floors wait for fee-inclusive settlement on this mint." : "No Floor quoted right now."}</div>}
+              {bestGap[0] ? <Link className="term-pick" href={`/trade/${bestGap[0].id}`} data-testid="buy-gap"><span><b>Buy a Gap</b> <span className="muted">${usdK(bestGap[0].strike)} · {dayLabel(bestGap[0].expiryTs)}</span></span><span className="mono">${usd(bestGap[0].ladder[0]!.ask!)} / share</span><span className="pick-go">Buy →</span></Link> : <div className="small muted">No Gap quoted right now.</div>}
+              {bestFloor[0] ? <Link className="term-pick" href={`/trade/${bestFloor[0].id}`} data-testid="buy-floor"><span><b>Buy a Floor</b> <span className="muted">${usdK(bestFloor[0].strike)} · {dayLabel(bestFloor[0].expiryTs)}</span></span><span className="mono">${usd(bestFloor[0].ladder[0]!.ask!)} / share</span><span className="pick-go">Buy →</span></Link> : <div className="small muted">{m.hasTransferFee ? "Floors wait for fee-inclusive settlement on this mint." : "No Floor quoted right now."}</div>}
               <Link className="btn secondary sm" href={`/underwrite?m=${m.symbol}`} style={{ justifySelf: "start", marginTop: 4 }}>Underwrite {m.symbol}</Link>
             </div>
           </div>

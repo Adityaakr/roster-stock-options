@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- The wordmark's mark (globals.css .wordmark i): an ink square with a paper notch on its right half. -->
+  <style>
+    .sq { fill: #1a1a1a }
+    .notch { fill: #fcfcfc }
+    @media (prefers-color-scheme: dark) { .sq { fill: #fcfcfc } .notch { fill: #1a1a1a } }
+  </style>
+  <rect class="sq" width="32" height="32" rx="5.33" />
+  <rect class="notch" x="16" y="8.89" width="7.11" height="14.22" rx="1.78" />
+</svg>

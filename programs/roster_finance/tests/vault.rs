@@ -269,3 +269,53 @@ fn vault_refuses_late_expiry_cap_and_strangers() {
     // Nothing the vault has queued or reserved is ever written: the deposit is 10 lots, 5 are out, only 5 remain.
     expect_err(env.vault_quote(&manager, CC, &far, 6 * LOT, 1 * LOT, 1 * USDC), "ExpiryPastRoll");
 }
+
+/// The Cash-Secured Put vault is the same code with USDC as collateral: a full epoch where the buyer exercises half,
+/// so the vault ends holding the tokens it was assigned and the USDC it kept, and the depositor withdraws both exactly.
+#[test]
+fn cash_secured_put_epoch_assigned_tokens_withdraw_exact() {
+    const CSP: u8 = VAULT_CASH_SECURED_PUT;
+    let mut env = Env::new();
+    let manager = env.wallet(0, 0);
+    let vault = env.init_vault(CSP, &manager.pubkey(), env.expiries[0] + 3600, 100_000 * LOT, 0).unwrap();
+    let alice = env.wallet(0, 2_000);
+    env.vault_deposit(&alice, CSP, 2_000 * USDC).unwrap();
+    let cranker = env.keeper.insecure_clone();
+    let v = load_vault(&env.svm, &vault);
+    warp_to(&mut env.svm, v.next_roll_ts + 1);
+    env.vault_roll(&cranker, CSP, MARK).unwrap();
+    env.vault_claim(&alice, CSP, 0).unwrap();
+    assert_eq!(env.shares_of(&vault, &alice.pubkey()), 2_000 * SHARE_UNIT, "1e6 shares per USDC");
+
+    // The vault writes 10 puts at 180: 1800 USDC locked; a holder buys them and exercises 4 (delivers 4 tokens).
+    let expiry = env.expiries[1];
+    let strike = 180 * USDC;
+    let series = env.create_series(&env.authority.insecure_clone(), Side::Put, strike, expiry).unwrap();
+    env.vault_quote(&manager, CSP, &series, 10 * LOT, 10 * LOT, 1 * USDC).unwrap();
+    assert_eq!(load_vault(&env.svm, &vault).locked_raw, 10 * strike);
+    let bob = env.wallet(4, 100);
+    env.buy(&bob, &series, 10 * LOT, 2 * USDC).unwrap();
+    env.exercise(&bob, &series, 4 * LOT).unwrap();
+    warp_to(&mut env.svm, expiry + 1);
+    env.vault_settle(&cranker, CSP, &series).unwrap();
+    let v = load_vault(&env.svm, &vault);
+    assert_eq!(v.locked_raw, 0);
+    assert_eq!(v.epoch_assigned_lots6, 4 * LOT);
+    let usdc = balance(&env.svm, &env.us(&vault));
+    let tokens = balance(&env.svm, &env.nv(&vault));
+    assert_eq!(tokens, 4 * LOT * RAW_PER_LOT6, "assigned four tokens at the strike");
+    assert_eq!(usdc, 2_000 * USDC - 4 * strike + v.epoch_premium_in, "kept the rest plus the premium");
+
+    env.vault_request_withdraw(&alice, CSP, 2_000 * SHARE_UNIT).unwrap();
+    let v = load_vault(&env.svm, &vault);
+    warp_to(&mut env.svm, v.next_roll_ts + 1);
+    env.vault_roll(&cranker, CSP, MARK).unwrap();
+    let before_usdc = balance(&env.svm, &env.us(&alice.pubkey()));
+    let before_tokens = balance(&env.svm, &env.nv(&alice.pubkey()));
+    env.vault_claim(&alice, CSP, 1).unwrap();
+    assert_eq!(balance(&env.svm, &env.us(&alice.pubkey())) - before_usdc, usdc);
+    assert_eq!(balance(&env.svm, &env.nv(&alice.pubkey())) - before_tokens, tokens);
+    let v = load_vault(&env.svm, &vault);
+    assert_eq!(v.total_shares, 0);
+    assert_eq!(v.reserved_collateral_raw + v.reserved_other, 0);
+}

@@ -12,12 +12,15 @@ export interface Proposal {
   locked: { amount: number; unit: string } | null;
   href: string; explanation: string; caveats: string[];
   intent: {
-    action: "buy_gap" | "buy_floor" | "write_floor" | "write_gap" | "unclear";
-    market: string | null; sizeShares: number | null; budgetUsdc: number | null;
+    action: "buy_gap" | "buy_floor" | "write_floor" | "write_gap" | "question" | "unclear";
+    market: string | null; sizeShares: number | null; budgetUsdc: number | null; notionalUsdc: number | null;
     horizon: { kind: "nearest" } | { kind: "furthest" } | { kind: "days"; days: number } | { kind: "date"; iso: string };
     strike: "at_the_money" | "cheap" | "tight" | null; strikePct: number | null; note: string;
   };
 }
+
+/** A question answered from the live figures rather than a ticket. */
+export interface Answer { answer: string; intent: Proposal["intent"]; grounded: boolean }
 
 /** null while asking, then whether this deployment has a key. */
 export function useIntentEnabled(): boolean | null {

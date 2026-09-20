@@ -8,7 +8,7 @@ import { PayoffChart } from "@/components/payoff-chart";
 import { Badge } from "@/components/ui";
 import { usd, usdSmart, dayLabel } from "@/lib/format";
 import { productName, type Side } from "@/lib/model";
-import { useIntentEnabled, type Proposal } from "@/lib/use-intent";
+import { useIntentEnabled, type Answer, type Proposal } from "@/lib/use-intent";
 import { useRoster } from "@/lib/use-roster";
 
 /*
@@ -19,6 +19,7 @@ import { useRoster } from "@/lib/use-roster";
 const EXAMPLES: { group: string; items: { m: string; q: string }[] }[] = [
   { group: "Upside", items: [{ m: "NVDAx", q: "$200 of Nvidia upside through Friday" }, { m: "TSLAx", q: "50 TSLAx of upside for two weeks, the cheap strike" }, { m: "SPYx", q: "SPYx upside through the weekend" }] },
   { group: "Protection", items: [{ m: "NVDAx", q: "protect my 20 NVDAx through earnings" }, { m: "SPYx", q: "a floor under 10 SPYx 5% below the price" }, { m: "SPACEX", q: "a funded exit on my 5 SPACEX through next Friday" }] },
+  { group: "Ask anything", items: [{ m: "NVDAx", q: "what is a Floor and what does one cost on NVDAx right now" }, { m: "SPACEX", q: "why does SPACEX trade below its mark" }, { m: "OPENAI", q: "which market has the cheapest Gap today" }] },
   { group: "Get paid", items: [{ m: "TSLAx", q: "get paid to buy Tesla 10% lower" }, { m: "GOOGLx", q: "sell the upside on my 25 GOOGLx above $360" }, { m: "OPENAI", q: "get paid to sell my 2 OPENAI above the price" }] }
 ];
 type Stage = "idle" | "reading" | "pricing" | "writing" | "done";
@@ -29,6 +30,7 @@ export default function AskPage() {
   const [text, setText] = useState("");
   const [stage, setStage] = useState<Stage>("idle");
   const [result, setResult] = useState<Proposal | null>(null);
+  const [answer, setAnswer] = useState<Answer | null>(null);
   const [phrased, setPhrased] = useState(false);
   const [error, setError] = useState<{ error: string; intent?: Proposal["intent"] } | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
@@ -44,15 +46,17 @@ export default function AskPage() {
     setText(t);
     setError(null);
     setResult(null);
+    setAnswer(null);
     setPhrased(false);
     setStage("reading");
     const tick = setTimeout(() => setStage((x) => (x === "reading" ? "pricing" : x)), 2_500);
     try {
       const r = await fetch("/api/intent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: t, stage: "resolve" }) });
-      const j = (await r.json()) as Proposal | { error: string; intent?: Proposal["intent"] };
+      const j = (await r.json()) as Proposal | Answer | { error: string; intent?: Proposal["intent"] };
       clearTimeout(tick);
       setRecent((xs) => [t, ...xs.filter((x) => x !== t)].slice(0, 5));
       if ("error" in j) { setError(j); setStage("done"); return; }
+      if ("answer" in j) { setAnswer(j); setPhrased(j.grounded); setStage("done"); return; }
       setResult(j);
       setStage("writing");
       const w = await fetch("/api/intent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ stage: "phrase", proposal: j }) });
@@ -65,7 +69,7 @@ export default function AskPage() {
       setStage("done");
     }
   }
-  function reset() { setResult(null); setError(null); setText(""); setStage("idle"); inputRef.current?.focus(); }
+  function reset() { setResult(null); setAnswer(null); setError(null); setText(""); setStage("idle"); inputRef.current?.focus(); }
 
   if (enabled === false) {
     return (
@@ -98,9 +102,25 @@ export default function AskPage() {
         </div>
       ) : null}
 
+      {answer ? (
+        <div className="card ask-answer" data-testid="intent-answer">
+          <div className="flex items-start gap-3">
+            <i className="mark" aria-hidden />
+            <div style={{ minWidth: 0 }}>
+              <p className="ask-answer-text">{answer.answer}</p>
+              <div className="small muted" style={{ marginTop: 8 }}>{answer.grounded ? "Answered from the live figures on this cluster; every number was checked against them." : "The model's wording did not pass the number check, so this is the app's own summary."}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap" style={{ marginTop: 14 }}>
+            <button type="button" className="btn secondary" onClick={reset}>Ask something else</button>
+            <Link href="/markets" className="btn secondary">Markets</Link>
+          </div>
+        </div>
+      ) : null}
+
       {result ? <Result p={result} phrased={phrased} onReset={reset} /> : null}
 
-      {!result && !busy && !error ? (
+      {!result && !answer && !busy && !error ? (
         <div className="ask-examples">
           {EXAMPLES.map((g) => (
             <div key={g.group} className="ask-row">
@@ -141,7 +161,7 @@ function Thinking({ stage, phrased }: { stage: Stage; phrased: boolean }) {
     return () => clearInterval(h);
   }, [running, stage]);
   if (stage === "idle") return null;
-  if (stage === "done") return <div className="ask-thinking done"><i className="dot" />{phrased ? "Priced by the app, worded by the model, every number checked." : "Priced by the app, in its own words this time."}</div>;
+  if (stage === "done") return <div className="ask-thinking done"><i className="dot" />{phrased ? "Every number checked against the live figures." : "In the app's own words this time: the model's wording did not pass the number check."}</div>;
   const words = SAYING[stage];
   const line = words[i % words.length]!;
   return (
@@ -227,14 +247,14 @@ function Result({ p, phrased, onReset }: { p: Proposal; phrased: boolean; onRese
 function IntentRead({ intent }: { intent: Proposal["intent"] }) {
   const h = intent.horizon;
   const horizon = h.kind === "nearest" ? "the nearest expiry" : h.kind === "furthest" ? "the furthest expiry" : h.kind === "days" ? `${h.days} days` : `by ${h.iso}`;
-  const action = { buy_gap: "buy a Gap", buy_floor: "buy a Floor", write_floor: "write a Floor", write_gap: "write a Gap", unclear: "unclear" }[intent.action];
+  const action = { buy_gap: "buy a Gap", buy_floor: "buy a Floor", write_floor: "write a Floor", write_gap: "write a Gap", question: "a question", unclear: "unclear" }[intent.action];
   return (
     <div className="card pad">
       <div className="h6">What the model read</div>
       <div className="ask-rows">
         <div><span>Action</span><b>{action}</b></div>
         <div><span>Market</span><b>{intent.market ?? <span className="muted">none named</span>}</b></div>
-        <div><span>Size</span><b>{intent.sizeShares ? `${intent.sizeShares} shares` : intent.budgetUsdc ? `a $${usdSmart(intent.budgetUsdc)} budget` : <span className="muted">not stated</span>}</b></div>
+        <div><span>Size</span><b>{intent.sizeShares ? `${intent.sizeShares} shares` : intent.notionalUsdc ? `$${usdSmart(intent.notionalUsdc)} of the token` : intent.budgetUsdc ? `a $${usdSmart(intent.budgetUsdc)} premium budget` : <span className="muted">not stated</span>}</b></div>
         <div><span>Horizon</span><b>{horizon}</b></div>
         <div><span>Strike</span><b>{intent.strikePct !== null ? `${intent.strikePct > 0 ? "+" : "−"}${Math.abs(intent.strikePct)}% from the price` : intent.strike === "cheap" ? "the cheapest" : intent.strike === "tight" ? "the tightest" : "the default, nearest the price"}</b></div>
         {intent.note ? <div><span>Its note</span><b className="muted" style={{ fontWeight: 400 }}>{intent.note}</b></div> : null}

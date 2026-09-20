@@ -30,6 +30,10 @@ On the Ask page (`/ask`, first in the Trade group; Markets links to it), a perso
 
 Two short calls per sentence, about 1,500 input tokens and under 200 output, at the model's listed price a fraction of a cent. The key is server-side and the route takes one sentence at a time; a public deployment should rate-limit it per IP like the faucet.
 
+## Questions
+
+A sentence that is a question rather than an order ("what is a Floor", "which market is cheapest right now", "why does SPACEX trade below its mark") takes a second path: the model reads it as `question`, the app builds a fact sheet (the product in a few lines, every market's mark, best Gap and Floor ask, depth, volatility, fee, and for PreStocks the spread to the issuer's mark) and the model answers in at most 70 words from those facts alone. The same number check applies; a rejected answer is replaced by the app's own summary of the cheapest Gap and Floor. "Is it a good time to buy" gets what exists and what it costs, never advice. A notional amount ("$500 of protection") sizes by the price, a budget ("$200 of upside") by the premium; the page shows which it read.
+
 ## Not done
 
 Answering "what if it opens at $X" on Positions from the position's own payoff, and a docs agent grounded on this folder, are the next two uses that keep the same rule: the model phrases, the app computes.

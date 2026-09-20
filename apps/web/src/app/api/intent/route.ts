@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { intentEnabled, intentToProposal, parseIntent, phrase, resolveIntent, type Proposal } from "@/lib/intent";
+import { answerQuestion, intentEnabled, intentToProposal, parseIntent, phrase, resolveIntent, type Proposal } from "@/lib/intent";
 import { rosterData } from "@/lib/roster-data";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +26,7 @@ export async function POST(req: Request) {
     if (body.stage === "resolve") {
       const data = await rosterData();
       const intent = await parseIntent(text, data.markets.map((m) => ({ symbol: m.symbol, name: m.name, underlyingSymbol: m.underlyingSymbol })));
+      if (intent.action === "question") return NextResponse.json(await answerQuestion(text, data, intent), { headers: { "cache-control": "no-store" } });
       const r = await resolveIntent(intent);
       return NextResponse.json(r, { status: "error" in r ? 422 : 200, headers: { "cache-control": "no-store" } });
     }

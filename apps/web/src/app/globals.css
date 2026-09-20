@@ -1006,3 +1006,5 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .spread-track .bar.down { background: var(--amber); }
 .fp-mark > span:first-child .mono { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; }
 @media (max-width: 767px) { .spread-row { grid-template-columns: 96px minmax(0, 1fr) 90px; } }
+.ask-answer { padding: 18px 20px; margin-top: 22px; }
+.ask-answer-text { margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink); }

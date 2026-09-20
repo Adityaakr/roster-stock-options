@@ -775,3 +775,52 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 @media (max-width: 1100px) { .vcard-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); } .vcard-figures .fig:nth-child(2) { border-right: 0; } .vcard-figures .fig:nth-child(-n + 2) { border-bottom: 1px solid var(--line); } }
 @media (max-width: 960px) { .vcard-body { grid-template-columns: minmax(0, 1fr); } .vcard-roll { margin-left: 0; } }
 @media (max-width: 559px) { .vcard-figures { grid-template-columns: minmax(0, 1fr); } .vcard-figures .fig { border-right: 0; border-bottom: 1px solid var(--line); } .vcard-figures .fig:last-child { border-bottom: 0; } }
+
+/* Vault list: a filter bar over a sortable table, one row per vault. */
+.chip-stat { display: inline-flex; align-items: baseline; gap: 10px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 9999px; background: var(--surface); font-size: 13px; color: var(--slate); }
+.chip-stat b { color: var(--ink); font-weight: 500; font-size: 15px; }
+.vlist-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.vtable-list { table-layout: fixed; min-width: 960px; }
+.vtable-list td { padding: 14px 12px; vertical-align: middle; }
+.vtable-list th:nth-child(1), .vtable-list td:nth-child(1) { width: 27%; }
+.vtable-list th:nth-child(2), .vtable-list td:nth-child(2) { width: 9%; }
+.vtable-list th:nth-child(3), .vtable-list td:nth-child(3) { width: 14%; }
+.vtable-list th:nth-child(4), .vtable-list td:nth-child(4) { width: 14%; }
+.vtable-list th:nth-child(5), .vtable-list td:nth-child(5) { width: 13%; }
+.vtable-list th:nth-child(6), .vtable-list td:nth-child(6) { width: 14%; }
+.vtable-list th:nth-child(7), .vtable-list td:nth-child(7) { width: 9%; }
+.vtable-list td:nth-child(1) > div > div { min-width: 0; }
+.vtable-list th.sortable { cursor: pointer; user-select: none; }
+.vtable-list th.sortable:hover { color: var(--ink); }
+.rowlink { cursor: pointer; }
+.rowlink:hover td { background: var(--surface); }
+
+/* One vault: the reading column, and the deposit panel that stays put. */
+.vdetail { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 32px; align-items: start; }
+.vdetail-side { position: sticky; top: 76px; }
+.vtitle { font-family: var(--display); font-weight: 500; font-size: 40px; line-height: 1.05; letter-spacing: -0.03em; margin: 0; }
+.vtitle .muted { font-weight: 300; }
+.vmeta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9999px; font-size: 12px; color: var(--ink-2); background: var(--paper); }
+a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
+.vfigs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
+.vfig .k { font-size: 13px; color: var(--slate); }
+.vfig .v { font-family: var(--display); font-weight: 500; font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 6px; white-space: nowrap; }
+.vfig .v .unit { font-size: 14px; font-weight: 400; color: var(--slate); margin-left: 6px; letter-spacing: 0; }
+.vfig .s { font-size: 12px; color: var(--slate); margin-top: 6px; }
+.vrows { display: grid; }
+.vrows > div { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.vrows > div:first-child { border-top: 1px solid var(--line); }
+.vrows > div > span { color: var(--slate); white-space: nowrap; }
+.vrows > div > b { font-weight: 400; text-align: right; min-width: 0; }
+.vpanel-stack { display: grid; gap: 10px; }
+.vdep { border: 1px solid var(--line-strong); border-radius: 12px; padding: 16px; background: var(--paper); }
+.vdep-amount { width: 100%; border: 0; outline: 0; background: transparent; font-family: var(--display); font-size: 36px; line-height: 1.1; letter-spacing: -0.02em; padding: 8px 0 6px; color: var(--ink); }
+.vdep-amount::placeholder { color: var(--line-strong); }
+.vsummary { border: 1px solid var(--line); border-radius: 12px; padding: 6px 16px 14px; background: var(--surface); }
+.vsummary .vrows > div:first-child { border-top: 0; }
+.vsummary .vrows > div:last-child { border-bottom: 0; }
+.vcta { width: 100%; height: 46px; font-size: 15px; }
+@media (max-width: 1100px) { .vfigs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 960px) { .vdetail { grid-template-columns: minmax(0, 1fr); } .vdetail-side { position: static; } .vtitle { font-size: 32px; } }
+@media (max-width: 559px) { .vfigs { grid-template-columns: minmax(0, 1fr); } }

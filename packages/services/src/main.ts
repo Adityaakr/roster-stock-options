@@ -373,7 +373,7 @@ async function main() {
         const info = shareAta ? await connection.getAccountInfo(shareAta, "confirmed") : null;
         return json(200, { shares: info ? info.data.readBigUInt64LE(64).toString() : "0", queuedDepositRaw: p?.queuedDepositRaw.toString() ?? "0", queuedDepositEpoch: p?.queuedDepositEpoch ?? null, queuedWithdrawShares: p?.queuedWithdrawShares.toString() ?? "0", queuedWithdrawEpoch: p?.queuedWithdrawEpoch ?? null });
       }
-      if (url.pathname === "/v1/events") return json(200, store.events({ name: url.searchParams.get("name") ?? undefined, series: url.searchParams.get("series") ?? undefined, limit: Number(url.searchParams.get("limit") ?? 100) }));
+      if (url.pathname === "/v1/events") return json(200, store.events({ name: url.searchParams.get("name") ?? undefined, series: url.searchParams.get("series") ?? undefined, wallet: url.searchParams.get("wallet") ?? undefined, limit: Number(url.searchParams.get("limit") ?? 100) }));
       if (url.pathname === "/v1/basis") return json(200, [...live.values()].map((m) => ({ symbol: m.meta.symbol, basisBps: m.basisBps, history: store.basisHistory(m.market.mint.toBase58(), Math.floor(Date.now() / 1000) - 86_400) })));
       json(404, { error: "not found" });
     } catch (e) {

@@ -64,10 +64,11 @@ export const services = {
   vaultBid: (vault: string, series: string) => get<ServicesVaultBid | null>(`/v1/vaults/${vault}/bid/${series}`),
   vaultPosition: (vault: string, wallet: string) => get<ServicesVaultPosition>(`/v1/vaults/${vault}/position/${wallet}`),
   prices: (mint: string, sinceUnix: number) => get<ServicesPrices>(`/v1/prices/${mint}?since=${sinceUnix}`),
-  events: (q: { name?: string; series?: string; limit?: number }) => {
+  events: (q: { name?: string; series?: string; wallet?: string; limit?: number }) => {
     const p = new URLSearchParams();
     if (q.name) p.set("name", q.name);
     if (q.series) p.set("series", q.series);
+    if (q.wallet) p.set("wallet", q.wallet);
     if (q.limit) p.set("limit", String(q.limit));
     return get<ServicesEvent[]>(`/v1/events?${p.toString()}`);
   }

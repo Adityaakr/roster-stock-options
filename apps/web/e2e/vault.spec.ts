@@ -19,7 +19,11 @@ test("devnet: deposit into the vault, buy from it, sell back to it", async ({ pa
 
   await page.goto("/vaults");
   await expect(page.getByRole("heading", { level: 1, name: "Vaults" })).toBeVisible();
-  await expect(page.getByTestId("vault").first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("vault-row").first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/paid risk/i).first()).toBeVisible();
+  // The vault's own page: figures, tabs, and the deposit panel.
+  await page.getByTestId("vault-row").filter({ hasText: "NVDAx Covered Call" }).first().click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("NVDAx");
   await expect(page.getByText(/paid risk, not yield/i).first()).toBeVisible();
 
   // Connect the burner and take funds.
@@ -33,8 +37,8 @@ test("devnet: deposit into the vault, buy from it, sell back to it", async ({ pa
   await page.keyboard.press("Escape");
   await page.mouse.click(5, 5);
 
-  // Queue 2 NVDAx into the covered-call vault: it shows in the queue with the roll it enters at.
-  const card = page.getByTestId("vault").filter({ hasText: "Covered Call · NVDAx" }).first();
+  // Queue 2 NVDAx into the covered-call vault: it shows in the wallet's queue with the roll it enters at.
+  const card = page.locator(".vdetail-side");
   await card.getByTestId("vault-amount").fill("2");
   await card.getByTestId("vault-deposit").click();
   await expect(card.getByTestId("tx-done").or(card.getByTestId("tx-failed"))).toBeVisible({ timeout: 120_000 });

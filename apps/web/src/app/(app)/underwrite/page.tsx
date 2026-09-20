@@ -69,7 +69,14 @@ function UnderwriteInner() {
   }, [wanted, data]);
 
   const ideas = useMemo(() => data?.ideas ?? [], [data]);
-  const trending = useMemo(() => [...ideas].sort((a, b) => b.openInterest - a.openInterest).slice(0, 3), [ideas]);
+  // Trending: the most-bought term on each of three different markets, so the strip reads across the product, not
+  // three strikes of one name; filled from the rest only when fewer than three markets have any buying.
+  const trending = useMemo(() => {
+    const byOi = [...ideas].filter((i) => i.openInterest > 0).sort((a, b) => b.openInterest - a.openInterest);
+    const seen = new Set<string>();
+    const distinct = byOi.filter((i) => (seen.has(i.market) ? false : (seen.add(i.market), true)));
+    return [...distinct, ...byOi.filter((i) => !distinct.includes(i))].slice(0, 3);
+  }, [ideas]);
   const featured = useMemo(() => [...ideas].filter((i) => i.onCollateral !== null && i.capacity > 0).sort((a, b) => (b.onCollateral ?? 0) - (a.onCollateral ?? 0)).slice(0, 4), [ideas]);
   const marketsWithIdeas = useMemo(() => [...new Set(ideas.map((i) => i.market))], [ideas]);
   const listed = useMemo(() => ideas.filter((i) => explore === "all" || (explore === "put" && i.side === "put") || (explore === "call" && i.side === "call") || i.market === explore).sort((a, b) => (b.onCollateral ?? 0) - (a.onCollateral ?? 0)), [ideas, explore]);

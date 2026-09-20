@@ -824,3 +824,39 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 @media (max-width: 1100px) { .vfigs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 960px) { .vdetail { grid-template-columns: minmax(0, 1fr); } .vdetail-side { position: static; } .vtitle { font-size: 32px; } }
 @media (max-width: 559px) { .vfigs { grid-template-columns: minmax(0, 1fr); } }
+
+/* Underwrite: discovery over the write form. Trending strip, featured cards, explore tiles, the list, then the form. */
+.hstat { display: grid; gap: 2px; text-align: right; }
+.hstat span { font-size: 12px; color: var(--slate); }
+.hstat b { font-weight: 500; font-size: 18px; }
+.usec { margin-top: 26px; }
+.usec .h5 { margin: 0 0 10px; }
+.utrend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.utrend-item { display: flex; align-items: center; gap: 12px; padding: 16px 18px; text-align: left; border-right: 1px solid var(--line); min-width: 0; }
+.utrend-item:last-child { border-right: 0; }
+.utrend-item:hover { background: var(--surface); }
+.utrend-item .rank { font-family: var(--display); font-size: 20px; font-weight: 500; color: var(--ink-2); width: 16px; }
+.utrend-item .name { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.utrend-item .name b { font-weight: 500; }
+.utrend-item .sub { display: block; font-size: 13px; margin-top: 2px; white-space: nowrap; }
+.ufeat { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.ufeat-card { text-align: left; padding: 18px; display: block; transition: border-color 120ms ease; }
+.ufeat-card:hover { border-color: var(--line-strong); }
+.ufeat-card .name { font-size: 18px; }
+.ufeat-card .name b { font-weight: 500; }
+.ufeat-card .rows { display: grid; gap: 6px; margin-top: 14px; font-size: 13px; }
+.ufeat-card .rows > div { display: flex; justify-content: space-between; gap: 10px; }
+.ufeat-card .rows span { color: var(--slate); }
+.ufeat-card .rows b { font-weight: 400; }
+.uexplore { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(150px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+.utile { display: grid; gap: 4px; text-align: left; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); min-width: 0; }
+.utile .t { font-size: 15px; font-weight: 500; }
+.utile .s { font-size: 12px; color: var(--slate); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.utile:hover { border-color: var(--line-strong); }
+.utile.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.utile.on .s { color: rgba(252, 252, 252, 0.7); }
+.ulist td { padding: 12px; }
+.ulist tr.on td { background: var(--surface); }
+@media (max-width: 1100px) { .ufeat { grid-template-columns: repeat(2, minmax(0, 1fr)); } .utrend { grid-template-columns: minmax(0, 1fr); } .utrend-item { border-right: 0; border-bottom: 1px solid var(--line); } .utrend-item:last-child { border-bottom: 0; } }
+@media (max-width: 559px) { .ufeat { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 559px) { .hide-sm { display: none; } .hstat { text-align: left; } .utile { padding: 10px 12px; } }

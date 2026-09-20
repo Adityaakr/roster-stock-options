@@ -58,6 +58,24 @@ export interface Market {
   changePct: number | null;
 }
 
+/** A term a writer could take across every market, summarised for the Underwrite page's discovery sections. */
+export interface WriteIdea {
+  id: string;
+  market: string;
+  side: Side;
+  strike: number;
+  expiryTs: number;
+  /** Best ask, premium per share. */
+  ask: number;
+  /** Premium per share over the collateral per share (the strike for a Floor, the mark for a Gap), to expiry. A ratio for this term's life, never annualised. */
+  onCollateral: number | null;
+  /** Shares bought so far and shares still fillable. */
+  openInterest: number;
+  capacity: number;
+  underwriters: number;
+  halted: boolean;
+}
+
 export interface Term {
   /** Stable id used in URLs: `${symbol}-${side}-${strike per lot in USDC}-${expiryTs}` with the symbol lower-cased. */
   id: string;
@@ -174,6 +192,8 @@ export interface RosterData {
   underlying: Underlying;
   expiries: number[];
   terms: Term[];
+  /** Every live quoted term on every market, for the write side's discovery. */
+  ideas: WriteIdea[];
   underwriters: Underwriter[];
   positions: Position[];
   exercises: ExerciseEvent[];

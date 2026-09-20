@@ -185,6 +185,11 @@ async function fromServices(r: ServicesRoster, selected: string | undefined, fre
     underlying: pick ? underlyingOf(pick) : { symbol: "NVDAx", name: "Nvidia xStock", mint: null, mark: 0, equityMark: null, basisBps: null, multiplier: 1, pendingActivationTs: null, wrapperTier: "xStock" },
     expiries: pick ? pick.expiries : [],
     terms: mine,
+    ideas: terms.filter((t) => t.ask > 0 && !t.halted).map((t) => {
+      const mk = markets.find((x) => x.symbol === t.market);
+      const collateralPerShare = t.side === "put" ? t.strike : (mk?.mark ?? null);
+      return { id: t.id, market: t.market, side: t.side, strike: t.strike, expiryTs: t.expiryTs, ask: t.ask, onCollateral: collateralPerShare ? t.ask / collateralPerShare : null, openInterest: t.openInterest, capacity: t.capacity, underwriters: t.writers.filter((w) => w.live).length, halted: t.halted };
+    }),
     underwriters: underwritersOf(mine, r.treasury, r.quoter),
     positions: [],
     exercises,
@@ -287,6 +292,7 @@ function fixture(): RosterData {
     underlying: underlyingOf(market),
     expiries,
     terms,
+    ideas: [],
     underwriters: UNDERWRITERS,
     positions: fixturePositions(expiries),
     exercises: fixtureExercises(now, expiries),

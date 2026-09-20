@@ -318,10 +318,13 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; }
 .sidebar { border-right: 1px solid var(--line); padding: 20px 16px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 24px; background: var(--paper); }
 .sidebar nav { display: grid; gap: 2px; }
-.sidebar nav a { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 4px; font-size: 14px; color: var(--slate); }
+.sidebar nav a { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 12px; border-radius: 6px; font-size: 14px; color: var(--ink-2); transition: background 120ms ease, color 120ms ease; }
 .sidebar nav a:hover { color: var(--ink); background: var(--surface); }
-.sidebar nav a[aria-current="page"] { color: var(--ink); background: var(--surface); box-shadow: inset 2px 0 0 var(--accent); }
-.sidebar nav a svg { width: 16px; height: 16px; opacity: 0.8; }
+/* The current screen is a solid ink pill, the same weight as the primary button, so there is never a stray bar or a
+   half-tinted box to read as a border. */
+.sidebar nav a[aria-current="page"] { color: var(--paper); background: var(--ink); font-weight: 500; }
+.sidebar nav a svg { width: 16px; height: 16px; flex: 0 0 16px; opacity: 0.7; }
+.sidebar nav a:hover svg, .sidebar nav a[aria-current="page"] svg { opacity: 1; }
 .sidebar .group { font-family: var(--mono); font-size: 11px; color: var(--slate); padding: 0 10px; margin: 8px 0 4px; }
 .topbar { height: 60px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 28px; position: sticky; top: 0; background: rgba(252, 252, 252, 0.88); backdrop-filter: blur(10px); z-index: 20; }
 .topbar .crumbs { font-size: 14px; color: var(--slate); display: flex; gap: 8px; align-items: center; min-width: 0; }
@@ -339,7 +342,7 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
   .sidebar { position: static; min-width: 0; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 16px; gap: 12px; }
   .sidebar nav { display: flex; overflow-x: auto; gap: 2px; min-width: 0; max-width: 100%; }
   .sidebar nav .contents { display: contents; }
-  .sidebar nav a { white-space: nowrap; }
+  .sidebar nav a { white-space: nowrap; height: 34px; padding: 0 12px; }
   .sidebar .group, .sidebar .foot { display: none; }
   .topbar { padding: 0 18px; }
   .crumbs > span:nth-child(-n + 2) { display: none; }

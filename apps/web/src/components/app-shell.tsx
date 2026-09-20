@@ -14,7 +14,7 @@ const NAV = [
   ] },
   { group: "Supply", items: [
     { href: "/underwrite", label: "Underwrite", icon: Icon.Coins, match: (p: string) => p.startsWith("/underwrite") },
-    { href: "/vaults", label: "Vaults", icon: Icon.Coins, match: (p: string) => p.startsWith("/vaults") },
+    { href: "/vaults", label: "Vaults", icon: Icon.Layers, match: (p: string) => p.startsWith("/vaults") },
     { href: "/roster", label: "Roster", icon: Icon.Shield, match: (p: string) => p.startsWith("/roster") }
   ] },
   { group: "Desks", items: [

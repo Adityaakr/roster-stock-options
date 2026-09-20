@@ -1013,3 +1013,34 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .loading { min-height: 46vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: var(--slate); font-size: 14px; }
 .loading .mark { width: 28px; height: 28px; border-radius: 6px; background: var(--ink); display: inline-block; position: relative; }
 .loading .mark::after { content: ""; position: absolute; inset: 8px 8px 8px 14px; background: var(--paper); border-radius: 1px; }
+
+/* Roster: five figures, then the market as one panel with tabs. */
+.rfigs-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.rfigs-5 .rfig .v { font-size: 24px; }
+.rpanel-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 18px 20px; }
+.rpanel-figs { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.rpanel-figs > div { display: grid; gap: 2px; }
+.rpanel-figs span { font-size: 12px; color: var(--slate); }
+.rpanel-figs b { font-weight: 500; font-size: 15px; white-space: nowrap; }
+.rtabs { display: flex; gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0 12px; overflow-x: auto; }
+.rtabs button { height: 42px; padding: 0 12px; font-size: 13px; color: var(--slate); white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.rtabs button.on { color: var(--ink); border-bottom-color: var(--ink); }
+.rtabs button:hover { color: var(--ink); }
+.rterms tr.rgroup td { padding: 8px 20px; font-size: 12px; color: var(--slate); background: var(--surface); border-bottom: 1px solid var(--line); letter-spacing: 0.01em; }
+.rcap { padding: 14px 20px; border-bottom: 1px solid var(--line); }
+.rwriters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 16px 20px; }
+.rwriter, .rvault { display: grid; gap: 6px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+.rvault { transition: border-color 150ms var(--ease); }
+.rvault:hover { border-color: var(--ink); }
+.rwriter b, .rvault b { font-weight: 500; }
+.rwriter-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--line); }
+.rwriter-figs > div { display: grid; gap: 2px; }
+.rwriter-figs span { font-size: 12px; color: var(--slate); }
+.rwriter-figs b { font-weight: 500; font-size: 14px; }
+.rvaults { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px 20px; }
+.rempty { display: flex; align-items: center; gap: 14px; padding: 28px 20px; color: var(--ink-2); }
+.rempty .mark { width: 22px; height: 22px; border-radius: 5px; background: var(--ink); display: inline-block; position: relative; flex: none; opacity: 0.5; }
+.rempty .mark::after { content: ""; position: absolute; inset: 6px 6px 6px 11px; background: var(--paper); border-radius: 1px; }
+.rempty b { font-weight: 500; color: var(--ink); }
+@media (max-width: 1100px) { .rfigs-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .rfigs-5 .rfig:nth-child(3) { border-right: 0; } .rfigs-5 .rfig:nth-child(-n+3) { border-bottom: 1px solid var(--line); } .rwriters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px) { .rfigs-5 { grid-template-columns: minmax(0, 1fr); } .rfigs-5 .rfig { border-right: 0; border-bottom: 1px solid var(--line); } .rwriters, .rvaults { grid-template-columns: minmax(0, 1fr); } }

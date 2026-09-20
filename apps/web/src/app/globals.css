@@ -979,7 +979,13 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .ask-pill { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px 0 8px; border: 1px solid var(--line); border-radius: 9999px; background: var(--paper); font-size: 13px; color: var(--ink); transition: border-color 150ms var(--ease), background 150ms var(--ease), transform 150ms var(--ease); }
 .ask-pill:hover { border-color: var(--ink); transform: translateY(-1px); }
 .ask-pill.recent { padding-left: 14px; color: var(--ink-2); }
-.ask-how { margin: 34px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line); counter-reset: step; }
+.ask-howto { margin-top: 34px; }
+.ask-howto summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--slate); user-select: none; }
+.ask-howto summary::-webkit-details-marker { display: none; }
+.ask-howto summary::before { content: "+"; font-family: var(--mono); width: 16px; height: 16px; border: 1px solid var(--line-strong); border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1; }
+.ask-howto[open] summary::before { content: "−"; }
+.ask-howto summary:hover { color: var(--ink); }
+.ask-how { margin: 12px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line); counter-reset: step; }
 .ask-how li { counter-increment: step; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; line-height: 21px; color: var(--ink-2); }
 .ask-how li::before { content: counter(step, decimal-leading-zero); font-family: var(--mono); font-size: 12px; color: var(--slate); padding-top: 3px; }
 .ask-how li b { color: var(--ink); font-weight: 500; }

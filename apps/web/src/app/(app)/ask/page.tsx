@@ -112,12 +112,15 @@ export default function AskPage() {
         </div>
       ) : null}
 
-      <ol className="ask-how">
-        <li><span><b>The model reads.</b> It maps the sentence to a listed market, a side, a size or a budget, a horizon and a strike preference, and says what it assumed. It never sees a price.</span></li>
-        <li><span><b>The app computes.</b> Expiry, strike and size follow rules written down in <code>docs/INTENT.md</code>; the premium is the walk of the resident asks on that term, the figure the ticket itself shows.</span></li>
-        <li><span><b>The model phrases.</b> Two sentences from the resolved facts. A number that is not one of them, an em-dash or the word yield throws the wording out for the app&apos;s own sentence.</span></li>
-      </ol>
-      <p className="note">This is not advice. Contracts can expire worthless; maximum loss on a purchase is the premium plus fees; writing is paid risk. Nothing is signed on this page.</p>
+      <details className="ask-howto">
+        <summary>How this works</summary>
+        <ol className="ask-how">
+          <li><span><b>The model reads.</b> It maps the sentence to a listed market, a side, a size or a budget, a horizon and a strike preference, and says what it assumed. It never sees a price.</span></li>
+          <li><span><b>The app computes.</b> Expiry, strike and size follow rules written down in <code>docs/INTENT.md</code>; the premium is the walk of the resident asks on that term, the figure the ticket itself shows.</span></li>
+          <li><span><b>The model phrases.</b> Two sentences from the resolved facts. A number that is not one of them, an em-dash or the word yield throws the wording out for the app&apos;s own sentence.</span></li>
+        </ol>
+        <p className="note">This is not advice. Contracts can expire worthless; maximum loss on a purchase is the premium plus fees; writing is paid risk. Nothing is signed on this page.</p>
+      </details>
     </div>
   );
 }

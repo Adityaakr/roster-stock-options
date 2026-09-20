@@ -1050,3 +1050,24 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .pb-figs b { font-size: 17px; }
 .sans { font-family: var(--sans); }
 .pb-markets .utile { min-width: 150px; }
+
+/* Earn, the write panel: the ticket beside its outcome, one card. */
+.wpanel { margin-top: 34px; }
+.wpanel-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.wside { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.wside button { display: grid; gap: 1px; text-align: left; padding: 8px 14px; border-right: 1px solid var(--line); min-width: 150px; }
+.wside button:last-child { border-right: 0; }
+.wside button b { font-weight: 500; font-size: 14px; }
+.wside button span { font-size: 12px; color: var(--slate); }
+.wside button.on { background: var(--ink); color: var(--paper); }
+.wside button.on span { color: rgba(252, 252, 252, 0.7); }
+.wgrid { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); }
+.wform { padding: 20px; border-right: 1px solid var(--line); }
+.wout { padding: 20px; display: grid; gap: 16px; align-content: start; }
+.wfigs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.wfigs b { font-size: 17px; }
+.wsketch { padding: 12px 12px 8px; border: 1px solid var(--line); border-radius: 8px; }
+.wout .table { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.wafter { margin: 0; padding: 4px 20px 8px; border-top: 1px solid var(--line); }
+.wafter li:last-child { border-bottom: 0; }
+@media (max-width: 1100px) { .wgrid { grid-template-columns: minmax(0, 1fr); } .wform { border-right: 0; border-bottom: 1px solid var(--line); } .wfigs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

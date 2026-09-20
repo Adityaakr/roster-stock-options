@@ -1,13 +1,14 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MarketLogo } from "@/components/market-list";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { TxStatus } from "@/components/tx-status";
-import { Badge, ErrorState, KV, Loading, Tabs } from "@/components/ui";
+import { Badge, ErrorState, KV, Loading } from "@/components/ui";
 import { useCluster } from "@/lib/cluster";
 import { usd, usd0, usdK, usdSmart, dayLabel, countdown } from "@/lib/format";
 import { commitMath, DEFAULT_SIZE, lots6ForShares, sharesOf, type Side, type Term, type WriteIdea } from "@/lib/model";
@@ -201,78 +202,121 @@ function UnderwriteInner() {
         <p className="small muted" style={{ marginTop: 8 }}>On collateral is the premium over what you lock per share, for this term&apos;s life, never annualised. A result you keep only if you are not assigned.</p>
       </section>
 
-      <div ref={formRef} className="page-head" style={{ marginTop: 34, scrollMarginTop: 80 }}>
-        <div>
-          <h2 className="h4" style={{ margin: 0 }}>Write on {sym}</h2>
-          <p className="body-sm" style={{ margin: "4px 0 0" }}>{market.name} · <Link href={`/markets/${sym}`}>market page</Link>{marketsWithIdeas.length > 1 ? <> · or pick another market above</> : null}</p>
-        </div>
-      </div>
-      <div className="grid-2 split-right">
-        <div className="card pad">
-          <Tabs value={side} onChange={(v) => { setSide(v as Side); setTermId(null); setAsk(null); tx.reset(); }} items={[{ id: "put", label: "Floors" }, { id: "call", label: "Gaps" }]} />
-          <label className="lbl" style={{ marginTop: 16 }}>Term</label>
-          <select className="field" value={t.id} onChange={(e) => { setTermId(e.target.value); setAsk(null); tx.reset(); }} aria-label="Term" data-testid="term">
-            {terms.map((x) => <option key={x.id} value={x.id}>${usdK(x.strike)} through {dayLabel(x.expiryTs)} · {x.ask ? `best ask $${usd(x.ask)}` : "no ask yet"}</option>)}
-          </select>
-          <div className="grid-2" style={{ marginTop: 12 }}>
+      <div ref={formRef} className="wpanel-anchor" style={{ scrollMarginTop: 80 }} />
+      <section className="card wpanel">
+        <div className="wpanel-head">
+          <div className="flex items-center gap-3">
+            <MarketLogo m={market} size={40} />
             <div>
-              <label className="lbl">Size in {sym}</label>
+              <div className="flex items-center gap-2 flex-wrap"><h2 className="h5" style={{ margin: 0 }}>Write on {sym}</h2><Badge tone={side === "put" ? "blue" : "green"}>{side === "put" ? "Floor" : "Gap"} ${usdK(t.strike)}</Badge></div>
+              <div className="small muted">{market.name} · mark <span className="mono ink">${usd(u.mark)}</span> · <Link href={`/markets/${sym}`}>market page</Link>{marketsWithIdeas.length > 1 ? <> · or pick another market above</> : null}</div>
+            </div>
+          </div>
+          <div className="wside" role="tablist">
+            {([["put", "Floors", "get paid to buy lower"], ["call", "Gaps", "get paid to sell higher"]] as [Side, string, string][]).map(([id, label, sub]) => (
+              <button key={id} role="tab" aria-selected={side === id} className={side === id ? "on" : ""} onClick={() => { setSide(id); setTermId(null); setAsk(null); tx.reset(); }}><b>{label}</b><span>{sub}</span></button>
+            ))}
+          </div>
+        </div>
+
+        <div className="wgrid">
+          <div className="wform">
+            <label className="lbl">Term</label>
+            <select className="field" value={t.id} onChange={(e) => { setTermId(e.target.value); setAsk(null); tx.reset(); }} aria-label="Term" data-testid="term">
+              {terms.map((x) => <option key={x.id} value={x.id}>${usdK(x.strike)} through {dayLabel(x.expiryTs)} · {x.ask ? `best ask $${usd(x.ask)}` : "no ask yet"}</option>)}
+            </select>
+            <div className="small muted" style={{ marginTop: 6 }}>Expires {dayLabel(t.expiryTs)}, in {countdown(t.expiryTs, data.nowTs)} · {t.writers.filter((w) => w.live).length} underwriter{t.writers.filter((w) => w.live).length === 1 ? "" : "s"} live · {Math.floor(t.capacity)} {sym} fillable</div>
+
+            <label className="lbl" style={{ marginTop: 16 }}>Size</label>
+            <div className="pb-amount">
               <input className="field mono" type="number" min={1} step={1} value={size} onChange={(e) => setSize(Math.max(1, Math.floor(Number(e.target.value) || DEFAULT_SIZE)))} aria-label="Size" data-testid="write-size" />
+              <span className="unit">{sym}</span>
             </div>
-            <div>
-              <label className="lbl">Your ask per share</label>
+            <div className="flex items-center gap-2" style={{ marginTop: 8 }}>{[10, 20, 50].map((n) => <button key={n} type="button" className={`chip ${size === n ? "on" : ""}`} onClick={() => setSize(n)}>{n}</button>)}</div>
+
+            <label className="lbl" style={{ marginTop: 16 }}>Your ask per share</label>
+            <div className="pb-amount">
               <input className="field mono" type="number" min={0.01} step={0.05} value={myAsk} onChange={(e) => setAsk(Math.max(0.01, Number(e.target.value) || 0.01))} aria-label="Ask per share" data-testid="write-ask" />
+              <span className="unit">USD</span>
             </div>
+            <div className="small muted" style={{ marginTop: 6 }}>{t.ask ? <>Best resident ask <span className="mono ink">${usd(t.ask)}</span>{myAsk > t.ask * 1.0005 ? <>; yours is <span className="mono">{(((myAsk - t.ask) / t.ask) * 100).toFixed(1)}%</span> above it and fills after it</> : myAsk < t.ask * 0.9995 ? <>; yours is <span className="mono">{(((t.ask - myAsk) / t.ask) * 100).toFixed(1)}%</span> below it and fills first</> : "; yours matches it"} · <button type="button" className="link" onClick={() => setAsk(Number(t.ask.toFixed(4)))}>use best ask</button></> : "No ask resident yet: yours would be the first."}</div>
+
+            <div className="divider" style={{ margin: "18px 0" }} />
+            {!publicKey ? (
+              <button className="btn primary wide" onClick={() => setVisible(true)}>Connect wallet to quote</button>
+            ) : (
+              <button className="btn primary wide" disabled={!cluster.programDeployed || busy || expired || !t.series} onClick={quote} data-testid="write">Lock {side === "put" ? `$${usd0(Math.max(0, m.locked - (side === "put" ? free * t.strike : 0)))}` : `${Math.max(0, m.locked - free)} ${sym}`} and quote</button>
+            )}
+            {mine && free > 0 ? <div className="small muted" style={{ marginTop: 8 }}>{free} {sym} already free in your slot counts toward this.</div> : null}
+            {publicKey && !cluster.programDeployed ? <div className="msg red" style={{ marginTop: 10 }} role="alert">Program not deployed on {cluster.label}; nothing to sign yet.</div> : null}
+            <TxStatus state={tx.state} onRetry={() => { tx.reset(); reload(true); }} doneHref={`/roster?m=${sym}`} doneLabel="See it on the roster" />
+            <p className="note" style={{ marginTop: 12 }}>Capital is locked until expiry or exercise. Paid risk, not yield: if the price moves through the strike you are assigned at it, pro rata of what you sold, whoever bought the contract that was exercised.</p>
           </div>
-          <div className="divider" style={{ margin: "16px 0" }} />
-          <KV items={[
-            { k: side === "put" ? "USDC to lock" : `${sym} to lock`, v: <span className="mono ink" style={{ fontWeight: 500 }}>{side === "put" ? `$${usd0(m.locked)}` : `${m.locked} ${sym}`}</span> },
-            { k: "Premium you receive", v: <span className="mono up">${usdSmart(m.premium)}</span> },
-            { k: side === "put" ? "Effective buy price if assigned" : "Effective sale price if assigned", v: <span className="mono">${usd(m.effective)}</span> },
-            { k: "Locked until", v: `${dayLabel(t.expiryTs)} or exercise` },
-            ...(mine && free > 0 ? [{ k: "Already free in your slot", v: <span className="mono">{free} {sym}</span> }] : [])
-          ]} />
-          <div className="divider" style={{ margin: "16px 0" }} />
-          {!publicKey ? (
-            <button className="btn primary wide" onClick={() => setVisible(true)}>Connect wallet to quote</button>
-          ) : (
-            <button className="btn primary wide" disabled={!cluster.programDeployed || busy || expired || !t.series} onClick={quote} data-testid="write">Lock {side === "put" ? `$${usd0(Math.max(0, m.locked - (side === "put" ? free * t.strike : 0)))}` : `${Math.max(0, m.locked - free)} ${sym}`} and quote</button>
-          )}
-          {publicKey && !cluster.programDeployed ? <div className="msg red" style={{ marginTop: 10 }} role="alert">Program not deployed on {cluster.label}; nothing to sign yet.</div> : null}
-          <TxStatus state={tx.state} onRetry={() => { tx.reset(); reload(true); }} doneHref={`/roster?m=${sym}`} doneLabel="See it on the roster" />
-          <p className="note" style={{ marginTop: 12 }}>Capital is locked until expiry or exercise. This is paid risk, not yield: if the price moves through the strike you are assigned at it. Assignment is pooled: every writer on the term is assigned in proportion to what they sold, whoever bought the contract that was exercised.</p>
-        </div>
-        <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
-          <div className="card">
-            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
-              <div className="h6">Loss scenarios</div>
-              <div className="small" style={{ marginTop: 4 }}>What assignment costs at three adverse prices, net of the premium you collected.</div>
+
+          <div className="wout">
+            <div className="intent-figs wfigs">
+              <div><span>You lock</span><b className="mono">{side === "put" ? `$${usd0(m.locked)}` : `${m.locked} ${sym}`}</b><i className="small muted">until {dayLabel(t.expiryTs)} or exercise</i></div>
+              <div><span>You receive</span><b className="mono up">${usdSmart(m.premium)}</b><i className="small muted">{m.locked > 0 ? `${((m.premium / (side === "put" ? m.locked : m.locked * u.mark)) * 100).toFixed(2)}% on collateral, to expiry` : ""}</i></div>
+              <div><span>{side === "put" ? "Buy at, if assigned" : "Sell at, if assigned"}</span><b className="mono">${usd(m.effective)}</b><i className="small muted">strike {side === "put" ? "less" : "plus"} the premium</i></div>
+              <div><span>Worst case</span><b className="mono down">{side === "put" ? `−$${usdSmart(m.locked - m.premium)}` : "upside above the strike forgone"}</b><i className="small muted">{side === "put" ? `if ${sym} goes to zero` : `you keep ${sym} below $${usdK(t.strike)}`}</i></div>
             </div>
-            <div className="scroll-x">
-              <table className="table">
-                <thead><tr><th>{sym} at expiry</th><th className="num">Assignment</th><th className="num">Premium kept</th><th className="num">Net</th></tr></thead>
-                <tbody>
-                  {adverse.map((p) => (
-                    <tr key={p}>
-                      <td><span className="mono">${usd(p)}</span> <span className="small muted">({side === "put" ? "−" : "+"}{Math.abs(((p - t.strike) / t.strike) * 100).toFixed(0)}% from strike)</span></td>
-                      <td className="num">{side === "put" ? `buy ${size} at $${usdK(t.strike)}` : `sell ${size} at $${usdK(t.strike)}`}</td>
-                      <td className="num up">+${usdSmart(m.premium)}</td>
-                      <td className="num down">−${usdSmart(lossAt(p))}</td>
-                    </tr>
-                  ))}
-                  <tr><td>Not assigned</td><td className="num muted">collateral released at expiry</td><td className="num up">+${usdSmart(m.premium)}</td><td className="num up">+${usdSmart(m.premium)}</td></tr>
-                </tbody>
-              </table>
-            </div>
+
+            <WriterSketch side={side} strike={t.strike} premium={m.premium} size={size} mark={u.mark} sym={sym} />
+
+            <table className="table">
+              <thead><tr><th>{sym} at expiry</th><th className="num">Net</th><th className="hide-sm">Which means</th></tr></thead>
+              <tbody>
+                {[...adverse.map((p) => ({ p, assigned: true })), { p: t.strike, assigned: false }].sort((a, b) => a.p - b.p).map((r) => (
+                  <tr key={r.p}>
+                    <td className="nowrap"><span className="mono">${usd(r.p)}</span> <span className="small muted">({r.assigned ? `${side === "put" ? "−" : "+"}${Math.abs(((r.p - t.strike) / t.strike) * 100).toFixed(0)}%` : "strike or better"})</span></td>
+                    <td className={`num mono ${r.assigned ? "down" : "up"}`}>{r.assigned ? `−$${usdSmart(lossAt(r.p))}` : `+$${usdSmart(m.premium)}`}</td>
+                    <td className="small muted hide-sm">{r.assigned ? `${side === "put" ? "buy" : "sell"} ${size} ${sym} at $${usdK(t.strike)} while it trades at $${usdK(r.p)}; keep the $${usdSmart(m.premium)}` : "not assigned: collateral released, premium kept"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          {mine ? <MySlot t={t} sym={sym} multiplier={u.multiplier} mine={mine} myAsks={myAsks} free={free} expired={expired} nowTs={data.nowTs} busy={busy} onAction={run} /> : (
-            <div className="card pad">
-              <div className="h6">After you quote</div>
-              <p className="body-sm" style={{ margin: "6px 0 0" }}>Your ask goes live on the roster next to every other underwriter on the term. Buyers match the cheapest asks first, so a fill can be partial. Premium accrues to your slot with each fill and is yours to claim any time. At expiry, what was not assigned is released and what was is settled at the strike, in one transaction anyone can send.</p>
-            </div>
-          )}
         </div>
-      </div>
+
+        {mine ? <div style={{ padding: "0 20px 20px" }}><MySlot t={t} sym={sym} multiplier={u.multiplier} mine={mine} myAsks={myAsks} free={free} expired={expired} nowTs={data.nowTs} busy={busy} onAction={run} /></div> : (
+          <ol className="ask-how wafter">
+            <li><span><b>Your ask goes live on the roster</b> next to every other underwriter on the term; buyers match the cheapest asks first, so a fill can be partial.</span></li>
+            <li><span><b>Premium accrues to your slot</b> with each fill and is yours to claim any time; the unsold part can be withdrawn any time.</span></li>
+            <li><span><b>At expiry</b> what was not assigned is released and what was is settled at the strike, in one transaction anyone can send.</span></li>
+          </ol>
+        )}
+      </section>
+    </div>
+  );
+}
+
+/** The writer's result at expiry across a band of prices: the premium kept, then the loss past the strike. */
+function WriterSketch({ side, strike, premium, size, mark, sym }: { side: Side; strike: number; premium: number; size: number; mark: number; sym: string }) {
+  const reduce = useReducedMotion();
+  const pnl = (p: number) => premium - (side === "put" ? Math.max(0, strike - p) : Math.max(0, p - strike)) * size;
+  const lo = Math.min(mark, strike) * 0.75, hi = Math.max(mark, strike) * 1.25;
+  const pts = Array.from({ length: 41 }, (_, i) => lo + ((hi - lo) * i) / 40);
+  const W = 420, H = 150, PAD = 8;
+  const ys = pts.map(pnl);
+  const yMin = Math.min(...ys, 0), yMax = Math.max(...ys, premium);
+  const X = (p: number) => PAD + ((p - lo) / (hi - lo)) * (W - 2 * PAD);
+  const Y = (v: number) => H - PAD - ((v - yMin) / Math.max(1e-9, yMax - yMin)) * (H - 2 * PAD);
+  const d = pts.map((p, i) => `${i ? "L" : "M"}${X(p).toFixed(1)},${Y(pnl(p)).toFixed(1)}`).join(" ");
+  const be = side === "put" ? strike - premium / size : strike + premium / size;
+  return (
+    <div className="wsketch">
+      <svg viewBox={`0 0 ${W} ${H}`} className="pb-sketch" role="img" aria-label="The writer's result at expiry across prices">
+        <rect x={side === "put" ? X(lo) : X(strike)} y={PAD} width={side === "put" ? X(strike) - X(lo) : X(hi) - X(strike)} height={H - 2 * PAD} fill="var(--surface)" />
+        <line x1={PAD} x2={W - PAD} y1={Y(0)} y2={Y(0)} stroke="var(--line)" />
+        <line x1={X(mark)} x2={X(mark)} y1={PAD} y2={H - PAD} stroke="var(--line)" strokeDasharray="3 3" />
+        <text x={X(mark) + 4} y={H - PAD - 4} className="pb-lbl">mark ${usdK(mark)}</text>
+        <line x1={X(strike)} x2={X(strike)} y1={PAD} y2={H - PAD} stroke="var(--ink)" strokeDasharray="3 3" />
+        <text x={X(strike) + (side === "put" ? 4 : -4)} y={PAD + 10} textAnchor={side === "put" ? "start" : "end"} className="pb-lbl ink">strike ${usdK(strike)}</text>
+        <motion.path key={`${side}-${strike}-${premium}-${size}`} d={d} fill="none" stroke="var(--ink)" strokeWidth="2" initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.8, ease: [0.2, 0, 0, 1] }} />
+        <text x={side === "put" ? W - PAD : PAD} y={Y(premium) + 12} textAnchor={side === "put" ? "end" : "start"} className="pb-lbl ink">premium kept ${usdK(premium)}</text>
+        <text x={X(be) + (side === "put" ? -4 : 4)} y={H - PAD - 4} textAnchor={side === "put" ? "end" : "start"} className="pb-lbl">break-even ${usdK(be)}</text>
+      </svg>
+      <div className="flex items-center justify-between small muted mono"><span>${usdK(lo)}</span><span>{sym} at expiry</span><span>${usdK(hi)}</span></div>
     </div>
   );
 }

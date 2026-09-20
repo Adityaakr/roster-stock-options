@@ -960,7 +960,11 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .ask-input::placeholder { color: var(--slate); }
 .ask-go { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px 0 14px; border-radius: 8px; background: var(--ink); color: var(--paper); font-size: 14px; font-weight: 500; transition: opacity 150ms var(--ease); }
 .ask-go:disabled { opacity: 0.35; }
-.ask-go .spin { width: 12px; height: 12px; border-radius: 9999px; border: 2px solid rgba(252, 252, 252, 0.35); border-top-color: var(--paper); display: inline-block; }
+.ask-thinking { display: flex; align-items: center; gap: 2px; margin: 14px 0 0 18px; font-size: 14px; color: var(--ink-2); min-height: 20px; }
+.ask-thinking .dots { display: inline-flex; gap: 3px; margin-left: 4px; align-items: flex-end; height: 14px; }
+.ask-thinking .dots i { width: 4px; height: 4px; border-radius: 9999px; background: var(--ink); display: inline-block; }
+.ask-thinking.done { color: var(--slate); font-size: 13px; gap: 8px; }
+.ask-thinking.done .dot { width: 7px; height: 7px; border-radius: 9999px; background: var(--green); display: inline-block; }
 .ask-steps { display: flex; gap: 22px; flex-wrap: wrap; margin: 14px 0 0 18px; font-size: 13px; color: var(--slate); }
 .ask-steps span { display: inline-flex; align-items: center; gap: 8px; transition: color 200ms var(--ease); }
 .ask-steps span i { width: 7px; height: 7px; border-radius: 9999px; background: var(--line-strong); display: inline-block; }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { MarketLogo } from "@/components/market-list";
 import { PayoffChart } from "@/components/payoff-chart";
@@ -33,6 +33,7 @@ export default function AskPage() {
   const [error, setError] = useState<{ error: string; intent?: Proposal["intent"] } | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const reduce = useReducedMotion();
   const busy = stage !== "idle" && stage !== "done";
   const logoOf = (symbol: string) => data?.markets.find((m) => m.symbol === symbol) ?? { symbol, logo: null };
 
@@ -83,11 +84,11 @@ export default function AskPage() {
       </div>
 
       <form className={`ask-composer ${busy ? "busy" : ""}`} onSubmit={(e) => { e.preventDefault(); void ask(text); }} data-testid="intent">
-        <i className="mark" aria-hidden />
+        {busy && !reduce ? <motion.i className="mark" aria-hidden animate={{ scale: [1, 0.82, 1], rotate: [0, 90, 90, 180, 180] }} transition={{ duration: 1.6, repeat: Infinity, ease: [0.2, 0, 0, 1], times: [0, 0.5, 0.55, 1, 1] }} /> : <i className="mark" aria-hidden />}
         <input ref={inputRef} className="ask-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="protect my 20 NVDAx through earnings" aria-label="What do you want to do" maxLength={300} autoFocus data-testid="intent-text" />
-        <button className="ask-go" type="submit" disabled={busy || !text.trim() || enabled === null} aria-label="Show me the ticket" data-testid="intent-go">{busy ? <motion.span className="spin" animate={{ rotate: 360 }} transition={{ duration: 0.7, ease: "linear", repeat: Infinity }} /> : <span aria-hidden>↵</span>}<span className="lbl">{busy ? "Working" : "Show the ticket"}</span></button>
+        <button className="ask-go" type="submit" disabled={busy || !text.trim() || enabled === null} aria-label="Show me the ticket" data-testid="intent-go"><span aria-hidden>↵</span><span className="lbl">{busy ? "Working" : "Show the ticket"}</span></button>
       </form>
-      <Steps stage={stage} phrased={phrased} />
+      <Thinking stage={stage} phrased={phrased} />
 
       {error ? (
         <div className="card pad ask-error" role="alert" data-testid="intent-error">
@@ -121,16 +122,29 @@ export default function AskPage() {
   );
 }
 
-/** The three steps as they happen, so the wait reads as work and not as a spinner. */
-function Steps({ stage, phrased }: { stage: Stage; phrased: boolean }) {
+/** What is happening, in one line of plain language that moves while the work runs. */
+const SAYING: Record<Exclude<Stage, "idle" | "done">, string[]> = {
+  reading: ["Reading your sentence", "Finding the market you mean", "Working out the size and the horizon"],
+  pricing: ["Walking the book", "Picking the expiry", "Choosing the strike", "Sizing it against what is fillable", "Adding the taker fee"],
+  writing: ["Writing it up", "Checking every number against the ticket"]
+};
+function Thinking({ stage, phrased }: { stage: Stage; phrased: boolean }) {
   const reduce = useReducedMotion();
+  const [i, setI] = useState(0);
+  const running = stage !== "idle" && stage !== "done";
+  useEffect(() => {
+    if (!running) return;
+    const h = setInterval(() => setI((x) => x + 1), 1_500);
+    return () => clearInterval(h);
+  }, [running, stage]);
   if (stage === "idle") return null;
-  const order: Stage[] = ["reading", "pricing", "writing"];
-  const idx = stage === "done" ? 3 : order.indexOf(stage);
-  const label = ["Reading the sentence", "Walking the book", phrased || stage !== "done" ? "Writing it up" : "Writing it up: the app's own words this time"];
+  if (stage === "done") return <div className="ask-thinking done"><i className="dot" />{phrased ? "Priced by the app, worded by the model, every number checked." : "Priced by the app, in its own words this time."}</div>;
+  const words = SAYING[stage];
+  const line = words[i % words.length]!;
   return (
-    <div className="ask-steps" aria-live="polite">
-      {label.map((l, i) => <span key={l} className={i < idx ? "done" : i === idx ? "now" : ""}>{i === idx && !reduce ? <motion.i animate={{ scale: [1, 0.6, 1], opacity: [1, 0.5, 1] }} transition={{ duration: 1, repeat: Infinity, ease: [0.2, 0, 0, 1] }} /> : <i />}{l}</span>)}
+    <div className="ask-thinking" aria-live="polite">
+      <motion.span key={line} initial={reduce ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}>{line}</motion.span>
+      <span className="dots" aria-hidden>{[0, 1, 2].map((n) => reduce ? <i key={n} /> : <motion.i key={n} animate={{ opacity: [0.2, 1, 0.2] }} transition={{ duration: 1.2, repeat: Infinity, delay: n * 0.2, ease: "easeInOut" }} />)}</span>
     </div>
   );
 }

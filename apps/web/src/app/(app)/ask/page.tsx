@@ -1,52 +1,70 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { MarketLogo } from "@/components/market-list";
 import { PayoffChart } from "@/components/payoff-chart";
 import { Badge } from "@/components/ui";
 import { usd, usdSmart, dayLabel } from "@/lib/format";
 import { productName, type Side } from "@/lib/model";
 import { useIntentEnabled, type Proposal } from "@/lib/use-intent";
+import { useRoster } from "@/lib/use-roster";
 
 /*
  * Ask: say what you want, review the ticket, sign somewhere else. The page shows the ticket the app priced, what the
  * model read from the sentence and every decision the resolver made on its own, so a person can see exactly how a
  * sentence became a term and a size. The model parses and phrases; the app computes (docs/INTENT.md).
  */
-const EXAMPLES: { group: string; what: string; items: string[] }[] = [
-  { group: "Upside", what: "a Gap: leveraged upside, loss capped at the premium", items: ["$200 of Nvidia upside through Friday", "50 TSLAx of upside for two weeks, the cheap strike", "SPYx upside through the weekend"] },
-  { group: "Protection", what: "a Floor: a funded exit at a price you choose", items: ["protect my 20 NVDAx through earnings", "a floor under 10 SPYx 5% below the price", "sell my tKalshi at a known price next week"] },
-  { group: "Get paid", what: "write one: paid risk, disclosed as such", items: ["get paid to buy Tesla 10% lower", "sell the upside on my 25 GOOGLx above $360", "write a floor on NVDAx for the week"] }
+const EXAMPLES: { group: string; items: { m: string; q: string }[] }[] = [
+  { group: "Upside", items: [{ m: "NVDAx", q: "$200 of Nvidia upside through Friday" }, { m: "TSLAx", q: "50 TSLAx of upside for two weeks, the cheap strike" }, { m: "SPYx", q: "SPYx upside through the weekend" }] },
+  { group: "Protection", items: [{ m: "NVDAx", q: "protect my 20 NVDAx through earnings" }, { m: "SPYx", q: "a floor under 10 SPYx 5% below the price" }, { m: "tKalshi", q: "sell my tKalshi at a known price next week" }] },
+  { group: "Get paid", items: [{ m: "TSLAx", q: "get paid to buy Tesla 10% lower" }, { m: "GOOGLx", q: "sell the upside on my 25 GOOGLx above $360" }, { m: "NVDAx", q: "write a floor on NVDAx for the week" }] }
 ];
+type Stage = "idle" | "reading" | "pricing" | "writing" | "done";
 
 export default function AskPage() {
   const enabled = useIntentEnabled();
+  const { data } = useRoster();
   const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState<Stage>("idle");
   const [result, setResult] = useState<Proposal | null>(null);
+  const [phrased, setPhrased] = useState(false);
   const [error, setError] = useState<{ error: string; intent?: Proposal["intent"] } | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const busy = stage !== "idle" && stage !== "done";
+  const logoOf = (symbol: string) => data?.markets.find((m) => m.symbol === symbol) ?? { symbol, logo: null };
 
+  // Two round trips: the ticket with the app's own sentence first, then the model's wording once it passes the check.
   async function ask(q: string) {
     const t = q.trim();
     if (!t || busy) return;
     setText(t);
-    setBusy(true);
     setError(null);
     setResult(null);
+    setPhrased(false);
+    setStage("reading");
+    const tick = setTimeout(() => setStage((x) => (x === "reading" ? "pricing" : x)), 2_500);
     try {
-      const r = await fetch("/api/intent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: t }) });
+      const r = await fetch("/api/intent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: t, stage: "resolve" }) });
       const j = (await r.json()) as Proposal | { error: string; intent?: Proposal["intent"] };
-      if ("error" in j) setError(j);
-      else setResult(j);
+      clearTimeout(tick);
       setRecent((xs) => [t, ...xs.filter((x) => x !== t)].slice(0, 5));
+      if ("error" in j) { setError(j); setStage("done"); return; }
+      setResult(j);
+      setStage("writing");
+      const w = await fetch("/api/intent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ stage: "phrase", proposal: j }) });
+      const wj = (await w.json()) as { explanation?: string };
+      if (wj.explanation) { setResult({ ...j, explanation: wj.explanation }); setPhrased(true); }
     } catch (e) {
+      clearTimeout(tick);
       setError({ error: e instanceof Error ? e.message : String(e) });
     } finally {
-      setBusy(false);
+      setStage("done");
     }
   }
+  function reset() { setResult(null); setError(null); setText(""); setStage("idle"); inputRef.current?.focus(); }
 
   if (enabled === false) {
     return (
@@ -58,57 +76,66 @@ export default function AskPage() {
   }
 
   return (
-    <div>
-      <div className="page-head">
-        <div>
-          <h1>Ask</h1>
-          <p>Say what you want in a sentence. The model reads it, the app picks the term and prices it with the same walk the ticket uses, and you review before anything is signed.</p>
-        </div>
+    <div className="ask">
+      <div className="ask-hero">
+        <h1>What do you want to do?</h1>
+        <p>Say it in a sentence. The model reads it, the app picks the term and prices it exactly as the ticket does, and nothing is signed until you review.</p>
       </div>
 
-      <form className="ask-form card" onSubmit={(e) => { e.preventDefault(); void ask(text); }} data-testid="intent">
-        <span className="glyph" aria-hidden>✦</span>
-        <input className="field" value={text} onChange={(e) => setText(e.target.value)} placeholder="protect my 20 NVDAx through earnings" aria-label="What do you want to do" maxLength={300} autoFocus data-testid="intent-text" />
-        <button className="btn primary" type="submit" disabled={busy || !text.trim() || enabled === null} data-testid="intent-go">{busy ? "Reading…" : "Show me the ticket"}</button>
+      <form className={`ask-composer ${busy ? "busy" : ""}`} onSubmit={(e) => { e.preventDefault(); void ask(text); }} data-testid="intent">
+        <i className="mark" aria-hidden />
+        <input ref={inputRef} className="ask-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="protect my 20 NVDAx through earnings" aria-label="What do you want to do" maxLength={300} autoFocus data-testid="intent-text" />
+        <button className="ask-go" type="submit" disabled={busy || !text.trim() || enabled === null} aria-label="Show me the ticket" data-testid="intent-go">{busy ? <motion.span className="spin" animate={{ rotate: 360 }} transition={{ duration: 0.7, ease: "linear", repeat: Infinity }} /> : <span aria-hidden>↵</span>}<span className="lbl">{busy ? "Working" : "Show the ticket"}</span></button>
       </form>
+      <Steps stage={stage} phrased={phrased} />
 
-      {busy ? <div className="ask-busy card" aria-live="polite"><span className="dot" /><span>Reading the sentence, then walking the book…</span></div> : null}
       {error ? (
         <div className="card pad ask-error" role="alert" data-testid="intent-error">
-          <div className="h6">Could not turn that into a ticket</div>
-          <p className="body-sm" style={{ margin: "6px 0 0" }}>{error.error}</p>
+          <div className="flex items-center gap-3"><i className="mark" aria-hidden /><div><div className="h6">Could not turn that into a ticket</div><p className="body-sm" style={{ margin: "4px 0 0" }}>{error.error}</p></div></div>
           {error.intent ? <IntentRead intent={error.intent} /> : null}
+          <button type="button" className="btn secondary sm" style={{ marginTop: 12 }} onClick={reset}>Try another sentence</button>
         </div>
       ) : null}
 
-      {result ? <Result p={result} onReset={() => { setResult(null); setText(""); }} /> : null}
+      {result ? <Result p={result} phrased={phrased} onReset={reset} /> : null}
 
-      {!result && !busy ? (
-        <>
-          <div className="ask-examples">
-            {EXAMPLES.map((g) => (
-              <div key={g.group} className="card ask-group">
-                <div className="h6">{g.group}</div>
-                <div className="small muted" style={{ marginTop: 2 }}>{g.what}</div>
-                <div className="ask-items">{g.items.map((x) => <button key={x} type="button" className="ask-item" onClick={() => void ask(x)}>{x}<span aria-hidden>→</span></button>)}</div>
-              </div>
-            ))}
-          </div>
-          {recent.length ? <div className="small muted" style={{ marginTop: 12 }}>Recent: {recent.map((r, i) => <span key={r}>{i ? " · " : ""}<button className="link" type="button" onClick={() => void ask(r)}>{r}</button></span>)}</div> : null}
-        </>
+      {!result && !busy && !error ? (
+        <div className="ask-examples">
+          {EXAMPLES.map((g) => (
+            <div key={g.group} className="ask-row">
+              <span className="ask-label">{g.group}</span>
+              <div className="ask-pills">{g.items.map((x) => <button key={x.q} type="button" className="ask-pill" onClick={() => void ask(x.q)}><MarketLogo m={logoOf(x.m)} size={18} />{x.q}</button>)}</div>
+            </div>
+          ))}
+          {recent.length ? <div className="ask-row"><span className="ask-label">Recent</span><div className="ask-pills">{recent.map((r) => <button key={r} type="button" className="ask-pill recent" onClick={() => void ask(r)}>{r}</button>)}</div></div> : null}
+        </div>
       ) : null}
 
-      <div className="grid-3 ask-how">
-        <div className="card pad"><div className="h6">1. The model reads</div><p className="body-sm">It maps the sentence to a market from the listed names, a side, a size or a budget, a horizon and a strike preference, and says what it assumed. It never sees a price.</p></div>
-        <div className="card pad"><div className="h6">2. The app computes</div><p className="body-sm">The expiry, the strike and the size are chosen by rules you can read in <code>docs/INTENT.md</code>, and the premium is the walk of the resident asks on that term, the same figure the ticket shows.</p></div>
-        <div className="card pad"><div className="h6">3. The model phrases</div><p className="body-sm">Two sentences from the resolved facts. A number that is not one of those facts, an em-dash or the word yield throws the wording out for the app&apos;s own sentence.</p></div>
-      </div>
-      <p className="note" style={{ marginTop: 12 }}>This is not advice. Contracts can expire worthless; maximum loss on a purchase is the premium plus fees; writing is paid risk. Nothing is signed on this page.</p>
+      <ol className="ask-how">
+        <li><span><b>The model reads.</b> It maps the sentence to a listed market, a side, a size or a budget, a horizon and a strike preference, and says what it assumed. It never sees a price.</span></li>
+        <li><span><b>The app computes.</b> Expiry, strike and size follow rules written down in <code>docs/INTENT.md</code>; the premium is the walk of the resident asks on that term, the figure the ticket itself shows.</span></li>
+        <li><span><b>The model phrases.</b> Two sentences from the resolved facts. A number that is not one of them, an em-dash or the word yield throws the wording out for the app&apos;s own sentence.</span></li>
+      </ol>
+      <p className="note">This is not advice. Contracts can expire worthless; maximum loss on a purchase is the premium plus fees; writing is paid risk. Nothing is signed on this page.</p>
     </div>
   );
 }
 
-function Result({ p, onReset }: { p: Proposal; onReset: () => void }) {
+/** The three steps as they happen, so the wait reads as work and not as a spinner. */
+function Steps({ stage, phrased }: { stage: Stage; phrased: boolean }) {
+  const reduce = useReducedMotion();
+  if (stage === "idle") return null;
+  const order: Stage[] = ["reading", "pricing", "writing"];
+  const idx = stage === "done" ? 3 : order.indexOf(stage);
+  const label = ["Reading the sentence", "Walking the book", phrased || stage !== "done" ? "Writing it up" : "Writing it up: the app's own words this time"];
+  return (
+    <div className="ask-steps" aria-live="polite">
+      {label.map((l, i) => <span key={l} className={i < idx ? "done" : i === idx ? "now" : ""}>{i === idx && !reduce ? <motion.i animate={{ scale: [1, 0.6, 1], opacity: [1, 0.5, 1] }} transition={{ duration: 1, repeat: Infinity, ease: [0.2, 0, 0, 1] }} /> : <i />}{l}</span>)}
+    </div>
+  );
+}
+
+function Result({ p, phrased, onReset }: { p: Proposal; phrased: boolean; onReset: () => void }) {
   const buying = p.action.startsWith("buy");
   const side: Side = p.term.side;
   const name = productName(side);
@@ -140,7 +167,7 @@ function Result({ p, onReset }: { p: Proposal; onReset: () => void }) {
           {buying ? <div><span>Max loss</span><b className="mono">${usdSmart(p.total)}</b></div> : <div><span>Premium at the ask</span><b className="mono">${usdSmart(p.premium)}</b></div>}
           <div><span>{buying ? "Break-even" : "Effective price"}</span><b className="mono">${usdSmart(p.breakEven)}</b><i className="small muted">{p.movePct >= 0 ? "+" : "−"}{Math.abs(p.movePct).toFixed(1)}% from the mark</i></div>
         </div>
-        <p className="intent-note" style={{ padding: "0 20px" }} data-testid="intent-explanation">{p.explanation}</p>
+        <motion.p className="intent-note" style={{ padding: "0 20px" }} data-testid="intent-explanation" key={p.explanation} initial={phrased ? { opacity: 0, y: 3 } : false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}>{p.explanation}</motion.p>
         {buying ? <div style={{ padding: "8px 20px 0" }}><PayoffChart side={side} strike={p.term.strike} premium={askPerShare} shares={p.size} mark={p.market.mark} expected={expected} height={220} /></div> : null}
         <table className="table" style={{ marginTop: 12 }}>
           <thead><tr><th>{p.market.symbol} at expiry</th><th className="num">Your result</th><th>Which means</th></tr></thead>

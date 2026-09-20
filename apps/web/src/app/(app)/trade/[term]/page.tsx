@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { use, useState } from "react";
+import { Suspense, use, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { PayoffChart } from "@/components/payoff-chart";
@@ -21,13 +22,23 @@ import { useRoster } from "@/lib/use-roster";
  */
 export default function ActPage({ params }: { params: Promise<{ term: string }> }) {
   const { term: id } = use(params);
+  return (
+    <Suspense fallback={<Loading what="the term" />}>
+      <ActInner id={id} />
+    </Suspense>
+  );
+}
+
+function ActInner({ id }: { id: string }) {
+  const search = useSearchParams();
   const parsed = parseTermId(id);
   const { data, error, reload } = useRoster(parsed?.symbol ?? null);
   const cluster = useCluster();
   const { publicKey } = useWallet();
   const { setVisible } = useWalletModal();
   const tx = useTransaction();
-  const [size, setSize] = useState(DEFAULT_SIZE);
+  // The intent box hands over a size in the url; otherwise the default.
+  const [size, setSize] = useState(Math.max(0, Number(search.get("size"))) || DEFAULT_SIZE);
   const [expected, setExpected] = useState<number | null>(null);
 
   if (error) return <ErrorState message={`Could not read the term: ${error}`} next="Reload the page." />;

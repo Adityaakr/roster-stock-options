@@ -1,0 +1,217 @@
+import "server-only";
+import { rosterData } from "./roster-data";
+import { costOf, breakEven, moveNeeded, productName, type RosterData, type Side, type Term } from "./model";
+import { usd, usdSmart, dayLabel } from "./format";
+
+/*
+ * The intent box. A sentence like "protect my 20 NVDAx through earnings" becomes a ticket in three steps, and the
+ * model is only trusted with the first:
+ *   1. parse: the model maps the sentence to a small structured intent (market, side, size or budget, horizon,
+ *      strike preference) through a tool call. It never sees the book and never produces a price.
+ *   2. resolve: this file picks the term and sizes it with the same `costOf` walk the Act screen uses, so every
+ *      figure the person sees is the app's own arithmetic.
+ *   3. phrase: the model writes two plain sentences from the resolved facts. Any number in its text that is not one
+ *      of the facts fails the check and the deterministic sentence is used instead.
+ * The key lives server-side; without one the box is absent from the product, never stubbed.
+ */
+
+const OPENROUTER = "https://openrouter.ai/api/v1/chat/completions";
+/** Verified against https://openrouter.ai/api/v1/models on 2026-09-20 (supports tools). */
+const MODEL = "anthropic/claude-sonnet-5";
+
+export function intentEnabled(): boolean {
+  return !!process.env.OPENROUTER_API_KEY;
+}
+
+export type IntentAction = "buy_gap" | "buy_floor" | "write_floor" | "write_gap" | "unclear";
+export interface Intent {
+  action: IntentAction;
+  market: string | null;
+  sizeShares: number | null;
+  budgetUsdc: number | null;
+  horizon: { kind: "nearest" } | { kind: "furthest" } | { kind: "days"; days: number } | { kind: "date"; iso: string };
+  strike: "at_the_money" | "cheap" | "tight" | null;
+  /** A level relative to the mark in percent, negative below it, when one was stated. */
+  strikePct: number | null;
+  note: string;
+}
+
+export interface Proposal {
+  action: Exclude<IntentAction, "unclear">;
+  market: { symbol: string; name: string; logo: string | null; mark: number };
+  term: { id: string; side: Side; strike: number; expiryTs: number; capacity: number };
+  size: number;
+  /** Premium, fee and total in USD at `size`; break-even and the move needed in the app's terms. */
+  premium: number; fee: number; total: number; breakEven: number; movePct: number;
+  /** For the write side: what is locked. */
+  locked: { amount: number; unit: string } | null;
+  href: string;
+  explanation: string;
+  /** What the resolver had to decide on its own, in plain words. */
+  caveats: string[];
+  intent: Intent;
+}
+
+export interface IntentFailure { error: string; intent?: Intent }
+
+const TOOL = {
+  type: "function",
+  function: {
+    name: "set_intent",
+    description: "Record what the person wants to do on Roster Finance. Never guess a market: use only symbols from the list. If the request is not a Gap, Floor or writing one of them, set action to unclear and say why in note.",
+    parameters: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        action: { type: "string", enum: ["buy_gap", "buy_floor", "write_floor", "write_gap", "unclear"], description: "buy_gap: leveraged upside with loss capped at the premium (a call). buy_floor: a funded exit at a chosen price, protection for tokens they hold (a put). write_floor: get paid to buy lower. write_gap: get paid to sell higher." },
+        market: { type: ["string", "null"], description: "A symbol from the list, e.g. NVDAx, or null if none fits." },
+        size_shares: { type: ["number", "null"], description: "Shares or tokens, when stated. 'my 20 NVDAx' is 20." },
+        budget_usdc: { type: ["number", "null"], description: "USD they want to spend on the premium, when stated. '$200 of upside' is 200." },
+        horizon: { type: "string", enum: ["nearest", "furthest", "days", "date"], description: "How long the contract should last. 'this week', 'the weekend', 'soon' or nothing said are nearest. 'earnings', 'next month', 'as long as possible' are furthest. A number of days or weeks is days (fill horizon_days). A weekday name or a date is date (fill horizon_date with the next such day from today)." },
+        horizon_days: { type: ["number", "null"], description: "Only when horizon is days." },
+        horizon_date: { type: ["string", "null"], description: "YYYY-MM-DD, only when horizon is date." },
+        strike: { type: ["string", "null"], enum: ["at_the_money", "cheap", "tight", null], description: "cheap: the lowest premium. tight: closest to the current price. at_the_money or null: the default." },
+        strike_pct_from_mark: { type: ["number", "null"], description: "When a level is stated relative to the price: '10% lower' is -10, '5% higher' is 5. Otherwise null." },
+        note: { type: "string", description: "One short sentence: what was assumed, or why it is unclear." }
+      },
+      required: ["action", "market", "size_shares", "budget_usdc", "horizon", "horizon_days", "horizon_date", "strike", "strike_pct_from_mark", "note"]
+    }
+  }
+} as const;
+
+async function chat(body: Record<string, unknown>, timeoutMs = 15_000): Promise<Record<string, unknown>> {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) throw new Error("OPENROUTER_API_KEY is not set");
+  const res = await fetch(OPENROUTER, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${key}`, "HTTP-Referer": "https://roster.finance", "X-Title": "Roster Finance" },
+    body: JSON.stringify({ model: MODEL, temperature: 0, ...body }),
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+  if (!res.ok) throw new Error(`openrouter: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
+  return (await res.json()) as Record<string, unknown>;
+}
+
+/** Step 1: the sentence to a structured intent. */
+export async function parseIntent(text: string, markets: { symbol: string; name: string; underlyingSymbol: string | null }[]): Promise<Intent> {
+  const list = markets.map((m) => `${m.symbol}: ${m.name}${m.underlyingSymbol && m.underlyingSymbol !== m.symbol ? ` (${m.underlyingSymbol})` : ""}`).join("\n");
+  const system = `You turn a sentence into a trading intent on Roster Finance, a venue for fully paid contracts on tokenized stocks. A Gap is the right to buy at a strike through an expiry (leveraged upside, loss capped at the premium). A Floor is the right to sell at a strike through an expiry (a funded exit). Writing one means getting paid to take the other side. Only these markets exist:\n${list}\nMap company names to their symbol (Nvidia is NVDAx). Call set_intent exactly once. Do not invent a market. Today is ${new Date().toISOString().slice(0, 10)}.`;
+  const r = await chat({ messages: [{ role: "system", content: system }, { role: "user", content: text }], tools: [TOOL], tool_choice: { type: "function", function: { name: "set_intent" } }, max_tokens: 500 });
+  const choice = (r.choices as { message?: { tool_calls?: { function?: { arguments?: string } }[] } }[] | undefined)?.[0];
+  const args = choice?.message?.tool_calls?.[0]?.function?.arguments;
+  if (!args) throw new Error("the model returned no intent");
+  let parsed: unknown;
+  try { parsed = JSON.parse(args); } catch { throw new Error(`the model returned malformed arguments: ${args.slice(0, 240)}`); }
+  const j = parsed as { action: IntentAction; market: string | null; size_shares: number | null; budget_usdc: number | null; horizon: string; horizon_days: number | null; horizon_date: string | null; strike: Intent["strike"]; strike_pct_from_mark: number | null; note: string };
+  const horizon: Intent["horizon"] = j.horizon === "days" && j.horizon_days ? { kind: "days", days: Math.max(0, j.horizon_days) } : j.horizon === "date" && j.horizon_date && /^\d{4}-\d{2}-\d{2}$/.test(j.horizon_date) ? { kind: "date", iso: j.horizon_date } : j.horizon === "furthest" ? { kind: "furthest" } : { kind: "nearest" };
+  const symbol = j.market ? markets.find((m) => m.symbol.toLowerCase() === String(j.market).toLowerCase())?.symbol ?? null : null;
+  return { action: j.action, market: symbol, sizeShares: j.size_shares && j.size_shares > 0 ? j.size_shares : null, budgetUsdc: j.budget_usdc && j.budget_usdc > 0 ? j.budget_usdc : null, horizon, strike: j.strike ?? null, strikePct: typeof j.strike_pct_from_mark === "number" && Number.isFinite(j.strike_pct_from_mark) ? j.strike_pct_from_mark : null, note: String(j.note ?? "") };
+}
+
+/** Step 2: the intent to a term and a size, with the app's own arithmetic. */
+export async function resolveIntent(intent: Intent): Promise<Proposal | IntentFailure> {
+  if (intent.action === "unclear") return { error: intent.note || "I could not map that to a Gap, a Floor or writing one.", intent };
+  if (!intent.market) return { error: "Which market? Name a listed one, for example NVDAx or TSLAx.", intent };
+  const data: RosterData = await rosterData(intent.market);
+  const market = data.markets.find((m) => m.symbol === intent.market);
+  if (!market || data.underlying.symbol !== intent.market) return { error: `${intent.market} is not listed here.`, intent };
+  const side: Side = intent.action === "buy_gap" || intent.action === "write_gap" ? "call" : "put";
+  const buying = intent.action.startsWith("buy");
+  const caveats: string[] = [];
+  const live = data.terms.filter((t) => t.side === side && !t.halted && t.ask > 0 && t.capacity > 0 && t.expiryTs > data.nowTs + 2 * 3600);
+  if (!live.length) return { error: `No ${productName(side)} is quoted on ${market.symbol} right now.`, intent };
+
+  // Expiry: the nearest one that lasts as long as asked; if none does, the furthest, and say so.
+  const now = data.nowTs;
+  const want = intent.horizon.kind === "days" ? now + intent.horizon.days * 86_400 : intent.horizon.kind === "date" ? Math.floor(new Date(intent.horizon.iso + "T20:00:00Z").getTime() / 1000) : null;
+  const expiries = [...new Set(live.map((t) => t.expiryTs))].sort((a, b) => a - b);
+  let expiry: number;
+  if (intent.horizon.kind === "furthest") expiry = expiries[expiries.length - 1]!;
+  else if (want === null) expiry = expiries[0]!;
+  else {
+    const ok = expiries.filter((e) => e >= want);
+    if (ok.length) expiry = ok[0]!;
+    else { expiry = expiries[expiries.length - 1]!; caveats.push(`Nothing runs as long as asked; the furthest expiry, ${dayLabel(expiry)}, is used.`); }
+  }
+  const atExpiry = live.filter((t) => t.expiryTs === expiry);
+
+  // Strike: the default is nearest the mark on the right side of it; cheap is the furthest out; tight is nearest the mark.
+  const mark = data.underlying.mark;
+  const byDist = [...atExpiry].sort((a, b) => Math.abs(a.strike - mark) - Math.abs(b.strike - mark));
+  const outOfMoney = atExpiry.filter((t) => (side === "call" ? t.strike >= mark : t.strike <= mark)).sort((a, b) => Math.abs(a.strike - mark) - Math.abs(b.strike - mark));
+  let term: Term;
+  if (intent.strikePct !== null) {
+    const level = mark * (1 + intent.strikePct / 100);
+    term = [...atExpiry].sort((a, b) => Math.abs(a.strike - level) - Math.abs(b.strike - level))[0]!;
+    if (Math.abs(term.strike - level) / level > 0.03) caveats.push(`No strike sits at ${intent.strikePct > 0 ? "+" : "−"}${Math.abs(intent.strikePct)}% ($${usdSmart(level)}); the nearest, $${usdSmart(term.strike)}, is used.`);
+  }
+  else if (intent.strike === "cheap") term = [...atExpiry].sort((a, b) => a.ask - b.ask)[0]!;
+  else if (intent.strike === "tight") term = byDist[0]!;
+  else term = outOfMoney[0] ?? byDist[0]!;
+  if (!outOfMoney.length && intent.strike !== "cheap" && intent.strikePct === null) caveats.push(`Every strike at this expiry is already through the mark; the nearest one, $${usdSmart(term.strike)}, is used.`);
+
+  // Size: what was asked, or what the budget buys at this term's own ladder, never more than is fillable.
+  let size: number;
+  if (intent.sizeShares) size = intent.sizeShares;
+  else if (intent.budgetUsdc) {
+    const one = costOf(term, 1, data.underlying.multiplier, data.feeBps);
+    size = one.fillable && one.total > 0 ? Math.max(1, Math.floor(intent.budgetUsdc / one.total)) : 1;
+    caveats.push(`$${usdSmart(intent.budgetUsdc)} buys ${size} share${size === 1 ? "" : "s"} at this premium.`);
+  } else { size = 10; caveats.push("No size was given; 10 shares is shown."); }
+  if (size > term.capacity) { caveats.push(`Only ${Math.floor(term.capacity)} shares are fillable on this term right now; the size is capped there.`); size = Math.max(1, Math.floor(term.capacity)); }
+  const c = costOf(term, size, data.underlying.multiplier, data.feeBps);
+  if (!c.fillable) return { error: `${size} shares are not fillable on ${market.symbol} ${productName(side)} $${usdSmart(term.strike)} right now.`, intent };
+  const askPerShare = c.premium / size;
+  const be = breakEven(side, term.strike, askPerShare);
+  const proposal: Proposal = {
+    action: intent.action,
+    market: { symbol: market.symbol, name: market.name, logo: market.logo ?? null, mark },
+    term: { id: term.id, side, strike: term.strike, expiryTs: term.expiryTs, capacity: term.capacity },
+    size, premium: c.premium, fee: c.fee, total: c.total, breakEven: be, movePct: moveNeeded(side, term.strike, askPerShare, mark),
+    locked: buying ? null : side === "put" ? { amount: term.strike * size, unit: "USDC" } : { amount: size, unit: market.symbol },
+    href: buying ? `/trade/${term.id}?size=${size}` : `/underwrite?m=${market.symbol}&t=${term.id}&size=${size}`,
+    explanation: "", caveats, intent
+  };
+  proposal.explanation = template(proposal);
+  return proposal;
+}
+
+/** The sentence the app writes itself; also the fallback when the model's wording fails the number check. */
+function template(p: Proposal): string {
+  const name = productName(p.term.side);
+  const when = dayLabel(p.term.expiryTs);
+  if (p.action === "buy_gap") return `Pay $${usdSmart(p.total)} for the right to buy ${p.size} ${p.market.symbol} at $${usdSmart(p.term.strike)} through ${when}. Above $${usdSmart(p.breakEven)} you are ahead; if it never gets there you lose the $${usdSmart(p.total)} and nothing else.`;
+  if (p.action === "buy_floor") return `Pay $${usdSmart(p.total)} for the right to sell ${p.size} ${p.market.symbol} at $${usdSmart(p.term.strike)} any time through ${when}, backed by USDC already locked. The most you can lose on the floor is the $${usdSmart(p.total)}.`;
+  if (p.action === "write_floor") return `Lock $${usdSmart(p.locked!.amount)} USDC, collect about $${usdSmart(p.premium)} at the current ask, and either keep it at ${when} or buy ${p.size} ${p.market.symbol} at $${usdSmart(p.term.strike)}. Paid risk: if it trades lower you own it at $${usdSmart(p.term.strike)}, and the most you can lose is the $${usdSmart(p.locked!.amount)} less the premium.`;
+  return `Lock ${p.size} ${p.market.symbol}, collect about $${usdSmart(p.premium)} at the current ask, and either keep it at ${when} or sell at $${usdSmart(p.term.strike)}. Paid risk: you give up the upside above $${usdSmart(p.term.strike)}. ${name}s are assigned pro rata of what you sold.`;
+}
+
+/** Step 3: the model phrases the facts; a number it did not receive is a failed check. */
+export async function phrase(p: Proposal): Promise<string> {
+  const facts = {
+    product: productName(p.term.side), action: p.action, market: p.market.symbol, company: p.market.name, mark: `$${usd(p.market.mark)}`, size: `${p.size}`, strike: `$${usdSmart(p.term.strike)}`, expiry: dayLabel(p.term.expiryTs),
+    ...(p.locked ? { premium_received: `$${usdSmart(p.premium)}`, locked: `${usdSmart(p.locked.amount)} ${p.locked.unit}`, effective_price: `$${usdSmart(p.breakEven)}` } : { premium: `$${usdSmart(p.premium)}`, fee: `$${usdSmart(p.fee)}`, total_paid: `$${usdSmart(p.total)}`, max_loss: `$${usdSmart(p.total)}`, break_even: `$${usdSmart(p.breakEven)}`, move_needed_pct: `${p.movePct >= 0 ? "+" : "−"}${Math.abs(p.movePct).toFixed(1)}%` })
+  };
+  try {
+    const system = "You write two short sentences, at most 45 words, in plain English for someone about to buy or write a fully paid contract on a tokenized stock. Use only the numbers given, written exactly as given. Sentence case. No em-dashes. Never say yield, option, call or put; say Gap or Floor. State the benefit and then the worst case: for a purchase the worst case is losing the total paid; for writing a Floor it is owning the shares at the strike with the locked USDC; for writing a Gap it is selling the shares at the strike and giving up anything above it. No advice, no adjectives like great or safe.";
+    const r = await chat({ messages: [{ role: "system", content: system }, { role: "user", content: JSON.stringify(facts) }], max_tokens: 120 }, 12_000);
+    const text = String((r.choices as { message?: { content?: string } }[] | undefined)?.[0]?.message?.content ?? "").trim().replace(/\s+/g, " ");
+    if (!text || text.includes("—") || /\byield\b/i.test(text)) { console.warn(`[intent] phrasing rejected on wording: ${text.slice(0, 160)}`); return p.explanation; }
+    const allowed = JSON.stringify(facts);
+    const numbers = text.match(/\d[\d,]*(?:\.\d+)?/g) ?? [];
+    for (const n of numbers) if (!allowed.includes(n)) { console.warn(`[intent] phrasing rejected on the number ${n}: ${text.slice(0, 160)}`); return p.explanation; }
+    return text;
+  } catch (e) {
+    console.warn(`[intent] phrasing failed: ${(e as Error).message.slice(0, 160)}`);
+    return p.explanation;
+  }
+}
+
+export async function intentToProposal(text: string): Promise<Proposal | IntentFailure> {
+  const data = await rosterData();
+  const intent = await parseIntent(text, data.markets.map((m) => ({ symbol: m.symbol, name: m.name, underlyingSymbol: m.underlyingSymbol })));
+  const r = await resolveIntent(intent);
+  if ("error" in r) return r;
+  r.explanation = await phrase(r);
+  return r;
+}

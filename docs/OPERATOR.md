@@ -10,6 +10,7 @@ The external inputs the build cannot obtain on its own (Part 2 section 1). Secre
 | `PYTH_PRO_API_KEY` | Pyth Pro application | bearer token in `.env` | nothing; unlocks `.PRE` `.POST` `.ON` | missing, optional |
 | `TOKENS_XYZ_API_KEY` | tokens.xyz Assets API button | `x-api-key` in `.env` | P7 registry (curated lists, variants) | **missing** |
 | `HELIUS_API_KEY` or `FORK_DATASOURCE_URL` | Helius or another archival + websocket RPC | URL in `.env` | P0 fork upstream (public mainnet RPC is the fallback and rate-limits `getProgramAccounts`), everything on mainnet | missing; fallback in use |
+| `OPENROUTER_API_KEY` | openrouter.ai keys | bearer token in `.env`, server-side only | nothing; the intent box on Markets (`docs/INTENT.md`) is absent without it | present (2026-09-20) |
 | `JUPITER_API_KEY` | portal.jup.ag, if the tier requires it | `.env` | P4 Protected Buy | missing; checked at P4 |
 | `DATABASE_URL` | Neon, Supabase or local Postgres | connection string in `.env` | P2 indexer (SQLite fallback on the fork) | missing; SQLite fallback |
 | Hosting + DNS | Vercel project, `roster.finance` | project id | P6, public launch | missing |

@@ -1,5 +1,6 @@
 "use client";
 
+import { IntentBox } from "@/components/intent-box";
 import { MarketList } from "@/components/market-list";
 import { Badge, ErrorState, Loading, Stat } from "@/components/ui";
 import { usd0 } from "@/lib/format";
@@ -20,6 +21,7 @@ export default function MarketsPage() {
           <h1 className="h3">Markets</h1>
           <p className="body-sm">Every listed market by executable depth. Open a name for its chart, terms, roster and the wrapper&apos;s rights profile.</p>
         </div>
+      <IntentBox />
         <Badge tone={data.session === "regular" ? "green" : "amber"} dot>{SESSION_LABEL[data.session]}</Badge>
       </div>
       <div className="grid-4" style={{ marginBottom: 16 }}>

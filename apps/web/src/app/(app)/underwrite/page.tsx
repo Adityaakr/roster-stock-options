@@ -45,7 +45,7 @@ function UnderwriteInner() {
   const wanted = params.get("t");
   const [side, setSide] = useState<Side>(wanted?.includes("-call-") ? "call" : "put");
   const [termId, setTermId] = useState<string | null>(wanted);
-  const [size, setSize] = useState(20);
+  const [size, setSize] = useState(() => Math.max(0, Number(params.get("size"))) || 20);
   const [ask, setAsk] = useState<number | null>(null);
   const [explore, setExplore] = useState<string>("all");
   const [showAll, setShowAll] = useState(false);

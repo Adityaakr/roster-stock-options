@@ -912,3 +912,19 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .pb-key { width: 14px; height: 2px; display: inline-block; border-radius: 1px; }
 .fp-tp { display: grid; text-align: right; }
 .fp-tp small { font-size: 11px; }
+
+/* The intent box: a sentence in, a ticket out. */
+.intent { padding: 16px 18px; margin-bottom: 18px; }
+.intent-form { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.intent-glyph { font-size: 16px; color: var(--ink-2); }
+.intent-form .field { height: 44px; font-size: 15px; }
+.intent-examples { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.intent-note { font-size: 14px; line-height: 1.5; margin: 12px 0 0; color: var(--ink-2); }
+.intent-result { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.intent-ticket { display: grid; gap: 14px; }
+.intent-figs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.intent-figs > div { display: grid; gap: 2px; padding: 10px 12px; background: var(--surface); border-radius: 6px; min-width: 0; }
+.intent-figs span { font-size: 12px; color: var(--slate); }
+.intent-figs b { font-weight: 500; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.intent-caveats { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: var(--slate); }
+@media (max-width: 767px) { .intent-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); } .intent-form { grid-template-columns: minmax(0, 1fr); } .intent-glyph { display: none; } }

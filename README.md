@@ -20,6 +20,8 @@ Tokenized stocks trade 168 hours a week. The shares behind them trade 32.5, abou
 | Settles into your wallet | No | No | No | **Yes, the token itself** |
 | Can liquidate you | Yes | Yes | No | **No** |
 
+**Say it.** Type what you want on the Markets page, "$200 of Nvidia upside through Friday" or "protect my 20 NVDAx through earnings", and get the ticket: market, term, size, total, max loss, break-even, in two plain sentences. The model only parses the sentence; the app picks the term and prices it with the same walk the Act screen uses, and any number the model writes that is not one of those facts is thrown out (`docs/INTENT.md`).
+
 **Discover.** Every listed market by executable depth, then every live term on the one you pick: expiry, premium, break-even, the max loss at your size, the move you need.
 
 **Act.** An executable quote at your size, the escrow accounts that back it, one transaction. The full cost and the maximum loss are on screen before you sign.
@@ -68,6 +70,7 @@ Devnet has no xStocks, Tessera or PreStocks tokens, so every market there trades
 | The supply side in a browser: deposit into the vault, buy from it, sell back to it | `apps/web/e2e/vault.spec.ts` | same command |
 | The same lifecycle on the real NVDAx mint, with expiry, settlement and release by time travel | `tests/e2e/*.test.ts` on a surfpool mainnet fork | `pnpm fork` then `pnpm test:fork`: 17 tests including the transfer-fee round trip reconciled to the unit |
 | Real marks with no Pyth subscription | `packages/services` | every market shows which source priced it: Tokens API, Jupiter, the issuer |
+| The intent box: a sentence becomes a priced ticket, and the model never touches a number | `apps/web/src/lib/intent.ts`, `docs/INTENT.md` | type "protect my 20 NVDAx through earnings" on Markets; `e2e/intent-devnet.spec.ts` reviews the ticket on the Act screen |
 
 **Not live, and why.** Mainnet: a stop-and-ask step that needs the deployer key, a Squads multisig as upgrade authority and your written seed sizes (`docs/SEEDING.md`); the code is the same. Protected Buy on devnet: a replica has no swap route; it round-trips on the fork. Auto-exercise: needs a verifiable on-chain price and no free Pyth read exists; contracts are American, so holders exercise themselves and the app says so. External resting bids, notifications, statements, the widget and SDK: roadmap.
 

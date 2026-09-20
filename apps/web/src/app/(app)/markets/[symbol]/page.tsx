@@ -65,16 +65,9 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
               <Badge tone={m.tier === 1 ? "green" : m.tier === 2 ? "blue" : undefined}>{TIER_LABEL[m.tier]}</Badge>
               <Badge>{m.wrapperTier}</Badge>
               {m.paused ? <Badge tone="amber" dot>paused</Badge> : null}
-              {m.replicaOf ? <Badge tone="amber">devnet replica</Badge> : null}
               <Badge tone={data.session === "regular" ? "green" : "amber"} dot>{SESSION_LABEL[data.session]}</Badge>
             </div>
             <p className="body-sm" style={{ margin: "4px 0 0" }}>{m.name} · {m.liveSeries > m.maxLiveSeries ? `${m.liveSeries} series live` : `${m.liveSeries} of ${m.maxLiveSeries} series live`} · {live.length} underwriter{live.length === 1 ? "" : "s"} quoting</p>
-            {m.replicaOf ? (
-              <p className="small muted" style={{ margin: "4px 0 0" }}>
-                A devnet token with the same extensions as the mainnet mint, priced from it:{" "}
-                <Address value={m.replicaOf} href={`https://solscan.io/token/${m.replicaOf}`} />. The issuer&apos;s own token is not on devnet.
-              </p>
-            ) : null}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>

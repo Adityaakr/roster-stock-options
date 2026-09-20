@@ -95,7 +95,7 @@ function BuyInner() {
         <label className="lbl">USDC to spend</label>
         <input className="field mono" type="number" min={1} step={1} value={usdcIn} onChange={(e) => setUsdcIn(Math.max(1, Math.floor(Number(e.target.value) || 1)))} style={{ maxWidth: 240 }} aria-label="USDC to spend" data-testid="usdc-in" />
         <div className="small" style={{ marginTop: 8 }}>
-          {noRoute ? <span className="muted">A swap needs a market to route through, and a devnet replica has none. The floor below is live; the desk trades on mainnet, and the fork tape shows it round-tripping.</span> : swapError ? <span className="down">Jupiter quote unavailable: {swapError}</span> : swap && tokens !== null ? <>Jupiter quotes <b className="mono ink">{tokens.toFixed(4)} {u.symbol}</b> via {swap.route}, at least <b className="mono ink">{minTokens!.toFixed(4)}</b> after {swap.slippageBps} bps slippage{Number(swap.priceImpactPct) > 0 ? `, ${(Number(swap.priceImpactPct) * 100).toFixed(2)}% price impact` : ""}.</> : "Fetching a Jupiter quote…"}
+          {noRoute ? <span className="muted">No swap route for this token on this cluster. The floor below is live; the swap leg trades on mainnet.</span> : swapError ? <span className="down">Jupiter quote unavailable: {swapError}</span> : swap && tokens !== null ? <>Jupiter quotes <b className="mono ink">{tokens.toFixed(4)} {u.symbol}</b> via {swap.route}, at least <b className="mono ink">{minTokens!.toFixed(4)}</b> after {swap.slippageBps} bps slippage{Number(swap.priceImpactPct) > 0 ? `, ${(Number(swap.priceImpactPct) * 100).toFixed(2)}% price impact` : ""}.</> : "Fetching a Jupiter quote…"}
         </div>
       </div>
       <div className="grid-2">

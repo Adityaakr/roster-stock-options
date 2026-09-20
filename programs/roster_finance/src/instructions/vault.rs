@@ -514,9 +514,15 @@ pub fn handle_vault_quote(ctx: Context<VaultWrite>, deposit_lots6: u64, ask_lots
         let seeds = VaultSeeds::of(v);
         let sd = seeds.seeds();
         let vault_info = v.to_account_info();
+        let before = series.writers[slot].deposited_lots6;
         let arrived = vault_in_signed(&ctx.accounts.collateral_token_program.to_account_info(), &ctx.accounts.collateral_ata, &ctx.accounts.collateral_mint, &mut ctx.accounts.collateral_vault, &vault_info, &[&sd], amount)?;
         book::credit_deposit(&mut series, market, slot, arrived, deposit_lots6, amount)?;
-        v.locked_raw = v.locked_raw.checked_add(amount).ok_or(RosterError::Overflow)?;
+        // What is locked is what the book credited, not what was sent: on a transfer-fee mint the fee and any sub-lot
+        // dust never come back through withdraw or settle, and a residual here would refuse every roll (vault_roll
+        // requires locked_raw == 0). The fee is the vault's cost of writing, shown in the epoch's P&L.
+        let credited = series.writers[slot].deposited_lots6 - before;
+        let locked = collateral_amount(&series, market, credited, true)?;
+        v.locked_raw = v.locked_raw.checked_add(locked).ok_or(RosterError::Overflow)?;
         let total_locked_lots6 = v.locked_raw / if v.is_covered_call() { market.raw_per_lot6() } else { 1 };
         check_total_cap(total_locked_lots6, v.cap_total_lots6)?;
     }

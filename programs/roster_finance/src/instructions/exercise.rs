@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_2022::Token2022,
-    token_interface::{self, Burn, Mint, TokenAccount, TokenInterface},
+    token_interface::{self, get_mint_extension_data, spl_token_2022::extension::transfer_fee::TransferFeeConfig, Burn, Mint, TokenAccount, TokenInterface},
 };
 
 use crate::{
@@ -85,10 +85,18 @@ pub fn handle_exercise(ctx: Context<Exercise>, lots6: u64) -> Result<()> {
         }
         Side::Put => {
             // Holder delivers the raw underlying and receives the strike (rounded down) from the collateral vault.
+            // On a transfer-fee mint the holder delivers gross so that exactly `raw` arrives: the writers are assigned
+            // `lots6` and the settlement vault holds every unit they are owed (Part 2 addendum E, docs/03). The fee is
+            // the holder's, and the ticket says so; `calculate_inverse_epoch_fee` rounds up, so `arrived >= raw`.
             let raw = raw_for_lots6(lots6, raw_per_lot6).ok_or(RosterError::Overflow)?;
-            let arrived = vault_in(&ctx.accounts.underlying_token_program, &ctx.accounts.holder_underlying_ata, &ctx.accounts.underlying_mint, &mut ctx.accounts.settlement_vault, &ctx.accounts.holder, raw)?;
-            let lots_eff = if market.has_transfer_fee { arrived / raw_per_lot6 } else { require!(arrived == raw, RosterError::WrongAccount); lots6 };
-            let usdc = usdc_paid_floor(lots_eff, strike).ok_or(RosterError::Overflow)?;
+            let send = if market.has_transfer_fee {
+                let cfg = get_mint_extension_data::<TransferFeeConfig>(&ctx.accounts.underlying_mint.to_account_info())?;
+                let fee = cfg.calculate_inverse_epoch_fee(clock.epoch, raw).ok_or(RosterError::Overflow)?;
+                raw.checked_add(fee).ok_or(RosterError::Overflow)?
+            } else { raw };
+            let arrived = vault_in(&ctx.accounts.underlying_token_program, &ctx.accounts.holder_underlying_ata, &ctx.accounts.underlying_mint, &mut ctx.accounts.settlement_vault, &ctx.accounts.holder, send)?;
+            require!(arrived >= raw, RosterError::WrongAccount);
+            let usdc = usdc_paid_floor(lots6, strike).ok_or(RosterError::Overflow)?;
             vault_out(&series_info, &seeds, &ctx.accounts.quote_token_program, &ctx.accounts.collateral_vault, &ctx.accounts.quote_mint, &ctx.accounts.holder_quote_ata, usdc)?;
             (usdc, raw)
         }

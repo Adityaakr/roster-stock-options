@@ -7,7 +7,7 @@ import "./env-load";
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { discoverWrappers, inspectMint, prestocksTokens, readRegistry, resolveFeeds, tesseraTokens, xstocksAsset, xstocksAssets, REGISTRY_PATH, TIER1_SET, TIER2_SET, type RegistryEntry, type RegistryFile, type Tier } from "../packages/registry/src";
+import { discoverWrappers, inspectMint, prestocksTokens, readRegistry, resolveFeeds, xstocksAsset, xstocksAssets, REGISTRY_PATH, TIER1_SET, TIER2_SET, type RegistryEntry, type RegistryFile, type Tier } from "../packages/registry/src";
 import { FORK_URL } from "./fork-lib";
 
 const args = new Set(process.argv.slice(2));
@@ -47,13 +47,14 @@ async function main() {
       }
     }
   }
-  // Pre-IPO (Part 2 section 2): tOpenAI, tKalshi, OPENAI and SPACEX at Tier 2, the rest of both registries at Tier 3.
-  const preipoTier2 = new Set(["tOpenAI", "tKalshi", "OPENAI", "SPACEX"]);
-  for (const t of [...(await tesseraTokens().catch((e) => { console.warn(`tessera: ${(e as Error).message}`); return []; })), ...(await prestocksTokens().catch((e) => { console.warn(`prestocks: ${(e as Error).message}`); return []; }))]) {
+  // Pre-IPO (Part 2 section 2, docs/03-prestocks-decision.md): PreStocks only. OPENAI and SPACEX at Tier 2; the other
+  // six of its tokens with `--all`, at Tier 3, each inspected on mainnet like any other mint.
+  const preipoTier2 = new Set(["OPENAI", "SPACEX"]);
+  for (const t of await prestocksTokens().catch((e) => { console.warn(`prestocks: ${(e as Error).message}`); return []; })) {
     if (!preipoTier2.has(t.symbol) && !args.has("--all")) continue;
     const inspection = await inspectMint(connection, new PublicKey(t.mint));
     const tier: Tier = preipoTier2.has(t.symbol) ? 2 : 3;
-    entries.push({ symbol: t.symbol, name: t.name, underlyingSymbol: null, isin: null, logo: t.logo, mint: t.mint, tier, wrapper: t.issuer, holders: t.holders, issuerMark: { markPrice: t.markPrice, tokenPrice: t.tokenPrice, holders: t.holders, source: t.issuer === "Tessera" ? "rest-api.tessera.pe" : "prestocks.com/api" }, inspection, feeds: { tokenFeed: null, equityFeed: null }, escrowProof: proofs.get(t.mint) ?? null, issuerHalted: false });
+    entries.push({ symbol: t.symbol, name: t.name, underlyingSymbol: null, isin: null, logo: t.logo, mint: t.mint, tier, wrapper: t.issuer, holders: t.holders, issuerMark: { markPrice: t.markPrice, tokenPrice: t.tokenPrice, holders: t.holders, source: "prestocks.com/api" }, inspection, feeds: { tokenFeed: null, equityFeed: null }, escrowProof: proofs.get(t.mint) ?? null, issuerHalted: false });
     console.log(`${t.symbol.padEnd(7)} ${t.mint} ${inspection.verdict.padEnd(18)} ${t.issuer} mark=${t.markPrice} token=${t.tokenPrice} ${inspection.reason}`);
   }
   const file: RegistryFile = { generatedAt: new Date().toISOString(), cluster: RPC, entries };

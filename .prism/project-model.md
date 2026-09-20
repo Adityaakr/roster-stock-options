@@ -12,6 +12,9 @@ pnpm workspace. `programs/roster_finance` (Anchor 1.2, zero-copy `Series`, 18 in
 - Mainnet is a stop: `scripts/anchor-deploy.sh` refuses without `DEPLOY_MAINNET_APPROVED=1`; `docs/SEEDING.md` holds the unexecuted proposal.
 
 ## Danger zones
+- Part 3 vault on a transfer-fee mint: `vault.rs:519` adds the gross deposit to `locked_raw` while `book.rs:42` credits net and `vault.rs:569,622` subtract net, so the fee residual never clears and `vault.rs:342` refuses every roll after the first quote (the devnet tKalshi vault holds a 120,181,000 raw residual as of 2026-09-20). Fix pending: credit `locked_raw` with `arrived`.
+- Pre-IPO pricing: `main.ts:119` asks Benchmarks for `Crypto.<SYMBOL>/USD`, absent for PreStocks, so vol is the 0.35 floor on the fork and devnet; `main.ts:220` applies the NYSE session multiplier to tokens with no session; `decideAsk` has no fee term; `docs/PRICING.md:16-17` claims a marks-based vol source that does not exist.
+- Fee-mint Floors: `create_series.rs:79-80` guard; lifting it alone shorts the last put writer (`exercise.rs:97-98` assigns full `lots6` against a net settlement vault, `settle.rs:118` caps). Correct fix is a gross-up via `TransferFeeConfig::calculate_inverse_epoch_fee` (spl-token-2022-interface 2.1.0 `transfer_fee/mod.rs:160`).
 - `sessionAt()`/`nextExpiries()` use the New York clock, not NYSE holidays.
 - The NVDAx fork market sits at its 12-series cap with series from earlier runs until they expire.
 - The fork clock is ~22 days ahead after time travels; oracle-based Jupiter venues fail there and are routed around.
@@ -24,6 +27,9 @@ pnpm workspace. `programs/roster_finance` (Anchor 1.2, zero-copy `Series`, 18 in
 - 2026-09-17 M3/M4: services as one process; app on live data with server-built, wallet-signed, server-sent transactions; burner wallet on the fork for browser-driven proof.
 - 2026-09-17 M5: registry package; tier rules in the quoter; issuer quote as the keyless stand-in on the fork only.
 - 2026-09-17 M7: Protected Buy as a v0 transaction (Jupiter swap + `buy`) simulated server-side with venue exclusion on failure; pre-IPO priced off the issuer mark by design (no Pyth feed exists).
+
+## Decision log (continued)
+- 2026-09-20 PreStocks bounty (docs/03-prestocks-decision.md): Tessera leaves every runtime surface (the clause is a hard ineligibility); OPENAI and SPACEX become devnet markets on faithful replicas (50 bps fee, live ScaledUiAmount multipliers 1.486 and 5); PreStocks desk states the token-vs-mark spread as a signed two-way figure, never "no exit"; vault residual, pre-IPO vol, fee-in-ask fixed before the vault is shown; fee-inclusive Floors attempted with a hard stop at Sep 22 12:00 UTC.
 
 ## Lessons
 - `@anchor-lang/core` ESM references `exports`: `serverExternalPackages` in Next; `EventParser` returns camelCase names, `BN.toJSON` is hex.

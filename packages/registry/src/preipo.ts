@@ -1,49 +1,59 @@
 /*
- * Pre-IPO tokens (CLAUDE.md 2.4, 2.5): Tessera's T-tokens and PreStocks' tokens from the issuers' own registries.
- * Neither has a Pyth feed; the issuer's mark is the price source and the app says so on every ticket.
+ * Pre-IPO tokens (CLAUDE.md 2.5): PreStocks' tokens from the issuer's own registry, every field it publishes. No Pyth
+ * feed exists; the token price (where the token trades) is the price source, the issuer's mark is shown beside it,
+ * and the app says so on every ticket. The rights and exit terms below are PreStocks' own words (prestocks.com/faq,
+ * read 2026-09-20), not ours.
  */
-const TESSERA_API = "https://rest-api.tessera.pe/v1/public/token-details";
 const PRESTOCKS_API = "https://prestocks.com/api/prestocks";
 
 export interface PreIpoToken {
   symbol: string;
   name: string;
-  issuer: "Tessera" | "PreStocks";
+  issuer: "PreStocks";
   mint: string;
-  /** The issuer's mark for the underlying share equivalent, USD. */
+  /** The issuer's mark: the gross price per share of the referenced company, USD. */
   markPrice: number | null;
-  /** The token's own trading price where the issuer publishes one, USD. */
+  /** Where the token trades on chain, USD per token. */
   tokenPrice: number | null;
+  /** Company valuation implied by the mark, and by the token price, USD. */
+  markValuation: number | null;
+  impliedValuation: number | null;
+  /** Token supply in display units. */
+  supply: number | null;
   holders: number | null;
   sector: string | null;
+  description: string | null;
   logo: string | null;
   external: string | null;
-}
-
-export async function tesseraTokens(): Promise<PreIpoToken[]> {
-  const res = await fetch(TESSERA_API, { signal: AbortSignal.timeout(15_000) });
-  if (!res.ok) throw new Error(`tessera: HTTP ${res.status}`);
-  const j = (await res.json()) as { code: string; name: string; mint: string; markPrice?: number; holders?: number; sector?: string }[];
-  return j.map((t) => ({ symbol: t.code, name: t.name, issuer: "Tessera", mint: t.mint, markPrice: t.markPrice ?? null, tokenPrice: null, holders: t.holders ?? null, sector: t.sector ?? null, logo: null, external: "https://docs.tessera.pe/features/redemption" }));
 }
 
 export async function prestocksTokens(): Promise<PreIpoToken[]> {
   const res = await fetch(PRESTOCKS_API, { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`prestocks: HTTP ${res.status}`);
-  const j = (await res.json()) as { symbol: string; name: string; contract_address: string; markPrice?: number; tokenPrice?: number; image?: string; external_url?: string }[];
-  return j.map((t) => ({ symbol: t.symbol, name: t.name, issuer: "PreStocks", mint: t.contract_address, markPrice: t.markPrice ?? null, tokenPrice: t.tokenPrice ?? null, holders: null, sector: null, logo: t.image ?? null, external: t.external_url ?? null }));
+  const j = (await res.json()) as { symbol: string; name: string; description?: string; image?: string; external_url?: string; contract_address: string; markPrice?: number; markValuation?: number; tokenPrice?: number; impliedValuation?: number; supply?: number }[];
+  return j.map((t) => ({
+    symbol: t.symbol, name: t.name, issuer: "PreStocks", mint: t.contract_address,
+    markPrice: num(t.markPrice), tokenPrice: num(t.tokenPrice), markValuation: num(t.markValuation), impliedValuation: num(t.impliedValuation), supply: num(t.supply),
+    holders: null, sector: null, description: t.description?.trim() || null, logo: t.image ?? null, external: t.external_url ?? null
+  }));
 }
 
-/** The rights profile and exit terms per issuer, the words the app prints on every ticket (CLAUDE.md 6, risk). */
-export const PREIPO_RIGHTS: Record<PreIpoToken["issuer"], { what: string; rights: string; exit: string }> = {
-  Tessera: {
-    what: "Loan participation rights, not securities",
-    rights: "No equity, no voting, no dividends",
-    exit: "Redemption needs a liquidity event, lock-up expiry, Tessera receiving proceeds and an announced start date, with no time bound; unclaimed proceeds are forfeited after the window and redemption is not automatic."
-  },
+function num(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) && v > 0 ? v : null;
+}
+
+/** Token price against the issuer's mark, in percent, signed: negative when the token trades below the mark. */
+export function spreadToMarkPct(t: Pick<PreIpoToken, "markPrice" | "tokenPrice">): number | null {
+  return t.markPrice && t.tokenPrice ? ((t.tokenPrice - t.markPrice) / t.markPrice) * 100 : null;
+}
+
+/** The rights profile and exit terms, printed on every ticket (CLAUDE.md 6, risk). PreStocks' own terms, paraphrased closely. */
+export const PREIPO_RIGHTS: Record<PreIpoToken["issuer"], { what: string; rights: string; exit: string; ipo: string; mna: string }> = {
   PreStocks: {
-    what: "SPV exposure to a private company, backed 1:1",
-    rights: "No ownership, voting or dividend rights",
-    exit: "A DEX where liquidity depends on finding a buyer; the mark-versus-token spread is the price of no exit."
+    what: "Fully backed by holding entities directly or indirectly invested in the company, with third-party attestation reports",
+    rights: "No ownership, voting, dividend, information or other legal rights",
+    exit: "Sellable on chain at any time on Jupiter and the apps that route through it, even if the company never lists; exit price and speed depend on the liquidity available. The mark is the issuer's gross price per share, not a price anyone pays for the token.",
+    ipo: "After an IPO the token converts on chain into the tokenized public stock, with up to 9 months to convert (the shares may sit in a lockup, typically 6 months); after that deadline the tokens expire worthless.",
+    mna: "In a cash acquisition net proceeds are distributed pro rata as USDC; in a stock deal the token may convert into the acquirer's tokenized equity if the issuer supports one, with 6 months to convert, after which the tokens expire worthless."
   }
 };

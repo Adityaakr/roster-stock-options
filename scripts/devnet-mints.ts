@@ -2,7 +2,7 @@ import "./env-load";
 /*
  * Devnet replicas of the mints the product trades.
  *
- * xStocks, Tessera and PreStocks tokens exist on mainnet only, so a devnet deployment has nothing real to escrow.
+ * xStocks and PreStocks tokens exist on mainnet only, so a devnet deployment has nothing real to escrow.
  * This creates mints that reproduce what the program actually has to handle: Token-2022, the same decimals, the same
  * extension set (scaled UI amount at the issuer's live multiplier, pausable, default account state, permanent
  * delegate, a transfer hook slot with no program) and, for the First Print replica, the same 20 bps transfer fee.
@@ -24,7 +24,8 @@ import {
 } from "@solana/spl-token";
 import { createInitializeInstruction, pack, type TokenMetadata } from "@solana/spl-token-metadata";
 import { sendRawAndConfirm } from "../packages/sdk/src";
-import { loadOrCreateKey, xstockMultiplier } from "./fork-lib";
+import { loadOrCreateKey, onChainMultiplier, xstockMultiplier } from "./fork-lib";
+import { prestocksTokens } from "../packages/registry/src";
 
 const RPC = process.env.DEVNET_RPC_URL ?? "https://api.devnet.solana.com";
 const QUOTE_DECIMALS = 6;
@@ -39,7 +40,15 @@ const XSTOCKS = [
   { symbol: "MSFTx", underlying: "MSFT", name: "Microsoft xStock" },
   { symbol: "GOOGLx", underlying: "GOOGL", name: "Alphabet xStock" },
 ];
-const FEE_MINTS = [{ symbol: "tKalshi", underlying: "Kalshi", name: "Kalshi", feeBps: 20 }];
+/**
+ * PreStocks replicas: OPENAI and SPACEX by default (the two with a mainnet inspection and escrow proof in the
+ * registry), every token the issuer lists with `--all`. Mints and names come from the issuer's API; the multiplier is
+ * read from the real mint on mainnet, because the issuer prices per share and the token carries a scaled UI amount
+ * (OPENAI 1.486, SPACEX 5 on 2026-09-20): a replica at 1 would put every strike off by that factor.
+ */
+const PRESTOCKS_DEFAULT = ["OPENAI", "SPACEX"];
+const PRESTOCKS_FEE_BPS = 50;
+const MAINNET_RPC = process.env.MAINNET_RPC_URL ?? process.env.FORK_DATASOURCE_URL ?? "https://api.mainnet-beta.solana.com";
 
 export interface DevnetMint {
   symbol: string;
@@ -47,7 +56,7 @@ export interface DevnetMint {
   underlyingSymbol: string;
   mint: string;
   decimals: number;
-  wrapper: "xStock" | "Tessera";
+  wrapper: "xStock" | "PreStocks";
   /** The mainnet mint this replica stands in for: where its mark comes from. */
   mainnetMint: string | null;
   multiplier: number;
@@ -104,17 +113,27 @@ async function createXstockReplica(conn: Connection, payer: Keypair, spec: { sym
   return mint.publicKey;
 }
 
-/** The First Print replica: 9 decimals and a transfer fee on every move, as the Tessera mints have. */
-async function createFeeReplica(conn: Connection, payer: Keypair, spec: { symbol: string; name: string; feeBps: number }): Promise<PublicKey> {
+/**
+ * The PreStocks replica: the extension set the real mints carry (docs/ELIGIBILITY.md, registry.json inspection):
+ * permanent delegate, default account state initialized, a 50 bps transfer fee with no cap, scaled UI amount at the
+ * mainnet multiplier, pausable, and the hook slot with no program. Nine decimals, as on mainnet. The confidential
+ * transfer extensions are not replicated: the program never makes a confidential transfer.
+ */
+async function createPreStocksReplica(conn: Connection, payer: Keypair, spec: { symbol: string; name: string; mainnetMint: string; feeBps: number }, multiplier: number): Promise<PublicKey> {
   const mint = Keypair.generate();
   const decimals = 9;
-  const metadata: TokenMetadata = { mint: mint.publicKey, name: `${spec.name} (devnet replica)`, symbol: spec.symbol, uri: "https://roster.finance/devnet", additionalMetadata: [["replicaOf", "Tessera mainnet mint"]] };
-  const base = getMintLen([ExtensionType.MetadataPointer, ExtensionType.TransferFeeConfig]);
+  const metadata: TokenMetadata = { mint: mint.publicKey, name: `${spec.name} (devnet replica)`, symbol: spec.symbol, uri: "https://roster.finance/devnet", additionalMetadata: [["replicaOf", spec.mainnetMint]] };
+  const base = getMintLen([ExtensionType.MetadataPointer, ExtensionType.PermanentDelegate, ExtensionType.DefaultAccountState, ExtensionType.TransferFeeConfig, ExtensionType.ScaledUiAmountConfig, ExtensionType.PausableConfig, ExtensionType.TransferHook]);
   const space = base + TYPE_SIZE + LENGTH_SIZE + pack(metadata).length;
   const tx = new Transaction().add(
     SystemProgram.createAccount({ fromPubkey: payer.publicKey, newAccountPubkey: mint.publicKey, space: base, lamports: await conn.getMinimumBalanceForRentExemption(space), programId: TOKEN_2022_PROGRAM_ID }),
     createInitializeMetadataPointerInstruction(mint.publicKey, payer.publicKey, mint.publicKey, TOKEN_2022_PROGRAM_ID),
+    createInitializePermanentDelegateInstruction(mint.publicKey, payer.publicKey, TOKEN_2022_PROGRAM_ID),
+    createInitializeDefaultAccountStateInstruction(mint.publicKey, AccountState.Initialized, TOKEN_2022_PROGRAM_ID),
     createInitializeTransferFeeConfigInstruction(mint.publicKey, payer.publicKey, payer.publicKey, spec.feeBps, BigInt("18446744073709551615"), TOKEN_2022_PROGRAM_ID),
+    createInitializeScaledUiAmountConfigInstruction(mint.publicKey, payer.publicKey, multiplier, TOKEN_2022_PROGRAM_ID),
+    createInitializePausableConfigInstruction(mint.publicKey, payer.publicKey, TOKEN_2022_PROGRAM_ID),
+    createInitializeTransferHookInstruction(mint.publicKey, payer.publicKey, PublicKey.default, TOKEN_2022_PROGRAM_ID),
     createInitializeMint2Instruction(mint.publicKey, decimals, payer.publicKey, null, TOKEN_2022_PROGRAM_ID),
     createInitializeInstruction({ programId: TOKEN_2022_PROGRAM_ID, mint: mint.publicKey, metadata: mint.publicKey, name: metadata.name, symbol: metadata.symbol, uri: metadata.uri, mintAuthority: payer.publicKey, updateAuthority: payer.publicKey }),
   );
@@ -158,13 +177,16 @@ async function main(): Promise<void> {
     console.log(`[devnet] ${spec.symbol} ${mint.toBase58()} multiplier ${multiplier}`);
   }
 
-  for (const spec of FEE_MINTS) {
-    if (file.mints.some((m) => m.symbol === spec.symbol) && (await alive(file.mints.find((m) => m.symbol === spec.symbol)!.mint))) continue;
-    const mint = await createFeeReplica(conn, payer, spec);
-    file.mints = file.mints.filter((m) => m.symbol !== spec.symbol);
-    file.mints.push({ symbol: spec.symbol, name: spec.name, underlyingSymbol: spec.underlying, mint: mint.toBase58(), decimals: 9, wrapper: "Tessera", mainnetMint: null, multiplier: 1, feeBps: spec.feeBps, createdAt: new Date().toISOString() });
+  const wanted = process.argv.includes("--all") ? null : new Set([...PRESTOCKS_DEFAULT, ...process.argv.slice(2).filter((a) => !a.startsWith("--"))]);
+  const mainnet = new Connection(MAINNET_RPC, "confirmed");
+  for (const t of (await prestocksTokens()).filter((t) => !wanted || wanted.has(t.symbol))) {
+    if (file.mints.some((m) => m.symbol === t.symbol) && (await alive(file.mints.find((m) => m.symbol === t.symbol)!.mint))) continue;
+    const multiplier = await onChainMultiplier(mainnet, new PublicKey(t.mint));
+    const mint = await createPreStocksReplica(conn, payer, { symbol: t.symbol, name: t.name, mainnetMint: t.mint, feeBps: PRESTOCKS_FEE_BPS }, multiplier);
+    file.mints = file.mints.filter((m) => m.symbol !== t.symbol);
+    file.mints.push({ symbol: t.symbol, name: t.name, underlyingSymbol: t.name, mint: mint.toBase58(), decimals: 9, wrapper: "PreStocks", mainnetMint: t.mint, multiplier, feeBps: PRESTOCKS_FEE_BPS, createdAt: new Date().toISOString() });
     write(file);
-    console.log(`[devnet] ${spec.symbol} ${mint.toBase58()} fee ${spec.feeBps} bps`);
+    console.log(`[devnet] ${t.symbol} ${mint.toBase58()} replica of ${t.mint} multiplier ${multiplier} fee ${PRESTOCKS_FEE_BPS} bps`);
   }
 
   console.log(`[devnet] ${file.mints.length} replicas and the quote mint in ${OUT}`);

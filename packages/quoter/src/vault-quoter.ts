@@ -60,7 +60,7 @@ export class VaultQuoter {
       const slot = s.writers.find((w) => w.writer.equals(v.address));
       const sold = slot ? Number(slot.soldLots6) / 1e6 : 0;
       const capLots = Number(v.capPerSeriesLots6) / 1e6;
-      const d = decideVaultQuote({ side, price: ctx.price, multiplier: ctx.multiplier, pendingDividendMultiplier: ctx.pendingDividendMultiplier, strikeUsdcPerLot: s.strikeUsdcPerLot, expiryTs: Number(s.expiryTs), nowTs: at, vol: ctx.vol, session, inActivationWindow: ctx.inActivationWindow, baseSpread: this.cfg.baseSpread, minAskPerLot: this.cfg.minAskPerLot, soldLots: sold, capLots, bidSpread: this.vcfg.bidSpread });
+      const d = decideVaultQuote({ side, price: ctx.price, multiplier: ctx.multiplier, pendingDividendMultiplier: ctx.pendingDividendMultiplier, strikeUsdcPerLot: s.strikeUsdcPerLot, expiryTs: Number(s.expiryTs), nowTs: at, vol: ctx.vol, session, inActivationWindow: ctx.inActivationWindow, baseSpread: this.cfg.baseSpread, minAskPerLot: this.cfg.minAskPerLot, soldLots: sold, capLots, bidSpread: this.vcfg.bidSpread, transferFeeBps: ctx.feeBps, noSession: ctx.noSession });
       const key = s.address.toBase58();
 
       // Premium the vault's fills have earned here funds the bid side: claimed into the vault's USDC account first.

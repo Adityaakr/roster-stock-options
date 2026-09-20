@@ -319,3 +319,47 @@ fn cash_secured_put_epoch_assigned_tokens_withdraw_exact() {
     assert_eq!(v.total_shares, 0);
     assert_eq!(v.reserved_collateral_raw + v.reserved_other, 0);
 }
+
+/// A Covered Call vault on a transfer-fee mint (the PreStocks shape, 50 bps): the fee is taken on the way into the
+/// series vault, the book credits what arrived, and what the vault counts as locked is exactly what was credited, so
+/// after settlement nothing remains locked and the next roll goes through. The fee is the vault's cost of writing.
+#[test]
+fn covered_call_vault_on_a_fee_mint_settles_to_zero_locked_and_rolls() {
+    let mut env = Env::with_fee(50);
+    let manager = env.wallet(0, 0);
+    let first_roll = env.expiries[0] + 3600;
+    let vault = env.init_vault(CC, &manager.pubkey(), first_roll, 1_000 * LOT, 10_000 * LOT).unwrap();
+    let alice = env.wallet(10, 0);
+    // The deposit itself pays the fee on its way into the vault's own account: 10 lots sent, 9.95 arrive.
+    env.vault_deposit(&alice, CC, 10 * LOT * RAW_PER_LOT6).unwrap();
+    let cranker = env.keeper.insecure_clone();
+    let v = load_vault(&env.svm, &vault);
+    warp_to(&mut env.svm, v.next_roll_ts + 1);
+    env.vault_roll(&cranker, CC, MARK).unwrap();
+    env.vault_claim(&alice, CC, 0).unwrap();
+
+    let expiry = env.expiries[1];
+    let series = env.create_series(&env.authority.insecure_clone(), Side::Call, 180 * USDC, expiry).unwrap();
+    // The vault sends 5 lots; the fee takes 0.025 of them on the way, so the book credits 4.97 lots (floored to the lot
+    // grid the quoter uses: here whole 1e6 lots, so 4 full lots plus dust the book floors away).
+    env.vault_quote(&manager, CC, &series, 5 * LOT, 4 * LOT, 2 * USDC).unwrap();
+    let s = load_series(&env.svm, &series);
+    let slot = s.writer_slot(&vault).unwrap();
+    let credited = s.writers[slot].deposited_lots6;
+    assert!(credited < 5 * LOT && credited >= 4 * LOT, "the book credits what arrived, less the fee: {credited}");
+    let v = load_vault(&env.svm, &vault);
+    assert_eq!(v.locked_raw, credited * RAW_PER_LOT6, "locked is what the book credited, not what was sent");
+
+    let bob = env.wallet(0, 2_000);
+    env.buy(&bob, &series, 4 * LOT, 3 * USDC).unwrap();
+    env.exercise(&bob, &series, 2 * LOT).unwrap();
+    warp_to(&mut env.svm, expiry + 1);
+    env.vault_settle(&cranker, CC, &series).unwrap();
+    let v = load_vault(&env.svm, &vault);
+    assert_eq!(v.locked_raw, 0, "nothing stays locked after settlement on a fee mint");
+
+    // The roll that the residual would have refused.
+    warp_to(&mut env.svm, v.next_roll_ts + 1);
+    env.vault_roll(&cranker, CC, MARK).unwrap();
+    assert_eq!(load_vault(&env.svm, &vault).epoch, 2);
+}

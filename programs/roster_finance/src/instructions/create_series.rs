@@ -76,8 +76,6 @@ pub fn handle_create_series(ctx: Context<CreateSeries>, side: Side, strike_usdc_
         Side::Put => (market.quote_mint, market.mint),
     };
     require!(ctx.accounts.collateral_mint.key() == want_collateral && ctx.accounts.settlement_mint.key() == want_settlement, RosterError::WrongVaultMint);
-    // Fee-inclusive put settlement lands with First Print (M7); until then transfer-fee mints list calls only.
-    require!(!(market.has_transfer_fee && side == Side::Put), RosterError::WrongVaultMint);
     let symbol = market.symbol_str();
     market.live_series += 1;
 

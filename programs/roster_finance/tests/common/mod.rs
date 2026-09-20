@@ -24,6 +24,7 @@ use {
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
     spl_token_2022::extension::{scaled_ui_amount, pausable, transfer_hook, ExtensionType},
+    spl_token_2022_interface::extension::transfer_fee as transfer_fee_ext,
 };
 
 pub const LOT: u64 = LOT6;
@@ -110,6 +111,26 @@ pub fn create_replica_mint(svm: &mut LiteSVM, payer: &Keypair, issuer: &Keypair)
     mint.pubkey()
 }
 
+/// The PreStocks shape (docs/ELIGIBILITY.md): the same extensions plus a transfer fee on every move, no cap.
+pub fn create_fee_replica_mint(svm: &mut LiteSVM, payer: &Keypair, issuer: &Keypair, fee_bps: u16) -> Pubkey {
+    let mint = Keypair::new();
+    let exts = [ExtensionType::TransferFeeConfig, ExtensionType::ScaledUiAmount, ExtensionType::Pausable, ExtensionType::TransferHook];
+    let len = ExtensionType::try_calculate_account_len::<spl_token_2022::state::Mint>(&exts).unwrap();
+    let rent = svm.minimum_balance_for_rent_exemption(len);
+    let pid = spl_token_2022::id();
+    let fee_ix = transfer_fee_ext::instruction::initialize_transfer_fee_config(&pid, &mint.pubkey(), Some(&issuer.pubkey()), Some(&issuer.pubkey()), fee_bps, u64::MAX).unwrap();
+    let ixs = [
+        system_instruction::create_account(&payer.pubkey(), &mint.pubkey(), rent, len as u64, &pid),
+        Instruction { program_id: pid, accounts: fee_ix.accounts.into_iter().map(|m| anchor_lang::solana_program::instruction::AccountMeta { pubkey: m.pubkey, is_signer: m.is_signer, is_writable: m.is_writable }).collect(), data: fee_ix.data },
+        scaled_ui_amount::instruction::initialize(&pid, &mint.pubkey(), Some(issuer.pubkey()), MULTIPLIER).unwrap(),
+        pausable::instruction::initialize(&pid, &mint.pubkey(), &issuer.pubkey()).unwrap(),
+        transfer_hook::instruction::initialize(&pid, &mint.pubkey(), Some(issuer.pubkey()), None).unwrap(),
+        spl_token_2022::instruction::initialize_mint2(&pid, &mint.pubkey(), &issuer.pubkey(), Some(&issuer.pubkey()), DECIMALS).unwrap(),
+    ];
+    send(svm, payer, &[payer, &mint], &ixs).unwrap();
+    mint.pubkey()
+}
+
 pub fn ata(owner: &Pubkey, mint: &Pubkey, program: &Pubkey) -> Pubkey {
     get_associated_token_address_with_program_id(owner, mint, program)
 }
@@ -144,6 +165,11 @@ pub fn load_market(svm: &LiteSVM, market: &Pubkey) -> MarketConfig {
 
 impl Env {
     pub fn new() -> Env {
+        Env::with_fee(0)
+    }
+
+    /// The same environment on a transfer-fee mint (`fee_bps > 0`), the PreStocks shape.
+    pub fn with_fee(fee_bps: u16) -> Env {
         let program_id = roster_finance::id();
         let mut svm = LiteSVM::default().with_builtins().with_lamports(10_000_000_000_000_000).with_sysvars().with_default_programs();
         let bytes = include_bytes!(concat!(env!("CARGO_TARGET_TMPDIR"), "/../deploy/roster_finance.so"));
@@ -156,7 +182,7 @@ impl Env {
             svm.airdrop(&k.pubkey(), 1_000_000_000_000).unwrap();
         }
         let usdc = create_spl_mint(&mut svm, &authority, 6);
-        let mint = create_replica_mint(&mut svm, &authority, &issuer);
+        let mint = if fee_bps > 0 { create_fee_replica_mint(&mut svm, &authority, &issuer, fee_bps) } else { create_replica_mint(&mut svm, &authority, &issuer) };
         let protocol = Pubkey::find_program_address(&[Protocol::SEED], &program_id).0;
         let fee_vault = ata(&protocol, &usdc, &spl_token::id());
         let market = Pubkey::find_program_address(&[MarketConfig::SEED, mint.as_ref()], &program_id).0;

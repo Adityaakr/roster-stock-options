@@ -20,7 +20,7 @@ export async function jupiterPrice(mint: string): Promise<number | null> {
   return typeof p === "number" && p > 0 ? p : null;
 }
 
-export type Issuer = "xStock" | "Ondo" | "Tessera" | "PreStocks" | "Other";
+export type Issuer = "xStock" | "Ondo" | "PreStocks" | "Other";
 
 export interface DiscoveredWrapper {
   symbol: string;

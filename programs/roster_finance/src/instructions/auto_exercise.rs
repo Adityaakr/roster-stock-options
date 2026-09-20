@@ -9,7 +9,7 @@ use anchor_spl::{
     token_interface::{self, get_mint_extension_data, spl_token_2022, ApproveChecked, Burn, Mint, Revoke, TokenAccount, TokenInterface, TransferChecked},
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
-use spl_token_2022::extension::scaled_ui_amount::ScaledUiAmountConfig;
+use spl_token_2022::extension::{scaled_ui_amount::ScaledUiAmountConfig, transfer_fee::TransferFeeConfig};
 
 use crate::{
     error::RosterError,
@@ -52,7 +52,8 @@ pub fn handle_enable_auto_exercise(ctx: Context<SetAutoExercise>, min_itm_bps: u
     let lots6 = ctx.accounts.holder_position_ata.amount;
     let pay_amount = match series.side() {
         Side::Call => usdc_owed_ceil(lots6, series.strike_usdc_per_lot).ok_or(RosterError::Overflow)?,
-        Side::Put => raw_for_lots6(lots6, ctx.accounts.market.raw_per_lot6()).ok_or(RosterError::Overflow)?,
+        // A put delivers gross on a transfer-fee mint, as `exercise` does, so the delegate covers the fee too.
+        Side::Put => gross_delivery(&ctx.accounts.market, &ctx.accounts.pay_mint.to_account_info(), raw_for_lots6(lots6, ctx.accounts.market.raw_per_lot6()).ok_or(RosterError::Overflow)?)?,
     };
     drop(series);
     let a = &mut ctx.accounts.auto_exercise;
@@ -201,11 +202,15 @@ pub fn handle_auto_exercise(ctx: Context<AutoExerciseCrank>, lots6: u64) -> Resu
         }
         Side::Put => {
             let raw = raw_for_lots6(lots6, raw_per_lot6).ok_or(RosterError::Overflow)?;
+            let send = gross_delivery(&ctx.accounts.market, &ctx.accounts.underlying_mint.to_account_info(), raw)?;
+            let before = ctx.accounts.settlement_vault.amount;
             token_interface::transfer_checked(
                 CpiContext::new_with_signer(ctx.accounts.underlying_token_program.key(), TransferChecked { from: ctx.accounts.holder_underlying_ata.to_account_info(), mint: ctx.accounts.underlying_mint.to_account_info(), to: ctx.accounts.settlement_vault.to_account_info(), authority: ctx.accounts.delegate.to_account_info() }, dsigner),
-                raw,
+                send,
                 ctx.accounts.underlying_mint.decimals,
             )?;
+            ctx.accounts.settlement_vault.reload()?;
+            require!(ctx.accounts.settlement_vault.amount.saturating_sub(before) >= raw, RosterError::WrongAccount);
             let usdc = usdc_paid_floor(lots6, strike).ok_or(RosterError::Overflow)?;
             vault_out(&series_info, &seeds, &ctx.accounts.quote_token_program, &ctx.accounts.collateral_vault, &ctx.accounts.quote_mint, &ctx.accounts.holder_quote_ata, usdc)?;
             (usdc, raw)
@@ -230,4 +235,12 @@ pub fn handle_auto_exercise(ctx: Context<AutoExerciseCrank>, lots6: u64) -> Resu
     series.total_exercised_lots6 = series.total_exercised_lots6.checked_add(lots6).ok_or(RosterError::Overflow)?;
     emit!(Exercised { series: series_key, holder: ctx.accounts.holder.key(), lots6, usdc, raw, auto: true });
     Ok(())
+}
+
+/// What a put holder must send so that exactly `raw` arrives: `raw` plus the mint's fee on it, when the mint has one.
+fn gross_delivery(market: &MarketConfig, mint_info: &AccountInfo, raw: u64) -> Result<u64> {
+    if !market.has_transfer_fee { return Ok(raw); }
+    let cfg = get_mint_extension_data::<TransferFeeConfig>(mint_info)?;
+    let fee = cfg.calculate_inverse_epoch_fee(Clock::get()?.epoch, raw).ok_or(RosterError::Overflow)?;
+    raw.checked_add(fee).ok_or(RosterError::Overflow.into())
 }

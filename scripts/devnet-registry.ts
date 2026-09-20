@@ -10,7 +10,7 @@ import "./env-load";
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { inspectMint, marketSnapshots, registryPathFor, resolveAsset, tesseraTokens, tokensApiKeyed, xstocksQuote, type RegistryEntry, type RegistryFile, type Tier } from "../packages/registry/src";
+import { inspectMint, marketSnapshots, prestocksTokens, registryPathFor, resolveAsset, tokensApiKeyed, xstocksQuote, type RegistryEntry, type RegistryFile, type Tier } from "../packages/registry/src";
 import { resolveXstockMint } from "./fork-lib";
 import type { DevnetMints } from "./devnet-mints";
 
@@ -33,19 +33,18 @@ async function main(): Promise<void> {
     if (real) counterparts.set(m.symbol, real.mint.toBase58());
   }
   const snaps = tokensApiKeyed() ? await marketSnapshots([...counterparts.values()]).catch(() => new Map()) : new Map();
-  // The First Print replica takes its mark from the issuer that publishes one, exactly as its mainnet counterpart does.
-  const tessera = await tesseraTokens().catch(() => []);
+  // A PreStocks replica takes its token price and mark from the issuer, exactly as its mainnet counterpart does.
+  const prestocks = await prestocksTokens().catch(() => []);
 
   // A rebuild refreshes facts, never erases proof: an escrow round trip already run on this mint still counts.
   const previous = new Map((existsSync(OUT) ? (JSON.parse(readFileSync(OUT, "utf8")) as RegistryFile).entries : []).map((e) => [e.mint, e]));
   const entries: RegistryEntry[] = [];
   for (const m of devnet.mints) {
     const inspection = await inspectMint(connection, new PublicKey(m.mint));
-    const issuerToken = m.wrapper === "Tessera" ? tessera.find((t) => t.symbol.toLowerCase() === m.symbol.toLowerCase()) ?? null : null;
-    const mainnetMint = counterparts.get(m.symbol) ?? issuerToken?.mint ?? null;
+    const issuer = m.wrapper === "PreStocks" ? prestocks.find((t) => t.mint === m.mainnetMint) ?? prestocks.find((t) => t.symbol.toLowerCase() === m.symbol.toLowerCase()) ?? null : null;
+    const mainnetMint = counterparts.get(m.symbol) ?? issuer?.mint ?? m.mainnetMint ?? null;
     const snap = mainnetMint ? snaps.get(mainnetMint) : undefined;
-    const issuer = issuerToken;
-    const perShare = issuer?.markPrice ?? snap?.price ?? (await xstocksQuote(m.symbol).catch(() => null));
+    const perShare = issuer?.tokenPrice ?? issuer?.markPrice ?? snap?.price ?? (await xstocksQuote(m.symbol).catch(() => null));
     const tier: Tier = TIER[m.symbol] ?? 2;
     const asset = mainnetMint && tokensApiKeyed() ? await resolveAsset(mainnetMint).catch(() => null) : null;
     entries.push({
@@ -53,13 +52,13 @@ async function main(): Promise<void> {
       name: m.name,
       underlyingSymbol: m.underlyingSymbol,
       isin: null,
-      logo: snap?.logo ?? null,
+      logo: issuer?.logo ?? snap?.logo ?? null,
       mint: m.mint,
       tier,
       wrapper: m.wrapper,
       holders: snap?.holders ?? null,
       // The mark is the counterpart's, and `source` says so on every ticket.
-      issuerMark: { markPrice: perShare ?? null, tokenPrice: perShare ?? null, holders: issuer?.holders ?? snap?.holders ?? null, source: issuer ? "tessera mainnet mark" : snap ? "tokens.xyz mainnet snapshot" : "xstocks mainnet quote" },
+      issuerMark: { markPrice: issuer?.markPrice ?? perShare ?? null, tokenPrice: perShare ?? null, holders: issuer?.holders ?? snap?.holders ?? null, source: issuer ? "prestocks.com/api (mainnet token price)" : snap ? "tokens.xyz mainnet snapshot" : "xstocks mainnet quote" },
       inspection,
       feeds: { tokenFeed: null, equityFeed: null },
       escrowProof: previous.get(m.mint)?.escrowProof ?? null,

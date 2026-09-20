@@ -15,8 +15,26 @@ export interface VolEstimate {
   vol30: number | null;
   vol90: number | null;
   blended: number;
-  source: "benchmarks" | "floor";
+  source: "benchmarks" | "floor" | "recorded" | "preipo_floor";
   at: number;
+}
+
+/**
+ * Realised volatility from prices the services recorded themselves (the `mark:<mint>` series), for a token with no
+ * Benchmarks history such as a pre-IPO token: daily closes are the last recorded price of each UTC day. Below seven
+ * days of closes the estimate is the stated pre-IPO floor, and the source says so.
+ */
+export function volFromRecorded(rows: { publish_time: number; price: number }[], floor: number, minDays = 7): VolEstimate {
+  const at = Math.floor(Date.now() / 1000);
+  const byDay = new Map<number, number>();
+  for (const r of rows) if (r.price > 0) byDay.set(Math.floor(r.publish_time / 86_400), r.price);
+  const closes = [...byDay.entries()].sort((a, b) => a[0] - b[0]).map(([, p]) => p);
+  if (closes.length < minDays) return { vol7: null, vol30: null, vol90: null, blended: floor, source: "preipo_floor", at };
+  const vol7 = realisedVol(closes.slice(-8));
+  const vol30 = realisedVol(closes.slice(-31));
+  const vol90 = realisedVol(closes.slice(-91));
+  const b = blend(vol7, vol30, vol90, floor);
+  return { vol7, vol30, vol90, blended: b.blended, source: b.source === "floor" ? "preipo_floor" : "recorded", at };
 }
 
 /** Annualised realised volatility from a series of closes (log returns, sample stdev, 365 days). */

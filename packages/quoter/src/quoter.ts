@@ -30,6 +30,8 @@ export interface MarketQuoteContext {
   inActivationWindow: boolean;
   vol: number;
   nowTs: number;
+  /** True when the underlying has no exchange session (pre-IPO): a constant spread replaces the session multiplier. */
+  noSession?: boolean | undefined;
 }
 
 export interface QuoterConfig {
@@ -135,7 +137,7 @@ export class Quoter {
         continue;
       }
       const sold = mySlot ? Number(mySlot.soldLots6) / 1e6 : 0;
-      const d = decideAsk({ side: s.side, price: ctx.price, multiplier: ctx.multiplier, pendingDividendMultiplier: ctx.pendingDividendMultiplier, strikeUsdcPerLot: s.strikeUsdcPerLot, expiryTs: Number(s.expiryTs), nowTs: ctx.nowTs, vol: ctx.vol, session, inActivationWindow: ctx.inActivationWindow, inventoryLots: sold, baseSpread: this.cfg.baseSpread, minAskPerLot: this.cfg.minAskPerLot });
+      const d = decideAsk({ side: s.side, price: ctx.price, multiplier: ctx.multiplier, pendingDividendMultiplier: ctx.pendingDividendMultiplier, strikeUsdcPerLot: s.strikeUsdcPerLot, expiryTs: Number(s.expiryTs), nowTs: ctx.nowTs, vol: ctx.vol, session, inActivationWindow: ctx.inActivationWindow, inventoryLots: sold, baseSpread: this.cfg.baseSpread, minAskPerLot: this.cfg.minAskPerLot, transferFeeBps: ctx.feeBps, noSession: ctx.noSession });
       const myAsks = s.asks.filter((a) => s.writers[a.writerSlot]?.writer.equals(me));
       const current = myAsks[0];
       if (current) {

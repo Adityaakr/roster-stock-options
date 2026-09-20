@@ -5,7 +5,7 @@
  */
 import { PublicKey } from "@solana/web3.js";
 
-import { jupiterPrice, listable, marketSnapshots, prestocksTokens, readRegistry, registryPathFor, tesseraTokens, tokensApiKeyed, TIER1_SET, xstocksQuote, type PreIpoToken } from "@roster/registry";
+import { jupiterPrice, listable, marketSnapshots, prestocksTokens, readRegistry, registryPathFor, tokensApiKeyed, TIER1_SET, xstocksQuote, type PreIpoToken } from "@roster/registry";
 
 export const LAUNCH_SET = TIER1_SET;
 export const XSTOCKS_API = "https://api.xstocks.fi/api/v2";
@@ -16,7 +16,7 @@ export interface LaunchEntry {
   mint: PublicKey;
   decimals: number;
   tier: number;
-  wrapper: "xStock" | "Ondo" | "Tessera" | "PreStocks";
+  wrapper: "xStock" | "Ondo" | "PreStocks";
   underlyingSymbol: string | null;
   /** Transfer fee on the mint, basis points; the quoter sizes asks under the deposit by this much. */
   feeBps: number;
@@ -79,26 +79,28 @@ export function snapshotOf(mint: string): { price: number | null; change24hPct: 
 }
 
 /**
- * Pre-IPO marks from the issuers, refreshed at most once a minute: with no Pyth feed the issuer's mark is the price
- * source by design (Part 2 section 2), on every cluster. Tessera publishes a mark; PreStocks a token price too.
+ * Pre-IPO prices from PreStocks, refreshed at most once a minute: with no Pyth feed the token price (where the token
+ * trades) is the price source by design (Part 2 section 2), on every cluster. The issuer's mark is carried beside it
+ * for the spread the app shows; it is never the price a contract settles against.
  */
 let preipoCache: { at: number; byMint: Map<string, PreIpoToken> } | null = null;
-export async function issuerMark(entry: LaunchEntry): Promise<{ price: number; source: "tessera" | "prestocks" } | null> {
-  if (entry.wrapper === "xStock" || entry.wrapper === "Ondo") return null;
+export async function preipoTokens(): Promise<Map<string, PreIpoToken>> {
   if (!preipoCache || Date.now() - preipoCache.at > 60_000) {
-    // A refresh that fails keeps the previous marks rather than dropping every pre-IPO price for a tick.
-    const [t, p] = await Promise.all([tesseraTokens().catch(() => null), prestocksTokens().catch(() => null)]);
-    const fresh = [...(t ?? []), ...(p ?? [])];
+    // A refresh that fails keeps the previous prices rather than dropping every pre-IPO price for a tick.
+    const p = await prestocksTokens().catch(() => null);
     const byMint = new Map(preipoCache?.byMint ?? []);
-    for (const x of fresh) byMint.set(x.mint, x);
-    if (t && p) preipoCache = { at: Date.now(), byMint };
-    else preipoCache = { at: preipoCache?.at ?? 0, byMint };
+    for (const x of p ?? []) byMint.set(x.mint, x);
+    preipoCache = { at: p ? Date.now() : (preipoCache?.at ?? 0), byMint };
   }
+  return preipoCache.byMint;
+}
+export async function issuerMark(entry: LaunchEntry): Promise<{ price: number; source: "prestocks"; mark: number | null } | null> {
+  if (entry.wrapper !== "PreStocks") return null;
+  const byMint = await preipoTokens();
   // A devnet replica of a pre-IPO token takes the mark of the mainnet token it stands in for.
-  const t = preipoCache.byMint.get(entry.replicaOf ?? entry.mint.toBase58());
-  if (!t) return null;
-  const price = t.tokenPrice ?? t.markPrice;
-  return price ? { price, source: t.issuer === "Tessera" ? "tessera" : "prestocks" } : null;
+  const t = byMint.get(entry.replicaOf ?? entry.mint.toBase58());
+  if (!t || !t.tokenPrice) return null;
+  return { price: t.tokenPrice, source: "prestocks", mark: t.markPrice };
 }
 
 export async function resolveLaunchSet(symbols: string[]): Promise<LaunchEntry[]> {

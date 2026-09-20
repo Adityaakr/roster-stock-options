@@ -46,7 +46,7 @@ export function SiteFooter({ network, source }: { network?: string; source?: str
           </div>
           <div>
             <h6>Reading</h6>
-            <ul><li><a className="navlink" href="https://docs.xstocks.fi/developers/multipliers" target="_blank" rel="noreferrer">xStocks multipliers</a></li><li><a className="navlink" href="https://docs.pyth.network/price-feeds/market-hours" target="_blank" rel="noreferrer">Pyth market hours</a></li><li><a className="navlink" href="https://docs.tessera.pe/features/redemption" target="_blank" rel="noreferrer">Tessera redemption</a></li></ul>
+            <ul><li><a className="navlink" href="https://docs.xstocks.fi/developers/multipliers" target="_blank" rel="noreferrer">xStocks multipliers</a></li><li><a className="navlink" href="https://docs.pyth.network/price-feeds/market-hours" target="_blank" rel="noreferrer">Pyth market hours</a></li><li><a className="navlink" href="https://prestocks.com/faq" target="_blank" rel="noreferrer">PreStocks terms</a></li></ul>
           </div>
         </div>
         <div className="divider" style={{ margin: "40px 0 20px" }} />

@@ -118,7 +118,7 @@ function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExer
   const remaining = p.shares - p.exercised;
   const value = mark === null ? null : buyerPnl(p.side, p.strike, 0, remaining, mark);
   const count = Math.min(remaining, Math.max(1, n ?? remaining));
-  const words = exerciseWords(p.side, p.strike, count, symbol, (v) => usd0(v));
+  const words = exerciseWords(p.side, p.strike, count, symbol, (v) => usd0(v), market?.feeBps ?? 0);
   const busy = (s: { status: string }) => s.status === "building" || s.status === "signing" || s.status === "sending";
   const can = programDeployed && !!p.series && !!market?.mint && !p.expired && remaining > 0;
 
@@ -130,8 +130,9 @@ function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExer
   async function sellToVault() {
     if (!p.series || !market?.mint || !bid) return;
     const shares = Math.min(count, bid.maxShares, remaining);
-    // The limit is the bid shown, less a hair for the multiplier's rounding: the program refuses anything below it.
-    const minPerLot = BigInt(Math.floor(bid.perShare * (market.multiplier ?? 1) * 1e6 * 0.999));
+    // The limit is one percent under the bid shown: the vault reprices every tick and a bid drifts a tenth of a
+    // percent between the read and the send, so a tighter limit fails a fair fill. The program refuses anything below.
+    const minPerLot = BigInt(Math.floor(bid.perShare * (market.multiplier ?? 1) * 1e6 * 0.99));
     const sig = await sell.run({ kind: "sell_to_vault", mint: market.mint, series: p.series, params: { lots6: lots6ForShares(shares, market.multiplier).toString(), minBidPerLot: minPerLot.toString() } });
     if (sig) { setConfirm(false); onChange(); }
   }
@@ -179,7 +180,7 @@ function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExer
           <div className="flex items-center gap-2">
             <button className="btn secondary sm" onClick={toggleAuto} disabled={!can || busy(auto.state)} data-testid="auto-toggle">{p.autoExercise ? "Revoke auto-exercise" : "Enable auto-exercise"}</button>
             <button className="btn secondary sm" onClick={() => setConfirm(true)} disabled={remaining === 0 || p.expired} data-testid="exercise">Exercise now</button>
-            {bid && bid.maxShares > 0 ? <button className="btn primary sm" onClick={sellToVault} disabled={!can || busy(sell.state)} data-testid="sell-to-vault">Sell {Math.min(count, bid.maxShares, remaining)} at ${usdSmart(bid.perShare)}</button> : null}
+            {bid && bid.maxShares > 0 ? <button className="btn primary sm" onClick={sellToVault} disabled={!can || busy(sell.state)} data-testid="sell-to-vault" title="The vault's live bid per share; the fill is refused below one percent under it">Sell {Math.min(count, bid.maxShares, remaining)} at ${usdSmart(bid.perShare)}</button> : null}
           </div>
         )}
         {sell.state.status !== "idle" ? <TxStatus state={sell.state} onRetry={sell.reset} /> : null}

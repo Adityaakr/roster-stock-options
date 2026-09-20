@@ -18,8 +18,8 @@ import { useRoster } from "@/lib/use-roster";
  */
 const EXAMPLES: { group: string; items: { m: string; q: string }[] }[] = [
   { group: "Upside", items: [{ m: "NVDAx", q: "$200 of Nvidia upside through Friday" }, { m: "TSLAx", q: "50 TSLAx of upside for two weeks, the cheap strike" }, { m: "SPYx", q: "SPYx upside through the weekend" }] },
-  { group: "Protection", items: [{ m: "NVDAx", q: "protect my 20 NVDAx through earnings" }, { m: "SPYx", q: "a floor under 10 SPYx 5% below the price" }, { m: "tKalshi", q: "sell my tKalshi at a known price next week" }] },
-  { group: "Get paid", items: [{ m: "TSLAx", q: "get paid to buy Tesla 10% lower" }, { m: "GOOGLx", q: "sell the upside on my 25 GOOGLx above $360" }, { m: "NVDAx", q: "write a floor on NVDAx for the week" }] }
+  { group: "Protection", items: [{ m: "NVDAx", q: "protect my 20 NVDAx through earnings" }, { m: "SPYx", q: "a floor under 10 SPYx 5% below the price" }, { m: "SPACEX", q: "a funded exit on my 5 SPACEX through next Friday" }] },
+  { group: "Get paid", items: [{ m: "TSLAx", q: "get paid to buy Tesla 10% lower" }, { m: "GOOGLx", q: "sell the upside on my 25 GOOGLx above $360" }, { m: "OPENAI", q: "get paid to sell my 2 OPENAI above the price" }] }
 ];
 type Stage = "idle" | "reading" | "pricing" | "writing" | "done";
 

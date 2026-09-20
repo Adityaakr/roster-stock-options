@@ -17,9 +17,9 @@ export interface ServicesSeries {
   unassigned_lots6: string; halted: number; collateral_balance: string; settlement_balance: string; asks: ServicesAsk[]; writers: ServicesWriter[];
 }
 export interface ServicesMarket {
-  symbol: string; name: string; wrapper: "xStock" | "Ondo" | "Tessera" | "PreStocks"; feeBps: number; mint: string; sparkline?: [number, number][]; market: string; decimals: number; tier: number; listed: boolean; paused: boolean;
+  symbol: string; name: string; wrapper: "xStock" | "Ondo" | "PreStocks"; feeBps: number; mint: string; sparkline?: [number, number][]; market: string; decimals: number; tier: number; listed: boolean; paused: boolean;
   hasTransferFee: boolean; hasPermanentDelegate: boolean; pausable: boolean; hookProgram: string; allowedExpiries: string[]; strikeStep: string;
-  minLots6: string; maxLots6: string; maxLiveSeries: number; liveSeries: number; price: number | null; priceAt: number; priceSource: "hermes" | "reference" | "tokens.xyz" | "xstocks" | "jupiter" | "tessera" | "prestocks" | "none";
+  minLots6: string; maxLots6: string; maxLiveSeries: number; liveSeries: number; price: number | null; priceAt: number; priceSource: "hermes" | "reference" | "tokens.xyz" | "xstocks" | "jupiter" | "prestocks" | "none";
   /** Devnet only: the mainnet mint this market's token replicates and takes its price from. */
   replicaOf?: string | null;
   /** The issuer's logo, the stock behind the wrapper and how many wrappers of it exist, from the cluster's registry. */
@@ -28,7 +28,7 @@ export interface ServicesMarket {
   wrappersOfUnderlying?: number;
   change24hPct?: number | null;
   holders?: number | null;
-  equityPrice: number | null; basisBps: number | null; multiplier: number; pendingActivationTs: number | null; inActivationWindow: boolean; vol: number; volSource: string;
+  equityPrice: number | null; basisBps: number | null; issuerMarkPrice?: number | null; markSpreadBps?: number | null; markSparkline?: [number, number][]; multiplier: number; pendingActivationTs: number | null; inActivationWindow: boolean; vol: number; volSource: string;
   series: ServicesSeries[];
 }
 export interface ServicesRoster {
@@ -38,7 +38,7 @@ export interface ServicesRoster {
 export interface ServicesEvent { signature: string; ix_index: number; slot: number; block_time: number; name: string; data_json: string }
 export interface ServicesPosition { series: string; market: string; side: "call" | "put"; strike_usdc_per_lot: string; expiry_ts: number; position_mint: string; lots6: string; autoExercise: boolean }
 export interface ServicesPositions { wallet: string; positions: ServicesPosition[]; events: ServicesEvent[] }
-export interface ServicesPrices { mint: string; mark: [number, number][]; token: [number, number][]; equity: [number, number][]; basis: { bps: number; at: number }[] }
+export interface ServicesPrices { mint: string; mark: [number, number][]; token: [number, number][]; equity: [number, number][]; issuerMark?: [number, number][]; basis: { bps: number; at: number }[] }
 export interface ServicesVaultEpoch { epoch: number; rolledAt: number; navCollateralRaw: string; navOther: string; markUsdcPerLot: string; totalSharesAfter: string; premiumIn: string; buybackOut: string; assignedLots6: string; pnlPerShare1e6: string; sharesPerRaw1e12: string; collateralPerShare1e12: string; otherPerShare1e12: string }
 export interface ServicesVault {
   symbol: string; address: string; kind: "covered_call" | "cash_secured_put"; halted: boolean; manager: string; shareMint: string; collateralMint: string; otherMint: string; collateralAta: string; otherAta: string;

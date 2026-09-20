@@ -20,6 +20,9 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
   const u = data.underlying;
   const rows = data.terms.filter((t) => t.side === side && t.expiryTs === expiry).sort((a, b) => (side === "call" ? a.strike - b.strike : b.strike - a.strike));
   const sess = SESSION_LABEL[data.session];
+  const market = data.markets.find((m) => m.symbol === u.symbol);
+  // A pre-IPO token has no exchange session and no share to have a basis to; its second figure is the issuer's mark.
+  const preIpo = market?.wrapperTier === "PreStocks";
 
   return (
     <div>
@@ -35,9 +38,11 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
       <div className="flex items-center gap-2 flex-wrap small" style={{ marginBottom: 10 }}>
         <span>Mark <b className="mono ink">${usd(u.mark)}</b></span>
         <span className="muted">·</span>
-        <Badge tone={data.session === "regular" ? "green" : "amber"} dot>{sess}</Badge>
+        {preIpo ? <Badge tone="blue" dot>No exchange session</Badge> : <Badge tone={data.session === "regular" ? "green" : "amber"} dot>{sess}</Badge>}
         <span className="muted">·</span>
-        <span>Token vs share basis <b className="mono ink">{u.basisBps === null ? "n/a, equity feed closed" : `${u.basisBps >= 0 ? "+" : ""}${u.basisBps} bps`}</b></span>
+        {preIpo
+          ? <span>Token vs issuer mark <b className={`mono ${market?.markSpreadBps === null || market?.markSpreadBps === undefined ? "muted" : market.markSpreadBps >= 0 ? "up" : "down"}`}>{market?.markSpreadBps === null || market?.markSpreadBps === undefined ? "n/a" : `${market.markSpreadBps >= 0 ? "+" : "−"}${(Math.abs(market.markSpreadBps) / 100).toFixed(1)}%`}</b>{market?.issuerMarkPrice ? <span className="muted"> (mark ${usd(market.issuerMarkPrice)})</span> : null}</span>
+          : <span>Token vs share basis <b className="mono ink">{u.basisBps === null ? "n/a, equity feed closed" : `${u.basisBps >= 0 ? "+" : ""}${u.basisBps} bps`}</b></span>}
         <span className="muted">·</span>
         <span>Expiry <b className="mono ink">{dayLabel(expiry)}</b> in <b className="mono ink">{countdown(expiry, data.nowTs)}</b></span>
       </div>

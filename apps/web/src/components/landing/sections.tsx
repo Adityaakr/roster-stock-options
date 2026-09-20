@@ -79,7 +79,7 @@ export function Hero({ data }: { data: RosterData }) {
 
 /* 2. Brand strip: what the venue is built on and priced with. */
 export function BrandStrip() {
-  const names: [string, string][] = [["Pyth", SOURCES.pythHermes], ["xStocks", SOURCES.xstocksMultipliers], ["Solana", "https://solana.com"], ["Jupiter", "https://jup.ag"], ["Tessera", SOURCES.tesseraRedemption], ["PreStocks", SOURCES.prestocksApi], ["Surfpool", SOURCES.surfpool], ["tokens.xyz", SOURCES.tokensApi]];
+  const names: [string, string][] = [["Pyth", SOURCES.pythHermes], ["xStocks", SOURCES.xstocksMultipliers], ["Solana", "https://solana.com"], ["Jupiter", "https://jup.ag"], ["PreStocks", SOURCES.prestocksApi], ["Surfpool", SOURCES.surfpool], ["tokens.xyz", SOURCES.tokensApi]];
   return (
     <Sec id="brands" className="brands" ticks={false}>
       <div style={{ padding: "66px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 40, overflow: "hidden", position: "relative" }}>
@@ -147,7 +147,7 @@ export function Products() {
     { t: "Floor", d: "A funded exit at a price you choose, exercisable any time until expiry. The USDC is locked before you buy. No equity venue sells a Saturday exit on Nvidia; this one does.", kind: "floor" as const, big: true },
     { t: "Commit", d: "Get paid to buy a stock cheaper or to sell it higher. Capital is locked until expiry or exercise. Paid risk, disclosed as such, never yield.", kind: "commit" as const, big: false },
     { t: "Protected Buy", d: "Buy the token, or buy it with a floor through a date, in one transaction. Purchase cost, premium and protected proceeds shown together. Ships after Gap and Floor.", kind: "protected" as const, big: false },
-    { t: "First Print", d: "Funded exits on Tessera and PreStocks tokens, the assets with no exit at all. Transfer-fee aware, redemption cliff explained on every ticket. Ships last.", kind: "firstprint" as const, big: false }
+    { t: "First Print", d: "Gaps and Floors on PreStocks tokens, the stocks that have not listed yet. Priced off where the token trades, the mint's fee stated in numbers, the issuer's own terms on every ticket.", kind: "firstprint" as const, big: false }
   ];
   return (
     <Sec id="products" className="usecases-sec">
@@ -313,25 +313,35 @@ export function SaidOutLoud() {
   );
 }
 
-/* 7. First Print: three hairline columns, one per pre-IPO token. */
+/* 7. First Print: three hairline columns, one per PreStocks token, with the issuer's live figures. */
 export function FirstPrint() {
+  const [live, setLive] = useState<Record<string, { tokenPrice: number | null; markPrice: number | null; spreadPct: number | null; listed: boolean }>>({});
+  useEffect(() => {
+    fetch("/api/preipo", { cache: "no-store" }).then((r) => r.json()).then((j: { tokens: { symbol: string; tokenPrice: number | null; markPrice: number | null; spreadPct: number | null; market: unknown }[] }) => {
+      const m: typeof live = {};
+      for (const t of j.tokens ?? []) m[t.symbol] = { tokenPrice: t.tokenPrice, markPrice: t.markPrice, spreadPct: t.spreadPct, listed: !!t.market };
+      setLive(m);
+    }).catch(() => undefined);
+  }, []);
+  const fmt = (v: number | null) => (v === null ? "…" : `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+  const spread = (s: string) => { const v = live[s]?.spreadPct ?? null; return v === null ? "…" : `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}% ${v >= 0 ? "above" : "below"} the mark`; };
   const tokens = [
-    { t: "tOpenAI", tag: "Tessera", d: "Loan participation rights, not securities. A 0.2% fee on every transfer. Redemption has four preconditions and no deadline.", price: "$812.79", unit: "mark", sub: "8,259 holders", cta: "Funded exits on tOpenAI", href: "/pre-ipo", items: ["Redemption needs a liquidity event", "Then lock-up expiry and receipt of proceeds", "Then an announced start date, no time bound", "Unclaimed proceeds forfeited after the window", "Escrow quoted fee-inclusive on both legs"] },
-    { t: "tKalshi", tag: "Tessera", d: "The same rights profile and the same redemption cliff, on a company with no listing date. The largest holder base after tOpenAI.", price: "$413.80", unit: "mark", sub: "2,605 holders", cta: "Funded exits on tKalshi", href: "/pre-ipo", items: ["A known price on a known date", "Exercisable any time until expiry", "USDC locked before you buy", "The 0.2% fee priced into the strike", "Redemption cliff on every ticket"], primary: true },
-    { t: "SPACEX", tag: "PreStocks", d: "SPV exposure with no ownership, voting or dividend rights. The token trades about 19% below its mark, the price of having no exit.", price: "$122.52", unit: "token", sub: "against a $151.17 mark", cta: "Funded exits on SPACEX", href: "/pre-ipo", items: ["Mark versus token price on every ticket", "The discount named as the price of no exit", "No ownership, voting or dividend rights", "Backed by SPV exposure", "Registry read from the PreStocks API"] }
-  ];
+    { t: "OPENAI", d: "The largest private name on chain. The token trades at a premium to the issuer's mark, the price of access; a Gap is that upside with the loss capped, a Floor is an exit at a price you chose.", sym: "OPENAI", cta: "A known price on OPENAI", items: ["Priced off where the token trades, never the mark", "Both figures on every ticket, the spread named", "Exercisable any time until expiry", "The 0.50% mint fee stated in numbers", "No ownership, voting or dividend rights"] },
+    { t: "SPACEX", d: "The largest float of the eight. The token has traded below the issuer's mark for the lack of an exit before a listing; a Floor is the exit that already has the USDC locked.", sym: "SPACEX", cta: "A funded exit on SPACEX", items: ["USDC locked before you buy", "Sell at the strike any time through the date", "Settles in the token itself, no oracle", "Fee delivered on top so writers are paid to the unit", "IPO and deal terms from the issuer on the ticket"], primary: true },
+    { t: "NEURALINK", d: "The widest premium of the eight. Holders can be paid to sell it higher through a Covered Call vault, and buyers can hold the upside without holding the token.", sym: "NEURALINK", cta: "Every PreStocks token", items: ["Eight tokens from the issuer's API, live", "Implied valuation both ways", "Recent volatility measured, not assumed", "Listed as escrow is proven, tier by tier", "Paid risk, disclosed as such, never yield"] }
+  ].map((p) => ({ ...p, price: fmt(live[p.sym]?.tokenPrice ?? null), unit: "token", sub: spread(p.sym), href: live[p.sym]?.listed ? `/pre-ipo/${p.sym}` : "/pre-ipo" }));
   return (
     <Sec id="first-print" className="plans-sec">
       <div style={{ padding: "100px 0 0", display: "flex", flexDirection: "column", gap: 75 }}>
         <div className="two" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, padding: "0 30px" }}>
-          <ScrollColorText as="h2" text="The assets with no exit at all." className="h-section" style={{ maxWidth: 500 }} />
-          <Reveal y={18} delay={0.1}><p className="body" style={{ margin: 0, maxWidth: 392 }}>Pre-IPO tokens are stocks whose market has never opened. A funded exit is the only way to hold a known price on a known date. About 10,900 wallets hold tOpenAI and tKalshi today.</p></Reveal>
+          <ScrollColorText as="h2" text="The stocks that have not listed yet." className="h-section" style={{ maxWidth: 500 }} />
+          <Reveal y={18} delay={0.1}><p className="body" style={{ margin: 0, maxWidth: 392 }}>PreStocks tokens trade on chain before the company does, above or below the issuer&apos;s mark for months with no print to anchor them. A funded price on a date is the only way to know what you will get.</p></Reveal>
         </div>
         <div className="plans">
           {tokens.map((p, j) => (
             <Reveal key={p.t} y={48} delay={j * 0.1} className="plan">
               <div className="head">
-                <div className="flex items-center justify-between gap-3"><div className="t">{p.t}</div>{p.tag ? <span className="ptag">{p.tag}</span> : null}</div>
+                <div className="flex items-center justify-between gap-3"><div className="t">{p.t}</div><span className="ptag">PreStocks</span></div>
                 <div className="d">{p.d}</div>
               </div>
               <div className="mid">
@@ -399,14 +409,13 @@ export function Risk({ data }: { data: RosterData }) {
     [`Gap and Floor across ${data.markets.length} listed market${data.markets.length === 1 ? "" : "s"}`, data.programDeployed ? "live" : "not yet", data.programDeployed],
     ["Commit: the write side, disclosed as paid risk", data.programDeployed ? "live" : "not yet", data.programDeployed],
     ["Protected Buy: a swap and a floor in one transaction", data.programDeployed ? "live" : "not yet", data.programDeployed],
-    ["First Print: Tessera and PreStocks funded exits", data.programDeployed ? "live" : "not yet", data.programDeployed]
+    ["First Print: Gaps and Floors on PreStocks tokens", data.programDeployed ? "live" : "not yet", data.programDeployed]
   ];
   const not = [
     "Chain halts, token freezes, pauses or transfer restrictions on the underlying mint",
     "Dividend reinvestment during a call accrues to the escrowed tokens and is captured by the buyer at exercise",
     "xStocks are tracker certificates with no voting rights",
-    "T-tokens are loan participation rights, not securities",
-    "PreStocks tokens confer no ownership, voting or dividend rights",
+    "PreStocks tokens confer no ownership, voting, dividend or information rights; after an IPO they must be converted within the issuer's window or expire worthless",
     "Non-US wrappers, fully collateralized; counsel before expanding"
   ];
   return (

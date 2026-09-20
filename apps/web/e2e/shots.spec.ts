@@ -13,7 +13,7 @@ const pages = [
   { path: "/underwrite", heading: "Underwrite", name: "underwrite", wait: "table.table"},
   { path: "/roster", heading: "Roster", name: "roster", wait: "table.table"},
   { path: "/buy", heading: "Protected Buy", name: "buy", wait: ".card"},
-  { path: "/pre-ipo", heading: "First Print", name: "pre-ipo", wait: ".fp-card"}
+  { path: "/pre-ipo", heading: "PreStocks", name: "pre-ipo", wait: ".fp-card"}
 ] as const;
 
 for (const p of pages) {

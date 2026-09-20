@@ -99,8 +99,8 @@ export class Quoter {
     const nearExpiry = ahead[0] !== undefined && ahead[0] - BigInt(ctx.nowTs) <= BigInt(ctx.graceSecs);
     const quotable = ahead.slice(0, ctx.tier === 2 ? (nearExpiry ? 2 : 1) : undefined);
     for (const expiry of quotable) {
-      // Floors are refused by the program on transfer-fee mints until fee-inclusive settlement ships.
-      for (const side of (m.hasTransferFee ? ["call"] : ["call", "put"]) as ("call" | "put")[]) {
+      // Both sides on every mint: a Floor on a transfer-fee mint has the holder deliver gross (docs/03-prestocks-decision.md).
+      for (const side of ["call", "put"] as ("call" | "put")[]) {
         for (const strike of gridStrikes(side, forwardPerLot, m.strikeStep).slice(0, this.cfg.strikesPerSide)) {
           if (strike < m.minStrike || strike > m.maxStrike) continue;
           const key = `${side}-${strike}-${expiry}`;

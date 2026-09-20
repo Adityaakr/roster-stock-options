@@ -94,7 +94,6 @@ function UnderwriteInner() {
   const free = mine ? Math.round((mine.deposited - mine.withdrawn - mine.open - mine.assigned - myAsks.reduce((a, x) => a + sharesOf(x.remainingLots6, u.multiplier), 0)) * 1e4) / 1e4 : 0;
   const busy = tx.state.status === "building" || tx.state.status === "signing" || tx.state.status === "sending";
   const expired = t.expiryTs <= data.nowTs;
-  const putsBlocked = side === "put" && market.hasTransferFee;
 
   async function run(kind: "quote" | "cancel_ask" | "withdraw_unsold" | "claim_premium" | "settle_writer", p?: Record<string, string | number | null>) {
     if (!t?.series || !u.mint) return;
@@ -230,10 +229,9 @@ function UnderwriteInner() {
           {!publicKey ? (
             <button className="btn primary wide" onClick={() => setVisible(true)}>Connect wallet to quote</button>
           ) : (
-            <button className="btn primary wide" disabled={!cluster.programDeployed || busy || expired || putsBlocked || !t.series} onClick={quote} data-testid="write">Lock {side === "put" ? `$${usd0(Math.max(0, m.locked - (side === "put" ? free * t.strike : 0)))}` : `${Math.max(0, m.locked - free)} ${sym}`} and quote</button>
+            <button className="btn primary wide" disabled={!cluster.programDeployed || busy || expired || !t.series} onClick={quote} data-testid="write">Lock {side === "put" ? `$${usd0(Math.max(0, m.locked - (side === "put" ? free * t.strike : 0)))}` : `${Math.max(0, m.locked - free)} ${sym}`} and quote</button>
           )}
           {publicKey && !cluster.programDeployed ? <div className="msg red" style={{ marginTop: 10 }} role="alert">Program not deployed on {cluster.label}; nothing to sign yet.</div> : null}
-          {putsBlocked ? <div className="msg" style={{ marginTop: 10 }} role="status">This mint charges a transfer fee, so Floors are not listed on it until fee-inclusive settlement ships with First Print. Gaps are open.</div> : null}
           <TxStatus state={tx.state} onRetry={() => { tx.reset(); reload(true); }} doneHref={`/roster?m=${sym}`} doneLabel="See it on the roster" />
           <p className="note" style={{ marginTop: 12 }}>Capital is locked until expiry or exercise. This is paid risk, not yield: if the price moves through the strike you are assigned at it. Assignment is pooled: every writer on the term is assigned in proportion to what they sold, whoever bought the contract that was exercised.</p>
         </div>

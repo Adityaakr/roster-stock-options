@@ -104,6 +104,9 @@ function liveMarket(m: ServicesMarket, nowTs: number, terms: Term[]): Market {
     underlyingSymbol: m.underlyingSymbol ?? UNDERLYING.get(m.mint) ?? null,
     wrappersOfUnderlying: m.wrappersOfUnderlying ?? WRAPPERS.get(UNDERLYING.get(m.mint) ?? "") ?? 1,
     sparkline: m.sparkline ?? [],
+    issuerMarkPrice: m.issuerMarkPrice ?? null,
+    markSpreadBps: m.markSpreadBps ?? null,
+    markSparkline: m.markSparkline ?? [],
     changePct: m.sparkline && m.sparkline.length >= 2 && m.sparkline[0]![1] > 0 ? ((m.sparkline[m.sparkline.length - 1]![1] - m.sparkline[0]![1]) / m.sparkline[0]![1]) * 100 : null
   };
 }
@@ -195,7 +198,7 @@ async function fromServices(r: ServicesRoster, selected: string | undefined, fre
     exercises,
     feeBps: r.feeBps ?? 0,
     keeperFeeUsd: r.keeperFeeUsdc ? Number(r.keeperFeeUsdc) / 1e6 : 0,
-    source: `${label}. Program ${r.program}. Marks from ${pick?.priceSource === "hermes" ? "Pyth Hermes" : pick?.priceSource === "reference" ? "a fork-only reference price" : pick?.priceSource === "xstocks" ? "the xStocks API quote (no Pyth entitlement; display only off the fork)" : pick?.priceSource === "jupiter" ? "Jupiter\u2019s routed price (no Pyth entitlement and no issuer quote; display only off the fork)" : pick?.priceSource === "tessera" ? "Tessera's published mark (no Pyth feed exists)" : pick?.priceSource === "prestocks" ? "the PreStocks token price (no Pyth feed exists)" : "no feed"}; asks, reserves and positions read from the program's accounts by the indexer.${r.blocked ? ` The quoter is blocked on ${r.blocked}.` : ""}`
+    source: `${label}. Program ${r.program}. Marks from ${pick?.priceSource === "hermes" ? "Pyth Hermes" : pick?.priceSource === "reference" ? "a fork-only reference price" : pick?.priceSource === "xstocks" ? "the xStocks API quote (no Pyth entitlement; display only off the fork)" : pick?.priceSource === "jupiter" ? "Jupiter\u2019s routed price (no Pyth entitlement and no issuer quote; display only off the fork)" : pick?.priceSource === "prestocks" ? "the PreStocks token price, where the token trades (no Pyth feed exists; the issuer's mark is shown beside it)" : "no feed"}; asks, reserves and positions read from the program's accounts by the indexer.${r.blocked ? ` The quoter is blocked on ${r.blocked}.` : ""}`
   };
 }
 
@@ -278,7 +281,7 @@ function fixture(): RosterData {
     symbol: "NVDAx", name: "Nvidia xStock", mint: null, address: null, decimals: 8, tier: 1, listed: true, paused: false, wrapperTier: "xStock",
     feeBps: 0, hasTransferFee: false, hasPermanentDelegate: true, pausable: true, mark: FIXTURE_MARK, priceSource: "fixture", replicaOf: null, equityMark: equityOpen ? 182.08 : null,
     basisBps: equityOpen ? 12 : null, multiplier: 1, pendingActivationTs: null, inActivationWindow: false, vol: 0.35, volSource: "fixture", expiries,
-    liveSeries: terms.length, maxLiveSeries: 12, minLots6: "10000", depthUsdc: terms.reduce((a, t) => a + t.capacity * t.strike, 0), bestAsk: 0.6, logo: null, underlyingSymbol: "NVDA", wrappersOfUnderlying: 1, sparkline: [], changePct: null
+    liveSeries: terms.length, maxLiveSeries: 12, minLots6: "10000", depthUsdc: terms.reduce((a, t) => a + t.capacity * t.strike, 0), bestAsk: 0.6, logo: null, underlyingSymbol: "NVDA", wrappersOfUnderlying: 1, sparkline: [], changePct: null, issuerMarkPrice: null, markSpreadBps: null, markSparkline: []
   };
   return {
     cluster: "fixture",

@@ -28,7 +28,7 @@ export interface Market {
   pausable: boolean;
   /** Token mark from the 24/7 token feed, USD per share equivalent; null when no feed answered. */
   mark: number | null;
-  priceSource: "hermes" | "reference" | "tokens.xyz" | "xstocks" | "jupiter" | "tessera" | "prestocks" | "fixture" | "none";
+  priceSource: "hermes" | "reference" | "tokens.xyz" | "xstocks" | "jupiter" | "prestocks" | "fixture" | "none";
   /** Devnet only: the mainnet mint whose price and behaviour this market's replica token stands in for. */
   replicaOf: string | null;
   equityMark: number | null;
@@ -54,6 +54,10 @@ export interface Market {
   logo: string | null;
   /** Marks recorded by the services over the last day, [unix, price], for the list's sparkline. */
   sparkline: [number, number][];
+  /** Pre-IPO only: the issuer's mark beside the token price, the token's spread to it in bps (signed), and its history. */
+  issuerMarkPrice: number | null;
+  markSpreadBps: number | null;
+  markSparkline: [number, number][];
   /** Change over the sparkline's window, percent; null until two points exist. */
   changePct: number | null;
 }
@@ -310,9 +314,18 @@ export function inTheMoney(side: Side, strike: number, mark: number): boolean {
 }
 
 /** What exercising requires, in plain words, for `shares` of a term. */
-export function exerciseWords(side: Side, strike: number, shares: number, symbol: string, fmt: (v: number) => string): string {
+/**
+ * What exercising requires, in plain words. On a transfer-fee mint the fee is the holder's on both sides: a Gap
+ * delivers the shares less the fee, and a Floor has the holder deliver gross so that exactly the shares arrive.
+ */
+export function exerciseWords(side: Side, strike: number, shares: number, symbol: string, fmt: (v: number) => string, feeBps = 0): string {
   const cash = fmt(strike * shares);
-  return side === "call" ? `pay $${cash} USDC, receive ${shares} ${symbol}` : `deliver ${shares} ${symbol}, receive $${cash} USDC`;
+  if (feeBps <= 0) return side === "call" ? `pay $${cash} USDC, receive ${shares} ${symbol}` : `deliver ${shares} ${symbol}, receive $${cash} USDC`;
+  const keep = 1 - feeBps / 10_000;
+  const pct = (feeBps / 100).toFixed(2);
+  return side === "call"
+    ? `pay $${cash} USDC, receive ${(shares * keep).toFixed(4)} ${symbol} (${shares} less the mint's ${pct}% fee)`
+    : `deliver ${(shares / keep).toFixed(4)} ${symbol} (${shares} plus the mint's ${pct}% fee), receive $${cash} USDC`;
 }
 
 /** The underwriter's side: what is locked and what is collected. */

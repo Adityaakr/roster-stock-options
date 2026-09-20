@@ -347,6 +347,7 @@ async function main() {
           mark: store.priceHistory(`mark:${mintKey}`, since).map((p) => [p.publish_time, p.price]),
           token: /^0+$/.test(token) ? [] : store.priceHistory(token, since).map((p) => [p.publish_time, p.price]),
           equity: /^0+$/.test(equity) ? [] : store.priceHistory(equity, since).map((p) => [p.publish_time, p.price]),
+          issuerMark: store.priceHistory(`issuer_mark:${mintKey}`, since).map((p) => [p.publish_time, p.price]),
           basis: store.basisHistory(mintKey, since)
         });
       }

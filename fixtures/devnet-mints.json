@@ -77,16 +77,28 @@
       "createdAt": "2026-09-19T13:40:40.031Z"
     },
     {
-      "symbol": "tKalshi",
-      "name": "Kalshi",
-      "underlyingSymbol": "Kalshi",
-      "mint": "78efLmN1D6jbvhzTKZCdT2oPXuRJHCpiqvKwsUv3SRWa",
+      "symbol": "OPENAI",
+      "name": "OpenAI PreStocks",
+      "underlyingSymbol": "OpenAI PreStocks",
+      "mint": "DK5xMekNLfy2YiBkyxMceCEyx7zRrQHQbws9xa44WWMY",
       "decimals": 9,
-      "wrapper": "Tessera",
-      "mainnetMint": null,
-      "multiplier": 1,
-      "feeBps": 20,
-      "createdAt": "2026-09-19T13:40:42.392Z"
+      "wrapper": "PreStocks",
+      "mainnetMint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+      "multiplier": 1.4861347,
+      "feeBps": 50,
+      "createdAt": "2026-09-20T09:11:50.185Z"
+    },
+    {
+      "symbol": "SPACEX",
+      "name": "SpaceX PreStocks",
+      "underlyingSymbol": "SpaceX PreStocks",
+      "mint": "4FiFp6BA1ZDH35WarP6qQMW1vx2XP6BTLsXuz18wGmxx",
+      "decimals": 9,
+      "wrapper": "PreStocks",
+      "mainnetMint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+      "multiplier": 5,
+      "feeBps": 50,
+      "createdAt": "2026-09-20T09:11:52.640Z"
     }
   ]
 }

@@ -992,3 +992,17 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .ask .note { margin-top: 12px; }
 .ask-result { margin-top: 22px; }
 @media (max-width: 767px) { .ask-row { grid-template-columns: minmax(0, 1fr); gap: 6px; } .ask-go .lbl { display: none; } .ask-go { padding: 0 14px; } .ask-input { font-size: 16px; } .ask-hero h1 { font-size: 28px; line-height: 32px; } }
+
+/* The PreStocks desk: the spread chart, one bar per token either side of the mark. */
+.spread-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.spread-rows { padding: 6px 0; }
+.spread-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) 110px 170px; gap: 14px; align-items: center; width: 100%; padding: 7px 20px; text-align: left; font-size: 13px; }
+.spread-row:hover { background: var(--surface); }
+.spread-row b { font-weight: 500; }
+.spread-track { position: relative; height: 14px; display: block; }
+.spread-track .mid { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--line-strong); }
+.spread-track .bar { position: absolute; top: 3px; height: 8px; border-radius: 2px; transition: width 600ms var(--ease); }
+.spread-track .bar.up { background: var(--green); }
+.spread-track .bar.down { background: var(--amber); }
+.fp-mark > span:first-child .mono { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; }
+@media (max-width: 767px) { .spread-row { grid-template-columns: 96px minmax(0, 1fr) 90px; } }

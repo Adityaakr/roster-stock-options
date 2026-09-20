@@ -20,11 +20,11 @@ const NAV = [
   ] },
   { group: "Desks", items: [
     { href: "/buy", label: "Protected Buy", icon: Icon.Lock, match: (p: string) => p.startsWith("/buy") },
-    { href: "/pre-ipo", label: "First Print", icon: Icon.Building, match: (p: string) => p.startsWith("/pre-ipo") }
+    { href: "/pre-ipo", label: "PreStocks", icon: Icon.Building, match: (p: string) => p.startsWith("/pre-ipo") }
   ] }
 ];
 
-const CRUMB: Record<string, string> = { ask: "Ask", markets: "Markets", trade: "Terms", positions: "Positions", underwrite: "Underwrite", vaults: "Vaults", roster: "Roster", buy: "Protected Buy", "pre-ipo": "First Print" };
+const CRUMB: Record<string, string> = { ask: "Ask", markets: "Markets", trade: "Terms", positions: "Positions", underwrite: "Underwrite", vaults: "Vaults", roster: "Roster", buy: "Protected Buy", "pre-ipo": "PreStocks" };
 
 /** The market the screen is on, from `?m=` or the term id, so the nav keeps it when moving between screens. */
 function useMarketParam(pathname: string): string | null {

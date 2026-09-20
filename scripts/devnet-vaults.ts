@@ -38,8 +38,7 @@ async function main(): Promise<void> {
     const mint = new PublicKey(e.mint);
     const m = await c.fetchMarket(mint);
     if (!m) { console.log(`${e.symbol}: not listed, skipped`); continue; }
-    // Floors are refused on fee mints, so a fee mint gets a covered-call vault only.
-    const kinds: VaultKind[] = m.hasTransferFee ? ["covered_call"] : ["covered_call", "cash_secured_put"];
+    const kinds: VaultKind[] = ["covered_call", "cash_secured_put"];
     for (const kind of kinds) {
       let v = await c.fetchVault(m, kind);
       if (!v) {
@@ -59,6 +58,17 @@ async function main(): Promise<void> {
       if (args.includes("--align") && v.epoch >= 1 && v.nextRollTs !== firstRoll) {
         await c.send(await c.setVaultParams(m, kind, { nextRollTs: firstRoll }));
         console.log(`${e.symbol} ${kind}: next roll aligned to ${new Date(Number(firstRoll) * 1000).toISOString()}`);
+      }
+      // `--top-up <usdc>` queues more USDC into a cash-secured-put vault (it enters at the next roll): a put on a
+      // token priced in the thousands needs more than the default seed to cover its three strikes.
+      const topUp = args.indexOf("--top-up");
+      if (topUp >= 0 && kind === "cash_secured_put") {
+        const raw = BigInt(args[topUp + 1] ?? "0") * USDC;
+        if (raw > 0n) {
+          await mintToOwner(connection, deployer, quote.mint, quote.program, deployer.publicKey, raw);
+          await c.send(await c.vaultDeposit(m, kind, raw));
+          console.log(`${e.symbol} ${kind}: queued ${raw / USDC} USDC more, enters at the next roll`);
+        }
       }
       // Seed: the treasury deposits, minted fresh on devnet. Skipped when the vault already has shares or a queue.
       if (v.totalShares === 0n && v.pendingDepositRaw === 0n) {

@@ -81,7 +81,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
           <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
             <div>
               <div className="h6">Mark</div>
-              <div className="small" style={{ marginTop: 2 }}>{m.priceSource === "hermes" ? "Pyth Hermes token feed" : m.priceSource === "xstocks" ? "xStocks issuer quote (no Pyth entitlement on this cluster)" : m.priceSource === "jupiter" ? "Jupiter routed price (no Pyth entitlement, no issuer quote)" : m.priceSource === "tessera" ? "Tessera published mark" : m.priceSource === "prestocks" ? "PreStocks token price" : m.priceSource === "reference" ? "fork reference price" : "no feed"}, recorded every tick</div>
+              <div className="small" style={{ marginTop: 2 }}>{m.priceSource === "hermes" ? "Pyth Hermes token feed" : m.priceSource === "xstocks" ? "xStocks issuer quote (no Pyth entitlement on this cluster)" : m.priceSource === "jupiter" ? "Jupiter routed price (no Pyth entitlement, no issuer quote)" : m.priceSource === "prestocks" ? "PreStocks token price, where the token trades" : m.priceSource === "reference" ? "fork reference price" : "no feed"}, recorded every tick</div>
             </div>
             <div className="seg" role="group" aria-label="Window">
               {[1, 7, 30].map((d) => <button key={d} className={days === d ? "on" : ""} onClick={() => setDays(d)}>{d === 1 ? "24h" : `${d}d`}</button>)}
@@ -110,7 +110,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
             <div className="small muted" style={{ marginTop: 2 }}>The cheapest live term each side. Every other strike is in the grid below.</div>
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
               {bestGap[0] ? <Link className="term-pick" href={`/trade/${bestGap[0].id}`} data-testid="buy-gap"><span><b>Buy a Gap</b> <span className="muted">${usdK(bestGap[0].strike)} · {dayLabel(bestGap[0].expiryTs)}</span></span><span className="mono">${usd(bestGap[0].ladder[0]!.ask!)} / share</span><span className="pick-go">Buy →</span></Link> : <div className="small muted">No Gap quoted right now.</div>}
-              {bestFloor[0] ? <Link className="term-pick" href={`/trade/${bestFloor[0].id}`} data-testid="buy-floor"><span><b>Buy a Floor</b> <span className="muted">${usdK(bestFloor[0].strike)} · {dayLabel(bestFloor[0].expiryTs)}</span></span><span className="mono">${usd(bestFloor[0].ladder[0]!.ask!)} / share</span><span className="pick-go">Buy →</span></Link> : <div className="small muted">{m.hasTransferFee ? "Floors wait for fee-inclusive settlement on this mint." : "No Floor quoted right now."}</div>}
+              {bestFloor[0] ? <Link className="term-pick" href={`/trade/${bestFloor[0].id}`} data-testid="buy-floor"><span><b>Buy a Floor</b> <span className="muted">${usdK(bestFloor[0].strike)} · {dayLabel(bestFloor[0].expiryTs)}</span></span><span className="mono">${usd(bestFloor[0].ladder[0]!.ask!)} / share</span><span className="pick-go">Buy →</span></Link> : <div className="small muted">No Floor quoted right now.</div>}
               <Link className="btn secondary sm" href={`/underwrite?m=${m.symbol}`} style={{ justifySelf: "start", marginTop: 4 }}>Underwrite {m.symbol}</Link>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
             { k: "Permanent delegate", v: m.hasPermanentDelegate ? "yes: the issuer can move tokens from any account, including a vault" : "no" },
             { k: "Pausable", v: m.pausable ? "yes: a pause halts every series until the resume, and expiry extends 24 hours" : "no" },
             { k: "Transfer fee", v: m.feeBps > 0 ? `${(m.feeBps / 100).toFixed(2)}% on every transfer; exercise delivers the raw amount less the fee` : "none" },
-            { k: "Rights", v: m.wrapperTier === "xStock" ? "tracker certificate, no voting rights; dividends reinvested through the multiplier" : m.wrapperTier === "Ondo" ? "Ondo tokenized stock; no voting rights, corporate actions through the issuer's multiplier" : m.wrapperTier === "Tessera" ? "loan participation rights, not securities" : "SPV exposure, no ownership, voting or dividend rights" }
+            { k: "Rights", v: m.wrapperTier === "xStock" ? "tracker certificate, no voting rights; dividends reinvested through the multiplier" : m.wrapperTier === "Ondo" ? "Ondo tokenized stock; no voting rights, corporate actions through the issuer's multiplier" : "backed by holding entities invested in the company; no ownership, voting, dividend or information rights" }
           ]} />
         </div>
         <div className="card">

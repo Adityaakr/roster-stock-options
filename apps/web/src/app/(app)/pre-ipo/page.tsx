@@ -2,62 +2,64 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Sparkline } from "@/components/charts";
 import { CountUp, Stagger } from "@/components/motion";
 import { Badge, ErrorState, Loading } from "@/components/ui";
-import { usd, usd0 } from "@/lib/format";
+import { floatUsd, short, spreadLabel, TokenMark, type PreIpoTokenView } from "@/components/preipo";
+import { usd, usd0, usdK } from "@/lib/format";
 
 /*
- * First Print (CLAUDE.md 5): the registry of Tessera and PreStocks tokens, live from the issuers, one card per token
- * with the rights profile, mark versus token price and the implied discount, the transfer fee read from the mint, the
- * verdict, and the funded-exit terms where a market is live. The redemption cliff and the price of no exit below.
+ * The PreStocks desk (CLAUDE.md 5 First Print, docs/03-prestocks-decision.md): every token the issuer lists, live from
+ * its API, with the mark, where the token trades, the signed spread between them, the valuations both imply, the
+ * supply, the fee and verdict read from the mint, and the live terms where a market exists. The spread is a
+ * premium or a discount to the issuer's mark, shown both ways; nothing here calls it a discount by default.
  */
-interface Token {
-  symbol: string; name: string; issuer: "Tessera" | "PreStocks"; mint: string; markPrice: number | null; tokenPrice: number | null; holders: number | null; sector: string | null; logo: string | null; external: string | null;
-  discountPct: number | null; feeBps: number | null; decimals: number | null; verdict: string; reason: string; escrowProven: boolean; tier: number | null;
-  market: { symbol: string; liveSeries: number; depthUsdc: number; bestAsk: number | null } | null;
-  rights: { what: string; rights: string; exit: string };
-}
-type Filter = "all" | "Tessera" | "PreStocks" | "listed";
+type Filter = "all" | "listed" | "above" | "below";
 
 export default function PreIpoPage() {
   const router = useRouter();
-  const [data, setData] = useState<{ tokens: Token[]; generatedAt: string | null } | null>(null);
+  const [data, setData] = useState<{ tokens: PreIpoTokenView[]; generatedAt: string | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   useEffect(() => {
-    fetch("/api/preipo", { cache: "no-store" }).then(async (r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return (await r.json()) as { tokens: Token[]; generatedAt: string | null }; }).then(setData).catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+    const load = () => fetch("/api/preipo", { cache: "no-store" }).then(async (r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return (await r.json()) as { tokens: PreIpoTokenView[]; generatedAt: string | null }; }).then(setData).catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+    load();
+    const h = setInterval(load, 60_000);
+    return () => clearInterval(h);
   }, []);
   const tokens = useMemo(() => data?.tokens ?? [], [data]);
   const shown = useMemo(() => {
-    const list = tokens.filter((t) => filter === "all" || (filter === "listed" ? !!t.market : t.issuer === filter));
-    // Listed first, then by holders, then by mark: what can be traded here leads.
-    return [...list].sort((a, b) => Number(!!b.market) - Number(!!a.market) || (b.holders ?? 0) - (a.holders ?? 0) || (b.markPrice ?? 0) - (a.markPrice ?? 0));
+    const list = tokens.filter((t) => filter === "all" || (filter === "listed" ? !!t.market : filter === "above" ? (t.spreadPct ?? 0) > 0 : (t.spreadPct ?? 0) < 0));
+    // Listed first, then by the size of the token float: what can be traded here leads.
+    return [...list].sort((a, b) => Number(!!b.market) - Number(!!a.market) || floatUsd(b) - floatUsd(a));
   }, [tokens, filter]);
-  if (error) return <ErrorState message={`Could not read the pre-IPO registries: ${error}`} next="Reload the page." />;
-  if (!data) return <Loading what="the registries" />;
+  if (error) return <ErrorState message={`Could not read the PreStocks registry: ${error}`} next="Reload the page." />;
+  if (!data) return <Loading what="the PreStocks registry" />;
   const listed = tokens.filter((t) => t.market);
-  const holders = tokens.reduce((a, t) => a + (t.holders ?? 0), 0);
-  const discounts = tokens.filter((t) => t.discountPct !== null).map((t) => t.discountPct!);
-  const avgDiscount = discounts.length ? discounts.reduce((a, b) => a + b, 0) / discounts.length : null;
-  const open = (t: Token) => router.push(`/pre-ipo/${encodeURIComponent(t.symbol)}`);
+  const above = tokens.filter((t) => (t.spreadPct ?? 0) > 0).length;
+  const below = tokens.filter((t) => (t.spreadPct ?? 0) < 0).length;
+  const float = tokens.reduce((a, t) => a + floatUsd(t), 0);
+  const open = (t: PreIpoTokenView) => router.push(`/pre-ipo/${encodeURIComponent(t.symbol)}`);
 
   return (
     <div>
       <div className="page-head">
         <div>
-          <h1>First Print</h1>
-          <p>Funded exits on the assets with no exit at all. A known price on a known date for tokens whose market has never opened, live from Tessera and PreStocks.</p>
+          <h1>PreStocks</h1>
+          <p>The stocks that have not listed yet, priced two ways: the issuer&apos;s mark for the share and where the token trades. A Gap or a Floor on each, backed before you buy, settled in the token itself.</p>
         </div>
         <div className="flex items-center gap-4 flex-wrap">
-          <div className="hstat"><span>Tokens tracked</span><b className="mono"><CountUp value={String(tokens.length)} /></b></div>
+          <div className="hstat"><span>Tokens</span><b className="mono"><CountUp value={String(tokens.length)} /></b></div>
           <div className="hstat"><span>Listed here</span><b className="mono"><CountUp value={String(listed.length)} /></b></div>
-          <div className="hstat"><span>Holders, Tessera</span><b className="mono"><CountUp value={holders.toLocaleString("en-US")} /></b></div>
-          <div className="hstat"><span>Token vs mark, PreStocks</span><b className="mono">{avgDiscount === null ? "n/a" : `${avgDiscount > 0 ? "−" : "+"}${Math.abs(avgDiscount).toFixed(1)}%`}</b></div>
+          <div className="hstat"><span>Token float</span><b className="mono">${short(float)}</b></div>
+          <div className="hstat"><span>Above the mark</span><b className="mono">{above} <span className="muted" style={{ fontWeight: 400, fontSize: 13 }}>· below {below}</span></b></div>
         </div>
       </div>
 
-      <div className="uexplore" style={{ marginTop: 22 }}>
-        {([["all", "All tokens", `${tokens.length} tracked`], ["listed", "Listed here", `${listed.length} with a live market`], ["Tessera", "Tessera", "loan participation rights"], ["PreStocks", "PreStocks", "SPV exposure, backed 1:1"]] as [Filter, string, string][]).map(([id, t, s]) => (
+      <SpreadChart tokens={tokens} onPick={open} />
+
+      <div className="uexplore" style={{ marginTop: 18 }}>
+        {([["all", "All tokens", `${tokens.length} from the issuer`], ["listed", "Listed here", `${listed.length} with a live market`], ["above", "Above the mark", `${above} trade at a premium`], ["below", "Below the mark", `${below} trade at a discount`]] as [Filter, string, string][]).map(([id, t, s]) => (
           <button key={id} className={`utile ${filter === id ? "on" : ""}`} onClick={() => setFilter(id)}><span className="t">{t}</span><span className="s">{s}</span></button>
         ))}
       </div>
@@ -65,24 +67,28 @@ export default function PreIpoPage() {
       {shown.length === 0 ? <div className="card pad muted" style={{ marginTop: 14 }}>Nothing here for that filter.</div> : (
         <Stagger className="fp-grid" step={0.05}>
           {shown.map((t) => (
-            <button key={t.mint} className={`card fp-card ${t.market ? "live" : ""}`} onClick={() => open(t)} data-testid="preipo-row" aria-label={`${t.symbol}, ${t.issuer}`}>
+            <button key={t.mint} className={`card fp-card ${t.market ? "live" : ""}`} onClick={() => open(t)} data-testid="preipo-row" aria-label={`${t.symbol}, PreStocks`}>
               <div className="flex items-center justify-between">
                 <TokenMark t={t} />
-                <Badge tone={t.issuer === "Tessera" ? "purple" : "blue"}>{t.issuer}</Badge>
+                {t.market ? <Badge tone="green" dot>listed</Badge> : <Badge>not listed here</Badge>}
               </div>
-              <div className="fp-name"><b>{t.symbol}</b><span className="muted">{t.sector ?? (t.issuer === "PreStocks" ? "SPV exposure, backed 1:1" : t.rights.what)}</span></div>
+              <div className="fp-name"><b>{t.symbol}</b><span className="muted">{t.description ?? t.name}</span></div>
               <div className="fp-mark">
-                <span className="mono">{t.markPrice === null ? "n/a" : `$${usd(t.markPrice)}`}</span>
-                <span className="small muted">issuer mark</span>
+                <span>
+                  <span className="mono">{t.tokenPrice === null ? "n/a" : `$${usd(t.tokenPrice)}`}</span>
+                  <span className="small muted" style={{ display: "block" }}>token price</span>
+                </span>
+                {t.market?.sparkline?.length ? <Sparkline points={t.market.sparkline} width={84} height={26} /> : null}
               </div>
               <div className="fp-rows">
-                <div><span>Token price</span><b className="mono fp-tp">{t.tokenPrice === null ? <span className="muted">not published</span> : <>${usd(t.tokenPrice)}<small className={t.discountPct !== null && t.discountPct > 0 ? "down" : "up"}>{t.discountPct === null ? "" : `${t.discountPct > 0 ? "−" : "+"}${Math.abs(t.discountPct).toFixed(1)}% vs mark`}</small></>}</b></div>
-                <div><span>Holders</span><b className="mono">{t.holders === null ? <span className="muted">n/a</span> : t.holders.toLocaleString("en-US")}</b></div>
-                <div><span>Transfer fee</span><b className="mono">{t.feeBps === null ? <span className="muted">not read</span> : t.feeBps === 0 ? "none" : `${(t.feeBps / 100).toFixed(2)}%`}</b></div>
+                <div><span>Issuer mark</span><b className="mono fp-tp">{t.markPrice === null ? <span className="muted">n/a</span> : <>${usd(t.markPrice)}<small className={t.spreadPct === null ? "muted" : t.spreadPct >= 0 ? "up" : "down"}>{spreadLabel(t.spreadPct)}</small></>}</b></div>
+                <div><span>Valuation</span><b className="mono fp-tp">{t.impliedValuation === null ? <span className="muted">n/a</span> : <>${short(t.impliedValuation)}<small className="muted">{t.markValuation !== null ? `mark $${short(t.markValuation)}` : "implied by the token"}</small></>}</b></div>
+                <div><span>Supply</span><b className="mono">{t.supply === null ? <span className="muted">n/a</span> : usdK(t.supply)}</b></div>
+                <div><span>Fee</span><b className="mono">{t.feeBps === null ? <span className="muted">not read</span> : t.feeBps === 0 ? "none" : `${(t.feeBps / 100).toFixed(2)}%`}</b></div>
                 <div><span>Escrow</span><b><Badge tone={t.verdict === "eligible" || t.verdict === "eligible_with_fee" ? "green" : t.verdict === "not checked" ? undefined : "amber"}>{t.escrowProven ? "proven" : t.verdict.replaceAll("_", " ")}</Badge></b></div>
               </div>
               <div className="fp-foot">
-                {t.market ? <span className="ink">{t.market.liveSeries} Gap series · <span className="mono">${usd0(t.market.depthUsdc)}</span> depth</span> : <span className="muted">{t.tier === 3 ? "Tier 3: quote it yourself" : "No market here yet"}</span>}
+                {t.market ? <span className="ink">{t.market.liveSeries} live series · <span className="mono">${usd0(t.market.depthUsdc)}</span> depth</span> : <span className="muted">{t.tier === 3 ? "Tier 3: quote it yourself" : "No market here yet"}</span>}
                 <span className="arrow" aria-hidden>→</span>
               </div>
             </button>
@@ -92,26 +98,57 @@ export default function PreIpoPage() {
 
       <div className="grid-2" style={{ marginTop: 22 }}>
         <div className="card pad">
-          <div className="h6">Tessera: the redemption cliff</div>
-          <p className="body-sm" style={{ margin: "6px 0 0" }}>{tokens.find((t) => t.issuer === "Tessera")?.rights.exit ?? "Redemption needs a liquidity event, lock-up expiry, Tessera receiving proceeds and an announced start date, with no time bound; unclaimed proceeds are forfeited after the window."} A Gap here is a known price on a known date against that; the 0.2% fee is taken by the mint on every transfer, so exercise delivers the raw amount less the fee and the ticket says so.</p>
+          <div className="h6">PreStocks&apos; own terms</div>
+          <div className="ask-rows" style={{ marginTop: 10 }}>
+            <div><span>Backing</span><b style={{ fontWeight: 400 }}>{tokens[0]?.rights.what ?? ""}</b></div>
+            <div><span>Rights</span><b style={{ fontWeight: 400 }}>{tokens[0]?.rights.rights ?? ""}</b></div>
+            <div><span>Exit</span><b style={{ fontWeight: 400 }}>{tokens[0]?.rights.exit ?? ""}</b></div>
+            <div><span>On an IPO</span><b style={{ fontWeight: 400 }}>{tokens[0]?.rights.ipo ?? ""}</b></div>
+            <div><span>On a deal</span><b style={{ fontWeight: 400 }}>{tokens[0]?.rights.mna ?? ""}</b></div>
+          </div>
         </div>
         <div className="card pad">
-          <div className="h6">PreStocks: the price of no exit</div>
-          <p className="body-sm" style={{ margin: "6px 0 0" }}>{tokens.find((t) => t.issuer === "PreStocks")?.rights.exit ?? "A DEX where liquidity depends on finding a buyer; the mark-versus-token spread is the price of no exit."} No ownership, voting or dividend rights. The mint charges the transfer fee shown on each card; Floors wait for fee-inclusive settlement.</p>
+          <div className="h6">What a contract here is</div>
+          <p className="body-sm" style={{ margin: "6px 0 0" }}>A Gap is the right to buy the token at a strike through a date; a Floor the right to sell it. Both are backed in full from the moment they are sold and settle in the token itself, with no oracle in the way of an exit. The mint takes its {tokens[0]?.feeBps ? `${(tokens[0].feeBps / 100).toFixed(2)}%` : "transfer"} fee on every move, so a Gap delivers the shares less the fee and a Floor has you deliver the fee on top; the ticket states both in numbers. Prices come from where the token trades, never from the mark: the mark is what the issuer says a share is worth, and no one will pay it for the token.</p>
+          <p className="body-sm" style={{ margin: "8px 0 0" }}>The spread between the two is shown as a premium or a discount. It is not a basis anyone can close, because nothing converts one into the other before a listing.</p>
         </div>
       </div>
-      <p className="small" style={{ marginTop: 14 }}>Issuer figures read now from rest-api.tessera.pe and prestocks.com; logos are the issuer&apos;s own where it publishes one. Mint facts and verdicts from the registry run{data.generatedAt ? ` of ${new Date(data.generatedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}` : ""}. Pre-IPO tokens have no Pyth feed: the issuer&apos;s own mark prices these terms and auto-exercise is off on them.</p>
+      <p className="small" style={{ marginTop: 14 }}>Figures read now from prestocks.com/api and refreshed every minute; logos are the issuer&apos;s. Mint facts and verdicts from the registry run{data.generatedAt ? ` of ${new Date(data.generatedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}` : ""}. PreStocks tokens have no Pyth feed: the token price prices these terms, recent volatility is measured from the prices the services record, and auto-exercise is off on them.</p>
     </div>
   );
 }
 
-/** The issuer's logo where it publishes one (PreStocks does), otherwise a monogram. */
-function TokenMark({ t }: { t: Token }) {
-  const [broken, setBroken] = useState(false);
-  if (t.logo && !broken) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={t.logo} alt="" className="fp-logo" onError={() => setBroken(true)} />;
-  }
-  return <span aria-hidden className={`fp-logo mono mono-${t.issuer === "Tessera" ? "t" : "p"}`}>{t.symbol.replace(/^t/, "").slice(0, 2).toUpperCase()}</span>;
+/** Where each token trades against its mark, as one picture: bars either side of the mark, sorted. */
+function SpreadChart({ tokens, onPick }: { tokens: PreIpoTokenView[]; onPick: (t: PreIpoTokenView) => void }) {
+  const rows = tokens.filter((t) => t.spreadPct !== null).sort((a, b) => (b.spreadPct ?? 0) - (a.spreadPct ?? 0));
+  if (!rows.length) return null;
+  const max = Math.max(5, ...rows.map((t) => Math.abs(t.spreadPct ?? 0)));
+  return (
+    <section className="card spread" style={{ marginTop: 22 }}>
+      <div className="spread-head">
+        <div>
+          <div className="h6">Where the token trades against the mark</div>
+          <div className="small muted" style={{ marginTop: 2 }}>The issuer&apos;s mark is the centre line. A bar to the right is a token paying a premium for access; to the left, a discount for the lack of it. Both directions exist today.</div>
+        </div>
+        <div className="small muted mono">±{max.toFixed(0)}%</div>
+      </div>
+      <div className="spread-rows">
+        {rows.map((t) => {
+          const v = t.spreadPct ?? 0;
+          const w = (Math.abs(v) / max) * 50;
+          return (
+            <button key={t.mint} className="spread-row" onClick={() => onPick(t)} aria-label={`${t.symbol} ${spreadLabel(v)}`}>
+              <span className="flex items-center gap-2" style={{ minWidth: 0 }}><TokenMark t={t} size={22} /><b>{t.symbol}</b></span>
+              <span className="spread-track" aria-hidden>
+                <i className="mid" />
+                <i className={`bar ${v >= 0 ? "up" : "down"}`} style={v >= 0 ? { left: "50%", width: `${w}%` } : { right: "50%", width: `${w}%` }} />
+              </span>
+              <span className={`mono ${v >= 0 ? "up" : "down"}`} style={{ textAlign: "right" }}>{spreadLabel(v)}</span>
+              <span className="small muted mono hide-sm" style={{ textAlign: "right" }}>${usd(t.tokenPrice ?? 0)} vs ${usd(t.markPrice ?? 0)}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
-

@@ -4,17 +4,28 @@ How the treasury and the vaults price what they post. Every decision line in the
 
 ## The mark
 
-Per market, in order: an issuer that publishes a mark for its own token (Tessera, PreStocks); the Tokens API snapshot;
-Jupiter's routed price; the xStocks quote. Routed and snapshot prices are per token and are divided by the on-chain
+Per market, in order: for a PreStocks token, the price where the token trades (`tokenPrice` from the issuer's API),
+never the issuer's mark; the Tokens API snapshot; Jupiter's routed price; the xStocks quote. Routed and snapshot prices are per token and are divided by the on-chain
 multiplier to give a per-share price. A devnet replica takes the price of the mainnet mint it stands in for. Pyth Core
 is used when the key's grant covers the feed and is absent otherwise; the app prints which source priced every mark.
 
 ## The reference model
 
 Black-Scholes on the per-lot forward (`price × multiplier`, or the pending dividend multiplier when one is scheduled),
-the strike per lot, time to expiry in years, and a realised volatility blended over 7 and 30 day windows with a
-configured floor (35% annualised). Realised volatility comes from Pyth Benchmarks when the key allows, else from the
-marks the services record themselves every tick; a floor-bound volatility is reported as `floor` and the app says so.
+the strike per lot, time to expiry in years, and a realised volatility blended over 7, 30 and 90 day windows with a
+configured floor (35% annualised). Realised volatility comes from Pyth Benchmarks when the key allows; a floor-bound
+volatility is reported as `floor` and the app says so.
+
+**Pre-IPO tokens** have no Benchmarks symbol. Their volatility is measured from the token prices the services record
+themselves (the last recorded price of each UTC day, the same 7/30/90 blend) once seven days exist, and is a stated
+floor of 90% annualised until then (`PREIPO_VOL_FLOOR`; the recorded SPACEX ticks ranged 8% in six hours on
+2026-09-20, which a 35% floor would have sold for a third of fair value). The source is reported as `recorded` or
+`preipo_floor` and the token page prints which.
+
+**Transfer fees are in the price.** On a mint with a transfer fee `f`, a Gap delivers the tokens less the fee, so its
+value is `(1 − f) × call(S, K / (1 − f))`; a Floor has the holder deliver gross so the writers receive exactly the raw
+amount, so its value is `put(S / (1 − f), K)`. The vault's bid floors at the same fee-aware intrinsic. Both make the fee
+the holder's cost, priced, rather than the writer's surprise.
 
 **The known mismatch.** The token trades 168 hours a week; the share behind it trades about 32.5, a fifth of the week.
 A volatility measured on the token's 24/7 series prices the weekend the way the token moves, not the way the share
@@ -27,7 +38,8 @@ for dust.
 
 - `spread` is the base half-spread (12% of theoretical) times the **session multiplier**: 1.0 regular, 1.4 pre and post,
   1.8 overnight, 2.2 fully closed, from Pyth's published market hours; 3.0 inside the fifteen minutes either side of a
-  multiplier activation.
+  multiplier activation. A pre-IPO token has no exchange session, so it takes one constant multiplier of 1.6 instead of
+  the clock: there are no regular hours to be cheap in and no close to be wide in, only a thin on-chain book.
 - `skew` is the **utilisation skew** for the vault: `1 + 3u²` where `u` is the vault's own sold lots in this series
   over its per-series cap. 1.03 at a tenth sold, 1.75 at half, 3.4 at nine tenths; at the cap the vault stops asking and
   the app shows it at capacity. External writers can still fill the book above it. This is what Hegic lacked: a pool
@@ -45,4 +57,6 @@ and refreshed every tick.
 
 Each stops quoting on a market and logs its trigger; none touches the book or an exercise: price older than 60
 seconds; token-versus-share basis beyond 300 bps in the regular session; the market paused or the mint frozen; the
-vault halted by its manager or the pause authority. A halted vault still settles, rolls and pays withdrawals.
+vault halted by its manager or the pause authority. A halted vault still settles, rolls and pays withdrawals. A
+pre-IPO token's spread to the issuer's mark is recorded and shown but is not a basis and never feeds this breaker:
+nothing converts the token into the share before a listing, so the spread is a premium or a discount, not an error.

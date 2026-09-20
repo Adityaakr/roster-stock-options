@@ -273,7 +273,6 @@ function UnderwriteInner() {
           )}
         </div>
       </div>
-      <p className="small" style={{ marginTop: 14 }}>{data.source}</p>
     </div>
   );
 }

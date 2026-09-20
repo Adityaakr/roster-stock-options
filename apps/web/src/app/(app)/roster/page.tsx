@@ -193,7 +193,6 @@ function RosterInner() {
         {tab === "vaults" ? <VaultLedger vaults={marketVaults} nowTs={data.nowTs} decimals={market?.decimals ?? 8} sym={sym} /> : null}
       </section>
 
-      <p className="small" style={{ marginTop: 14 }}>{data.source}</p>
     </div>
   );
 }

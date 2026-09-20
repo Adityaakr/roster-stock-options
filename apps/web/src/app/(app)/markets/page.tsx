@@ -32,7 +32,6 @@ export default function MarketsPage() {
       </div>
       {data.blocked && data.cluster !== "fixture" ? <div className="card pad msg" role="status" style={{ padding: "12px 16px", marginBottom: 16, color: "var(--amber)" }}>The quoter is blocked on {data.blocked}; asks shown are the ones resident on-chain. Operators: docs/OPERATOR.md.</div> : null}
       <MarketList markets={data.markets} maxHeight={680} />
-      <p className="small" style={{ marginTop: 14 }}>{data.source}</p>
     </div>
   );
 }

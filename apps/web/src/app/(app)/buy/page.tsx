@@ -227,7 +227,6 @@ function BuyInner() {
       {publicKey && !cluster.programDeployed ? <div className="msg red" style={{ marginTop: 12 }} role="alert">Program not deployed on {cluster.label}; nothing to sign yet.</div> : null}
       <TxStatus state={tx.state} onRetry={tx.reset} doneHref="/positions" doneLabel="See it under Positions" />
       <p className="note" style={{ marginTop: 12 }}>Contracts can expire worthless. Maximum loss on the floor is its premium plus fees; the floor pays only if exercised. The token price itself is not protected below the strike minus the premium. The floor covers the swap&apos;s minimum out, so a slippage shortfall never leaves tokens uncovered.</p>
-      <p className="small" style={{ marginTop: 14 }}>{data.source}</p>
     </div>
   );
 }

@@ -64,7 +64,6 @@ export function Examples({ data }: { data: RosterData }) {
                 <CommitExample put={put} sym={sym} name={name} />
               ) : null}
             </div>
-            <p className="note" style={{ marginTop: 10 }}>{data.source}</p>
           </div>
         </Reveal>
       </div>

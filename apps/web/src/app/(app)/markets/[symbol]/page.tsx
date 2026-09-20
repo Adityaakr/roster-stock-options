@@ -219,7 +219,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
           </div>
         </div>
       </div>
-      <p className="small" style={{ marginTop: 4 }}>{TIER_LABEL[m.tier]}: {TIER_RULE[m.tier]} {data.source}</p>
+      <p className="small" style={{ marginTop: 4 }}>{TIER_LABEL[m.tier]}: {TIER_RULE[m.tier]}</p>
     </div>
   );
 }

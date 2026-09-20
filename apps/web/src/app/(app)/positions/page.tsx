@@ -79,7 +79,6 @@ export default function PositionsPage() {
           </div>
         </div>
       ) : null}
-      {data ? <p className="small" style={{ marginTop: 14 }}>{data.source}</p> : null}
     </div>
   );
 }

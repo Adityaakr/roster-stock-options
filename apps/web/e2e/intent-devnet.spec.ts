@@ -5,8 +5,8 @@ import { test, expect } from "@playwright/test";
  * and size. Needs OPENROUTER_API_KEY on the app; the box is absent without it and this test says so.
  */
 test("intent: a sentence becomes a ticket on the Act screen", async ({ page }) => {
-  await page.goto("/markets");
-  const box = page.getByTestId("intent");
+  await page.goto("/ask");
+  const box = page.getByTestId("intent-go");
   // The box asks the app whether a key is set before it renders; give it a moment.
   const on = await box.waitFor({ state: "visible", timeout: 10_000 }).then(() => true).catch(() => false);
   if (!on) test.skip(true, "the intent box is off: no OPENROUTER_API_KEY");

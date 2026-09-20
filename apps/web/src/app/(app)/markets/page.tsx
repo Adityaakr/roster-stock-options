@@ -1,6 +1,6 @@
 "use client";
 
-import { IntentBox } from "@/components/intent-box";
+import Link from "next/link";
 import { MarketList } from "@/components/market-list";
 import { Badge, ErrorState, Loading, Stat } from "@/components/ui";
 import { usd0 } from "@/lib/format";
@@ -21,7 +21,7 @@ export default function MarketsPage() {
           <h1 className="h3">Markets</h1>
           <p className="body-sm">Every listed market by executable depth. Open a name for its chart, terms, roster and the wrapper&apos;s rights profile.</p>
         </div>
-      <IntentBox />
+      <Link href="/ask" className="card askline" data-testid="ask-line"><span className="glyph" aria-hidden>✦</span><span>Not sure which term? <b>Say what you want in a sentence</b> and get the ticket: market, expiry, size, max loss.</span><span className="arrow" aria-hidden>→</span></Link>
         <Badge tone={data.session === "regular" ? "green" : "amber"} dot>{SESSION_LABEL[data.session]}</Badge>
       </div>
       <div className="grid-4" style={{ marginBottom: 16 }}>

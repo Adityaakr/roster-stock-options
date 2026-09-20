@@ -4,7 +4,7 @@ A sentence in, a priced ticket out. Where a model helps in a venue whose whole p
 
 ## What it does
 
-On Markets, a person types what they want: "$200 of Nvidia upside through Friday", "protect my 20 NVDAx through earnings", "get paid to buy Tesla 10% lower". The box answers with a ticket (market, Gap or Floor, strike, expiry, size, total, max loss, break-even) and two plain sentences, then a **Review** button that opens the Act screen (or Underwrite, for the write side) with that term and size filled in. Nothing is signed from the box.
+On the Ask page (`/ask`, first in the Trade group; Markets links to it), a person types what they want: "$200 of Nvidia upside through Friday", "protect my 20 NVDAx through earnings", "get paid to buy Tesla 10% lower". The box answers with a ticket (market, Gap or Floor, strike, expiry, size, total, max loss, break-even) and two plain sentences, then a **Review** button that opens the Act screen (or Underwrite, for the write side) with that term and size filled in. Nothing is signed from the box.
 
 ## Three steps, and the model is trusted with one
 
@@ -22,7 +22,7 @@ On Markets, a person types what they want: "$200 of Nvidia upside through Friday
 
 - `apps/web/src/lib/intent.ts`: the three steps. OpenRouter, model `anthropic/claude-sonnet-5` (listed with tool support at `openrouter.ai/api/v1/models` on 2026-09-20), temperature 0, 15 s timeout on the parse and 12 s on the phrasing.
 - `apps/web/src/app/api/intent/route.ts`: `GET` says whether the box exists; `POST {text}` (one sentence, up to 300 characters) returns the proposal, or `422` with the reason and the parsed intent, or `502` when the model cannot be reached.
-- `apps/web/src/components/intent-box.tsx`: the box, three example chips, the result card with the four figures, the explanation, the caveats and the review link. Test ids `intent`, `intent-text`, `intent-go`, `intent-result`, `intent-error`, `intent-review`.
+- `apps/web/src/app/(app)/ask/page.tsx`: the page. Nine example sentences in three groups (upside, protection, get paid); the ticket with its four figures, the explanation, the payoff chart for a purchase and a five-price table of the result at expiry with what each one means; beside it, **what the model read** (the parsed intent, as returned, including its own note) and **what the app decided** (expiry, strike with its distance from the mark, size, how the price was formed, what is fillable, and every assumption the resolver made). A failed parse shows the reason and what was read. Test ids `intent`, `intent-text`, `intent-go`, `intent-result`, `intent-error`, `intent-review`.
 - `/trade/[term]?size=` and `/underwrite?m=&t=&size=` accept the handover.
 - `apps/web/e2e/intent-devnet.spec.ts`: the sentence above becomes a Gap on NVDAx and the Act screen opens on it with the same size; skipped when the key is absent.
 

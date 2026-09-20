@@ -2,13 +2,15 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { motion, useReducedMotion } from "motion/react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { TxStatus } from "@/components/tx-status";
-import { Badge, ErrorState, KV, Loading } from "@/components/ui";
+import { MarketLogo } from "@/components/market-list";
+import { ErrorState, KV, Loading, Tabs } from "@/components/ui";
 import { useCluster } from "@/lib/cluster";
 import { usd, usdK, usdSmart, dayLabel } from "@/lib/format";
-import { walkAsks, feeCeil } from "@/lib/model";
+import { walkAsks, feeCeil, lots6ForShares } from "@/lib/model";
 import { useTransaction } from "@/lib/tx";
 import { useRoster } from "@/lib/use-roster";
 
@@ -34,8 +36,10 @@ function BuyInner() {
   const { publicKey } = useWallet();
   const { setVisible } = useWalletModal();
   const tx = useTransaction();
+  const reduce = useReducedMotion();
   const [usdcIn, setUsdcIn] = useState(1000);
   const [floorId, setFloorId] = useState<string | null>(null);
+  const [mode, setMode] = useState<"floor" | "plain">("floor");
   const [swap, setSwap] = useState<SwapQuote | null>(null);
   const [swapError, setSwapError] = useState<string | null>(null);
   const mint = data?.underlying.mint ?? null;
@@ -68,11 +72,13 @@ function BuyInner() {
   const shares = tokens === null ? null : tokens * u.multiplier;
   // The floor covers the swap&apos;s minimum out, at lot granularity, exactly as the builder does.
   const minLots6 = market ? BigInt(market.minLots6) : 10_000n;
-  const lots6 = swap ? ((BigInt(swap.minOutRaw) * 1_000_000n) / 10n ** BigInt(decimals) / minLots6) * minLots6 : 0n;
+  // Without a swap quote (no route on this cluster, or one still loading) the floor is sized at the mark, and every
+  // figure that depends on it is marked as an estimate.
+  const lots6 = swap ? ((BigInt(swap.minOutRaw) * 1_000_000n) / 10n ** BigInt(decimals) / minLots6) * minLots6 : u.mark > 0 ? (lots6ForShares(usdcIn / u.mark, u.multiplier) / minLots6) * minLots6 : 0n;
   const w = f && lots6 > 0n ? walkAsks(f.asks, lots6) : null;
   const premium = w ? Number(w.premium) / 1e6 : null;
   const fee = w ? Number(feeCeil(w.premium, data.feeBps)) / 1e6 : null;
-  const protectedAt = f && minTokens !== null ? (Number(lots6) / 1e6) * (f.strike * u.multiplier) : null;
+  const protectedAt = f && lots6 > 0n ? (Number(lots6) / 1e6) * (f.strike * u.multiplier) : null;
   const busy = tx.state.status === "building" || tx.state.status === "signing" || tx.state.status === "sending";
   const ready = !!publicKey && cluster.programDeployed && !!swap && !busy && !!mint;
 
@@ -82,53 +88,115 @@ function BuyInner() {
     await tx.run({ kind: "protected_buy", mint, series: withFloor && f?.series ? f.series : "", params: { usdcIn: String(Math.round(usdcIn * 1e6)), maxPremiumPerLot: worst.toString(), slippageBps: 50 } });
   }
 
+  // The sketch: what the purchase is worth at expiry across a band of prices, with and without the floor. Shares
+  // come from the swap quote when there is one, else from the mark, and the panel says which.
+  const estShares = shares ?? usdcIn / Math.max(1e-9, u.mark);
+  const estimated = shares === null;
+  const floorShares = f && lots6 > 0n ? (Number(lots6) / 1e6) * u.multiplier : estShares;
+  const cost = premium ?? (f ? f.ask * floorShares : 0);
+  const valueAt = (p: number, withFloor: boolean) => withFloor && f ? Math.max(f.strike * floorShares, p * estShares) - cost - (fee ?? 0) : p * estShares;
+  const band = [0.75, 0.85, 0.95, 1, 1.05, 1.15, 1.25].map((k) => u.mark * k);
+  const W = 420, H = 180, PAD = 8;
+  const ys = band.flatMap((p) => [valueAt(p, false), valueAt(p, true)]);
+  const yMin = Math.min(...ys), yMax = Math.max(...ys);
+  const X = (p: number) => PAD + ((p - band[0]!) / (band[band.length - 1]! - band[0]!)) * (W - 2 * PAD);
+  const Y = (v: number) => H - PAD - ((v - yMin) / Math.max(1e-9, yMax - yMin)) * (H - 2 * PAD);
+  const path = (withFloor: boolean) => band.map((p, i) => `${i ? "L" : "M"}${X(p).toFixed(1)},${Y(valueAt(p, withFloor)).toFixed(1)}`).join(" ");
+  const scen = [-0.2, -0.1, 0.1].map((d) => ({ d, p: u.mark * (1 + d), plain: valueAt(u.mark * (1 + d), false) - usdcIn, floor: valueAt(u.mark * (1 + d), true) - usdcIn }));
+
   return (
     <div>
       <div className="page-head">
         <div>
-          <h1 className="h3">Protected Buy</h1>
-          <p className="body-sm">Buy {u.symbol}, or buy {u.symbol} with a floor through a date, in one transaction: a Jupiter swap and a Floor on what the swap delivers.</p>
+          <h1>Protected Buy</h1>
+          <p>Buy {u.symbol}, or buy {u.symbol} with a floor through a date, in one transaction: a Jupiter swap and a Floor on what the swap delivers.</p>
         </div>
-        <Badge>{u.symbol} · {u.name}</Badge>
-      </div>
-      <div className="card pad" style={{ marginBottom: 16 }}>
-        <label className="lbl">USDC to spend</label>
-        <input className="field mono" type="number" min={1} step={1} value={usdcIn} onChange={(e) => setUsdcIn(Math.max(1, Math.floor(Number(e.target.value) || 1)))} style={{ maxWidth: 240 }} aria-label="USDC to spend" data-testid="usdc-in" />
-        <div className="small" style={{ marginTop: 8 }}>
-          {noRoute ? <span className="muted">No swap route for this token on this cluster. The floor below is live; the swap leg trades on mainnet.</span> : swapError ? <span className="down">Jupiter quote unavailable: {swapError}</span> : swap && tokens !== null ? <>Jupiter quotes <b className="mono ink">{tokens.toFixed(4)} {u.symbol}</b> via {swap.route}, at least <b className="mono ink">{minTokens!.toFixed(4)}</b> after {swap.slippageBps} bps slippage{Number(swap.priceImpactPct) > 0 ? `, ${(Number(swap.priceImpactPct) * 100).toFixed(2)}% price impact` : ""}.</> : "Fetching a Jupiter quote…"}
+        <div className="flex items-center gap-3">
+          {market ? <MarketLogo m={market} size={36} /> : null}
+          <div><div style={{ fontWeight: 500 }}>{u.symbol} <span className="muted" style={{ fontWeight: 400 }}>{u.name}</span></div><div className="small muted">mark <span className="mono ink">${usd(u.mark)}</span></div></div>
         </div>
       </div>
-      <div className="grid-2">
-        <div className="card pad">
-          <div className="h5">Buy</div>
-          <p className="body-sm" style={{ margin: "6px 0 16px" }}>A swap into {u.symbol} through Jupiter at the current token price. No floor, no premium.</p>
-          <KV items={[
-            { k: "Token mark", v: <span className="mono">${usd(u.mark)}</span> },
-            { k: "You receive", v: <span className="mono">{tokens === null ? "…" : `${tokens.toFixed(4)} ${u.symbol}`}</span> },
-            { k: "Cost", v: <span className="mono ink" style={{ fontWeight: 500 }}>${usdSmart(usdcIn)}</span> },
-            { k: "Worst case", v: "the token price" }
-          ]} />
-          <div className="divider" style={{ margin: "16px 0" }} />
-          {!publicKey ? <button className="btn primary wide" onClick={() => setVisible(true)}>Connect wallet</button> : <button className="btn primary wide" disabled={!ready} onClick={() => run(false)} data-testid="buy-plain">Buy {tokens === null ? "" : `${tokens.toFixed(2)} `}{u.symbol}</button>}
-        </div>
-        <div className="card pad" style={{ boxShadow: "inset 0 2px 0 var(--ink)" }}>
-          <div className="h5">Buy with a floor</div>
-          <p className="body-sm" style={{ margin: "6px 0 16px" }}>The same swap, plus a Floor bought in the same transaction on the tokens it delivers. Purchase cost, premium and protected proceeds, together.</p>
-          <label className="lbl">Floor</label>
-          <select className="field" value={f?.id ?? ""} onChange={(e) => setFloorId(e.target.value)} aria-label="Floor" data-testid="floor">
-            {floors.length === 0 ? <option value="">No Floor quoted on {u.symbol} right now</option> : floors.map((x) => <option key={x.id} value={x.id}>${usdK(x.strike)} through {dayLabel(x.expiryTs)} · ${usd(x.ask)} per share</option>)}
-          </select>
-          <div style={{ marginTop: 14 }}>
-            <KV items={[
-              { k: `Purchase, ${shares === null ? "…" : shares.toFixed(2)} ${u.symbol}`, v: <span className="mono">${usdSmart(usdcIn)}</span> },
-              { k: `Premium${fee !== null ? ` and ${data.feeBps} bps fee` : ""}`, v: <span className="mono">{premium === null ? "…" : w && !w.fillable ? "not fillable at this size" : `$${usdSmart(premium + (fee ?? 0))}`}</span> },
-              { k: "Total", v: <span className="mono ink" style={{ fontWeight: 500 }} data-testid="pb-total">{premium === null ? "…" : `$${usdSmart(usdcIn + premium + (fee ?? 0))}`}</span> },
-              { k: `Protected proceeds through ${f ? dayLabel(f.expiryTs) : "expiry"}`, v: <span className="mono up">{protectedAt === null ? "…" : `$${usdSmart(protectedAt)}`}</span> },
-              { k: "Worst case", v: <span className="mono down">{protectedAt === null || premium === null ? "…" : `−$${usdSmart(usdcIn + premium + (fee ?? 0) - protectedAt)}`}</span> }
-            ]} />
+
+      <div className="grid-2 split-right" style={{ marginTop: 22 }}>
+        <div className="card pad pb-ticket">
+          <label className="lbl">USDC to spend</label>
+          <div className="pb-amount">
+            <input className="field mono" type="number" min={1} step={1} value={usdcIn} onChange={(e) => setUsdcIn(Math.max(1, Math.floor(Number(e.target.value) || 1)))} aria-label="USDC to spend" data-testid="usdc-in" />
+            <span className="unit">USDC</span>
           </div>
-          <div className="divider" style={{ margin: "16px 0" }} />
-          {!publicKey ? <button className="btn primary wide" onClick={() => setVisible(true)}>Connect wallet</button> : <button className="btn primary wide" disabled={!ready || !f || !w?.fillable} onClick={() => run(true)} data-testid="buy-floor">Buy {u.symbol} with a ${f ? usdK(f.strike) : "–"} floor</button>}
+          <div className="flex items-center gap-2" style={{ marginTop: 8 }}>
+            {[250, 1000, 5000].map((n) => <button key={n} className={`chip ${usdcIn === n ? "on" : ""}`} onClick={() => setUsdcIn(n)}>${usdK(n)}</button>)}
+          </div>
+          <div className="small" style={{ marginTop: 10 }}>
+            {noRoute ? <span className="muted">No swap route for this token on this cluster: the swap leg trades on mainnet. The floor is live and priced below.</span> : swapError ? <span className="down">Jupiter quote unavailable: {swapError}</span> : swap && tokens !== null ? <>Jupiter quotes <b className="mono ink">{tokens.toFixed(4)} {u.symbol}</b> via {swap.route}, at least <b className="mono ink">{minTokens!.toFixed(4)}</b> after {swap.slippageBps} bps slippage{Number(swap.priceImpactPct) > 0 ? `, ${(Number(swap.priceImpactPct) * 100).toFixed(2)}% price impact` : ""}.</> : "Fetching a Jupiter quote…"}
+          </div>
+
+          <div className="divider" style={{ margin: "18px 0" }} />
+          <label className="lbl">Protection</label>
+          <Tabs value={mode} onChange={setMode} items={[{ id: "floor", label: "With a floor" }, { id: "plain", label: "No floor" }]} />
+          {mode === "floor" ? (
+            <>
+              <p className="small muted" style={{ margin: "10px 0 12px" }}>A Floor bought in the same transaction on the tokens the swap delivers: the right to sell them at the strike any time through the date.</p>
+              <label className="lbl">Floor</label>
+              <select className="field" value={f?.id ?? ""} onChange={(e) => setFloorId(e.target.value)} aria-label="Floor" data-testid="floor">
+                {floors.length === 0 ? <option value="">No Floor quoted on {u.symbol} right now</option> : floors.map((x) => <option key={x.id} value={x.id}>${usdK(x.strike)} through {dayLabel(x.expiryTs)} · ${usd(x.ask)} per share</option>)}
+              </select>
+              <div style={{ marginTop: 14 }}>
+                <KV items={[
+                  { k: `Purchase, ${shares === null ? `about ${estShares.toFixed(2)}` : shares.toFixed(2)} ${u.symbol}`, v: <span className="mono">${usdSmart(usdcIn)}</span> },
+                  { k: `Premium${fee !== null ? ` and ${data.feeBps} bps fee` : ""}`, v: <span className="mono">{premium === null ? "…" : w && !w.fillable ? "not fillable at this size" : `$${usdSmart(premium + (fee ?? 0))}`}</span> },
+                  { k: "Total", v: <span className="mono ink" style={{ fontWeight: 500 }} data-testid="pb-total">{premium === null ? "…" : `$${usdSmart(usdcIn + premium + (fee ?? 0))}`}</span> },
+                  { k: `Protected proceeds through ${f ? dayLabel(f.expiryTs) : "expiry"}`, v: <span className="mono up">{protectedAt === null ? "…" : `$${usdSmart(protectedAt)}`}</span> },
+                  { k: "Worst case", v: <span className="mono down">{protectedAt === null || premium === null ? "…" : `−$${usdSmart(usdcIn + premium + (fee ?? 0) - protectedAt)}`}</span> }
+                ]} />
+              </div>
+              {estimated && premium !== null ? <p className="small muted" style={{ margin: "8px 0 0" }}>Sized at the mark until a swap quote arrives; the transaction sizes the floor to the swap&apos;s minimum out.</p> : null}
+              <div className="divider" style={{ margin: "16px 0" }} />
+              {!publicKey ? <button className="btn primary wide" onClick={() => setVisible(true)}>Connect wallet</button> : <button className="btn primary wide" disabled={!ready || !f || !w?.fillable} onClick={() => run(true)} data-testid="buy-floor">Buy {u.symbol} with a ${f ? usdK(f.strike) : "–"} floor</button>}
+            </>
+          ) : (
+            <>
+              <p className="small muted" style={{ margin: "10px 0 12px" }}>A swap into {u.symbol} through Jupiter at the current token price. No floor, no premium.</p>
+              <KV items={[
+                { k: "Token mark", v: <span className="mono">${usd(u.mark)}</span> },
+                { k: "You receive", v: <span className="mono">{tokens === null ? "…" : `${tokens.toFixed(4)} ${u.symbol}`}</span> },
+                { k: "Cost", v: <span className="mono ink" style={{ fontWeight: 500 }}>${usdSmart(usdcIn)}</span> },
+                { k: "Worst case", v: "the token price" }
+              ]} />
+              <div className="divider" style={{ margin: "16px 0" }} />
+              {!publicKey ? <button className="btn primary wide" onClick={() => setVisible(true)}>Connect wallet</button> : <button className="btn primary wide" disabled={!ready} onClick={() => run(false)} data-testid="buy-plain">Buy {tokens === null ? "" : `${tokens.toFixed(2)} `}{u.symbol}</button>}
+            </>
+          )}
+        </div>
+
+        <div className="card">
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
+            <div className="h6">What it is worth at expiry</div>
+            <div className="small muted" style={{ marginTop: 4 }}>The value of ${usdSmart(usdcIn)} of {u.symbol} across a band of prices, with and without the ${f ? usdK(f.strike) : "–"} floor{estimated ? ", shares estimated at the mark" : ""}.</div>
+          </div>
+          <div style={{ padding: "16px 20px" }}>
+            <svg viewBox={`0 0 ${W} ${H}`} className="pb-sketch" role="img" aria-label="Value at expiry with and without the floor">
+              <line x1={X(u.mark)} x2={X(u.mark)} y1={PAD} y2={H - PAD} stroke="var(--line)" strokeDasharray="3 3" />
+              {f ? <line x1={X(f.strike)} x2={X(f.strike)} y1={PAD} y2={H - PAD} stroke="var(--line-strong)" strokeDasharray="3 3" /> : null}
+              <path d={path(false)} fill="none" stroke="var(--slate)" strokeWidth="1.5" />
+              {f ? <motion.path key={`${f.id}-${usdcIn}`} d={path(true)} fill="none" stroke="var(--ink)" strokeWidth="2" initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, ease: [0.2, 0, 0, 1] }} /> : null}
+            </svg>
+            <div className="flex items-center justify-between small muted mono" style={{ marginTop: 4 }}><span>${usdK(band[0]!)}</span><span>mark ${usdK(u.mark)}</span><span>${usdK(band[band.length - 1]!)}</span></div>
+            <div className="flex items-center gap-4 small" style={{ marginTop: 10 }}><span className="flex items-center gap-2"><i className="pb-key" style={{ background: "var(--ink)" }} />With the floor</span><span className="flex items-center gap-2"><i className="pb-key" style={{ background: "var(--slate)" }} />Without</span></div>
+          </div>
+          <table className="table">
+            <thead><tr><th>{u.symbol} at expiry</th><th className="num">Without</th><th className="num">With the floor</th></tr></thead>
+            <tbody>
+              {scen.map((r) => (
+                <tr key={r.d}>
+                  <td><span className="mono">${usd(r.p)}</span> <span className="small muted">({r.d > 0 ? "+" : "−"}{Math.abs(r.d * 100).toFixed(0)}%)</span></td>
+                  <td className={`num mono ${r.plain < 0 ? "down" : "up"}`}>{r.plain < 0 ? "−" : "+"}${usdSmart(Math.abs(r.plain))}</td>
+                  <td className={`num mono ${!f ? "muted" : r.floor < 0 ? "down" : "up"}`}>{!f ? "no floor quoted" : `${r.floor < 0 ? "−" : "+"}$${usdSmart(Math.abs(r.floor))}`}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="small muted" style={{ padding: "12px 20px 16px", margin: 0 }}>The floor costs its premium whatever happens and pays only when exercised; below the strike the loss stops at the premium plus the gap to the strike.</p>
         </div>
       </div>
       {publicKey && !cluster.programDeployed ? <div className="msg red" style={{ marginTop: 12 }} role="alert">Program not deployed on {cluster.label}; nothing to sign yet.</div> : null}

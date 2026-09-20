@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Address, Badge, ErrorState, Loading, Stat } from "@/components/ui";
+import { MarketLogo } from "@/components/market-list";
+import { CountUp } from "@/components/motion";
+import { Address, Badge, ErrorState, Loading } from "@/components/ui";
 import { useCluster, explorerUrl } from "@/lib/cluster";
 import { usd, usd0, usdK, dayLabel, timeLabel } from "@/lib/format";
 import { productName, TIER_LABEL } from "@/lib/model";
@@ -35,48 +37,61 @@ function RosterInner() {
   const oi = data.terms.reduce((a, t) => a + t.openInterest, 0);
   const depthAll = data.markets.reduce((a, m) => a + m.depthUsdc, 0);
   const liveAll = data.markets.reduce((a, m) => a + m.liveSeries, 0);
+  const depthMax = Math.max(...data.markets.map((m) => m.depthUsdc), 0);
+  const market = data.markets.find((m) => m.symbol === sym);
 
   return (
     <div>
       <div className="page-head">
         <div>
-          <h1 className="h3">Roster</h1>
-          <p className="body-sm">The standing list of who is committed, protocol-wide and per market: capital locked, quotes live, and every exercise, including the ones that failed.</p>
+          <h1>Roster</h1>
+          <p>The standing list of who is committed, protocol-wide and per market: capital locked, quotes live, and every exercise, including the ones that failed.</p>
         </div>
-        <Badge tone={data.underwriters.some((u) => u.live) ? "green" : "amber"} dot>{data.underwriters.filter((u) => u.live).length} underwriters live on {sym}</Badge>
+        <Badge tone={data.underwriters.some((u) => u.live) ? "green" : "amber"} dot>{data.underwriters.filter((u) => u.live).length} underwriter{data.underwriters.filter((u) => u.live).length === 1 ? "" : "s"} live on {sym}</Badge>
       </div>
 
-      <div className="grid-4" style={{ marginBottom: 16 }}>
-        <Stat k="Executable depth, all markets" v={`$${usd0(depthAll)}`} s={`${data.markets.length} listed market${data.markets.length === 1 ? "" : "s"}`} />
-        <Stat k="Live series" v={String(liveAll)} s="capped per market so the book cannot sprawl" />
-        <Stat k={`Fillable now, ${sym}`} v={`${Math.floor(capacity)} ${sym}`} s="across every live term" />
-        <Stat k={`Open interest, ${sym}`} v={`${Math.floor(oi)} ${sym}`} s="filled and not yet exercised" />
+      <div className="card rfigs" style={{ marginBottom: 16 }}>
+        <div className="rfig"><div className="k">Executable depth, all markets</div><div className="v"><CountUp value={`$${usd0(depthAll)}`} /></div><div className="s">{data.markets.length} listed market{data.markets.length === 1 ? "" : "s"}</div></div>
+        <div className="rfig"><div className="k">Live series</div><div className="v"><CountUp value={String(liveAll)} /></div><div className="s">of {data.markets.reduce((a, m) => a + m.maxLiveSeries, 0)} allowed, capped per market</div></div>
+        <div className="rfig"><div className="k">Fillable now, {sym}</div><div className="v"><CountUp value={`${Math.floor(capacity)}`} /><span className="unit">{sym}</span></div><div className="s">across every live term</div></div>
+        <div className="rfig"><div className="k">Open interest, {sym}</div><div className="v"><CountUp value={`${Math.floor(oi)}`} /><span className="unit">{sym}</span></div><div className="s">filled and not yet exercised</div></div>
       </div>
 
       <div className="card scroll-x" style={{ marginBottom: 16 }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
-          <div className="h6">Per market</div>
-          <div className="small" style={{ marginTop: 4 }}>Executable depth in USDC, live series against the cap, and the tier that sets who quotes.</div>
+        <div className="flex items-center justify-between gap-4 flex-wrap" style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
+          <div>
+            <div className="h6">Per market</div>
+            <div className="small" style={{ marginTop: 4 }}>Executable depth in USDC, live series against the cap, and the tier that sets who quotes. Pick a market to see its terms and its underwriters below.</div>
+          </div>
+          <div className="flex items-center gap-2 small muted"><Badge tone="green">Tier 1</Badge> treasury seeded <Badge tone="blue">Tier 2</Badge> quotes on request <Badge>Tier 3</Badge> permissionless</div>
         </div>
-        <table className="table">
-          <thead><tr><th>Market</th><th className="num">Depth</th><th className="num">Series</th><th className="num">Best ask</th><th>Tier</th></tr></thead>
+        <table className="table rtable">
+          <thead><tr><th>Market</th><th>Depth</th><th className="num hide-sm">Series</th><th className="num">Best ask</th><th className="hide-sm">Tier</th></tr></thead>
           <tbody>
-            {data.markets.map((m) => (
-              <tr key={m.symbol} className="row-link" onClick={() => router.push(`/roster?m=${m.symbol}`)} aria-current={m.symbol === sym ? "true" : undefined} style={m.symbol === sym ? { background: "var(--inset)" } : undefined}>
-                <td><div style={{ fontWeight: 500 }}>{m.symbol} <span className="small muted" style={{ fontWeight: 400 }}>{m.name}</span></div></td>
-                <td className="num">${usd0(m.depthUsdc)}</td>
-                <td className="num">{m.liveSeries} / {m.maxLiveSeries}</td>
-                <td className="num">{m.bestAsk === null ? <span className="muted">none</span> : `$${usd(m.bestAsk)}`}</td>
-                <td><Badge tone={m.tier === 1 ? "green" : m.tier === 2 ? "blue" : undefined}>{TIER_LABEL[m.tier]}</Badge></td>
+            {[...data.markets].sort((a, b) => b.depthUsdc - a.depthUsdc).map((m) => (
+              <tr key={m.symbol} className={`rowlink ${m.symbol === sym ? "on" : ""}`} onClick={() => router.push(`/roster?m=${m.symbol}`)} aria-current={m.symbol === sym ? "true" : undefined}>
+                <td><div className="flex items-center gap-3"><MarketLogo m={m} size={28} /><div><div style={{ fontWeight: 500 }}>{m.symbol}</div><div className="small muted">{m.name}</div></div></div></td>
+                <td>
+                  <div className="mono">${usd0(m.depthUsdc)}</div>
+                  <div className="bar thin" aria-hidden><span style={{ width: `${Math.max(2, (m.depthUsdc / Math.max(1, depthMax)) * 100)}%` }} /></div>
+                </td>
+                <td className="num hide-sm"><span className="mono">{m.liveSeries}</span> <span className="small muted">/ {m.maxLiveSeries}</span></td>
+                <td className="num mono">{m.bestAsk === null ? <span className="muted">none</span> : `$${usd(m.bestAsk)}`}</td>
+                <td className="hide-sm"><Badge tone={m.tier === 1 ? "green" : m.tier === 2 ? "blue" : undefined}>{TIER_LABEL[m.tier]}</Badge></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
+      <div className="flex items-center gap-3" style={{ margin: "26px 0 12px" }}>
+        {market ? <MarketLogo m={market} size={32} /> : null}
+        <div><h2 className="h5" style={{ margin: 0 }}>{sym}</h2><div className="small muted">{market?.name}: its terms, its underwriters and its exercise history</div></div>
+      </div>
+
       <div className="card scroll-x" style={{ marginBottom: 16 }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
-          <div className="h6">{sym}: quotes at three sizes</div>
+          <div className="h6">Quotes at three sizes</div>
           <div className="small" style={{ marginTop: 4 }}>Each ask is executable at the size shown and backed by escrow. Wider sizes pay more; a dash means that size is not fillable right now.</div>
         </div>
         <table className="table">
@@ -181,8 +196,8 @@ function VaultLedger({ nowTs, decimalsOf }: { nowTs: number; decimalsOf: (symbol
           <div className="small muted">Short volatility with no hedge: losing epochs are published like any other. {rows.length} rolled so far, {losing} of them losing.</div>
         </div>
         <div className="flex items-center gap-4">
-          <Stat k="Premium collected" v={`$${usd(totalPremium)}`} />
-          <Stat k="Paid on buybacks" v={`$${usd(totalBuyback)}`} />
+          <div className="hstat"><span>Premium collected</span><b className="mono">${usd(totalPremium)}</b></div>
+          <div className="hstat"><span>Paid on buybacks</span><b className="mono">${usd(totalBuyback)}</b></div>
           <Link href="/vaults" className="btn secondary sm">Deposit</Link>
         </div>
       </div>
@@ -198,7 +213,7 @@ function VaultLedger({ nowTs, decimalsOf }: { nowTs: number; decimalsOf: (symbol
                 <tr key={`${v.address}-${e.epoch}`}>
                   <td>{cc ? "Covered Call" : "Cash-Secured Put"} · {v.symbol} <Badge tone={v.halted ? "amber" : "green"} dot>{v.halted ? "halted" : "quoting"}</Badge></td>
                   <td className="mono">{e.epoch}</td>
-                  <td>{timeLabel(e.rolledAt)}</td>
+                  <td className="nowrap">{timeLabel(e.rolledAt)}</td>
                   <td className="num">${usd(Number(e.premiumIn) / 1e6)}</td>
                   <td className="num">${usd(Number(e.buybackOut) / 1e6)}</td>
                   <td className="num">{usdK(Number(e.assignedLots6) / 1e6)} lots</td>

@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const [tessera, prestocks, roster] = await Promise.all([tesseraTokens().catch(() => []), prestocksTokens().catch(() => []), rosterData()]);
   const reg = new Map((readRegistry()?.entries ?? []).map((e) => [e.mint, e]));
-  const live = new Map(roster.markets.map((m) => [m.mint, m]));
+  // On devnet a market trades a replica of the issuer's mint; the token is listed through it.
+  const live = new Map(roster.markets.map((m) => [m.replicaOf ?? m.mint, m]));
   const tokens = [...tessera, ...prestocks].map((t) => {
     const e = reg.get(t.mint);
     const m = live.get(t.mint);

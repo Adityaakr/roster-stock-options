@@ -826,7 +826,7 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 @media (max-width: 559px) { .vfigs { grid-template-columns: minmax(0, 1fr); } }
 
 /* Underwrite: discovery over the write form. Trending strip, featured cards, explore tiles, the list, then the form. */
-.hstat { display: grid; gap: 2px; text-align: right; }
+.hstat { display: grid; gap: 2px; text-align: left; }
 .hstat span { font-size: 12px; color: var(--slate); }
 .hstat b { font-weight: 500; font-size: 18px; }
 .usec { margin-top: 26px; }
@@ -860,3 +860,55 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 @media (max-width: 1100px) { .ufeat { grid-template-columns: repeat(2, minmax(0, 1fr)); } .utrend { grid-template-columns: minmax(0, 1fr); } .utrend-item { border-right: 0; border-bottom: 1px solid var(--line); } .utrend-item:last-child { border-bottom: 0; } }
 @media (max-width: 559px) { .ufeat { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 559px) { .hide-sm { display: none; } .hstat { text-align: left; } .utile { padding: 10px 12px; } }
+
+/* First Print: one card per pre-IPO token, in a grid that reads like a shelf. */
+.fp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+.fp-card { text-align: left; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: transform 200ms var(--ease), border-color 200ms var(--ease), box-shadow 200ms var(--ease); }
+.fp-card:hover { transform: translateY(-2px); border-color: var(--line-strong); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06); }
+.fp-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.fp-card.live { box-shadow: inset 0 2px 0 var(--ink); }
+.fp-logo { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--surface); display: inline-flex; align-items: center; justify-content: center; font-size: 15px; flex: none; }
+.fp-logo.mono-t { background: #efe9fb; color: #4b2a9b; }
+.fp-logo.mono-p { background: #e8f0fb; color: #1d4f9c; }
+.fp-name { display: grid; gap: 2px; margin-top: 4px; }
+.fp-name b { font-size: 18px; font-weight: 500; }
+.fp-name span { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fp-mark { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.fp-mark > .mono { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; }
+.fp-mark > .small { white-space: nowrap; }
+.fp-rows { display: grid; gap: 7px; font-size: 13px; border-top: 1px solid var(--line); padding-top: 12px; }
+.fp-rows > div { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.fp-rows span:first-child { color: var(--slate); }
+.fp-rows b { font-weight: 400; }
+.fp-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; }
+.fp-foot .arrow { color: var(--slate); transition: transform 200ms var(--ease); }
+.fp-card:hover .fp-foot .arrow { transform: translateX(3px); color: var(--ink); }
+@media (max-width: 1100px) { .fp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 559px) { .fp-grid { grid-template-columns: minmax(0, 1fr); } }
+.fp-grid > div { display: grid; }
+.fp-card { height: 100%; }
+
+/* Roster: the protocol's figures in one strip, then the markets with their depth drawn. */
+.rfigs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.rfig { padding: 18px 20px; border-right: 1px solid var(--line); min-width: 0; }
+.rfig:last-child { border-right: 0; }
+.rfig .k { font-size: 13px; color: var(--slate); }
+.rfig .v { font-family: var(--display); font-weight: 500; font-size: 28px; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 6px; white-space: nowrap; }
+.rfig .v .unit { font-size: 14px; font-weight: 400; color: var(--slate); margin-left: 6px; letter-spacing: 0; }
+.rfig .s { font-size: 12px; color: var(--slate); margin-top: 6px; }
+.rtable td { padding: 12px 20px; vertical-align: middle; }
+.rtable tr.on td { background: var(--surface); }
+.bar.thin { height: 4px; border: 0; border-radius: 2px; margin-top: 6px; max-width: 220px; }
+.bar.thin span { background: var(--ink); border-radius: 2px; transition: width 600ms var(--ease); }
+@media (max-width: 1100px) { .rfigs { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rfig:nth-child(2) { border-right: 0; } .rfig:nth-child(-n+2) { border-bottom: 1px solid var(--line); } }
+@media (max-width: 559px) { .rfigs { grid-template-columns: minmax(0, 1fr); } .rfig { border-right: 0; border-bottom: 1px solid var(--line); } .rfig:last-child { border-bottom: 0; } }
+
+/* Protected Buy: one ticket, one sketch of what the purchase is worth at expiry. */
+.pb-amount { position: relative; }
+.pb-amount .field { height: 52px; font-size: 22px; padding-right: 72px; }
+.pb-amount .unit { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--slate); }
+.chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.pb-sketch { width: 100%; height: auto; display: block; }
+.pb-key { width: 14px; height: 2px; display: inline-block; border-radius: 1px; }
+.fp-tp { display: grid; text-align: right; }
+.fp-tp small { font-size: 11px; }

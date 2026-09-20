@@ -2531,6 +2531,59 @@
       ]
     },
     {
+      "name": "set_vault_params",
+      "discriminator": [
+        133,
+        151,
+        83,
+        6,
+        246,
+        197,
+        215,
+        41
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "update",
+          "type": {
+            "defined": {
+              "name": "VaultUpdate"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "settle_writer",
       "docs": [
         "After expiry: pay a writer everything it is owed. Permissionless; destinations are derived."
@@ -6991,6 +7044,59 @@
           {
             "name": "assigned_lots6",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultUpdate",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "manager",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "cap_per_series_lots6",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "cap_total_lots6",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "spread_bps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "mark_band_bps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "roll_interval_secs",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "next_roll_ts",
+            "docs": [
+              "Bring the next roll forward or push it back. Never earlier than now; the roll itself still needs `locked_raw` to be zero."
+            ],
+            "type": {
+              "option": "i64"
+            }
           }
         ]
       }

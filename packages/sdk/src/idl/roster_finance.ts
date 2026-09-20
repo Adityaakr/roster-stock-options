@@ -2537,6 +2537,59 @@ export type RosterFinance = {
       ]
     },
     {
+      "name": "setVaultParams",
+      "discriminator": [
+        133,
+        151,
+        83,
+        6,
+        246,
+        197,
+        215,
+        41
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "protocol",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "update",
+          "type": {
+            "defined": {
+              "name": "vaultUpdate"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "settleWriter",
       "docs": [
         "After expiry: pay a writer everything it is owed. Permissionless; destinations are derived."
@@ -6997,6 +7050,59 @@ export type RosterFinance = {
           {
             "name": "assignedLots6",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultUpdate",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "manager",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "capPerSeriesLots6",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "capTotalLots6",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "spreadBps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "markBandBps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "rollIntervalSecs",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "nextRollTs",
+            "docs": [
+              "Bring the next roll forward or push it back. Never earlier than now; the roll itself still needs `locked_raw` to be zero."
+            ],
+            "type": {
+              "option": "i64"
+            }
           }
         ]
       }

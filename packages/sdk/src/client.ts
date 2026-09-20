@@ -15,7 +15,7 @@ import { ComputeBudgetProgram, PublicKey, SystemProgram, type Commitment, type C
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import idlJson from "./idl/roster_finance.json" with { type: "json" };
 import type { RosterFinance } from "./idl/roster_finance";
-import { autoExerciseAuthority, autoExercisePda, marketPda, protocolPda, seriesPda, vaultPdas, type Side } from "./pda";
+import { autoExerciseAuthority, autoExercisePda, epochRecordPda, marketPda, protocolPda, seriesPda, vaultBidPda, vaultKindByte, vaultPda, vaultPdas, vaultPositionPda, vaultShareMint, type Side, type VaultKind } from "./pda";
 
 export const ROSTER_IDL = idlJson as RosterFinance;
 
@@ -93,6 +93,76 @@ export interface WriterState {
   assignedLots6: bigint;
   premiumClaimable: bigint;
   settled: boolean;
+}
+
+/** Part 3: a vault's on-chain state, decoded. Amounts in raw units of the collateral or other asset; shares carry six decimals. */
+export interface VaultState {
+  address: PublicKey;
+  market: PublicKey;
+  kind: VaultKind;
+  halted: boolean;
+  collateralMint: PublicKey;
+  otherMint: PublicKey;
+  manager: PublicKey;
+  shareMint: PublicKey;
+  collateralAta: PublicKey;
+  otherAta: PublicKey;
+  epoch: number;
+  epochStartTs: bigint;
+  nextRollTs: bigint;
+  rollIntervalSecs: bigint;
+  totalShares: bigint;
+  lockedRaw: bigint;
+  pendingDepositRaw: bigint;
+  pendingWithdrawShares: bigint;
+  reservedCollateralRaw: bigint;
+  reservedOther: bigint;
+  capPerSeriesLots6: bigint;
+  capTotalLots6: bigint;
+  spreadBps: number;
+  lastMarkUsdcPerLot: bigint;
+  markBandBps: number;
+  epochPremiumIn: bigint;
+  epochBuybackOut: bigint;
+  epochAssignedLots6: bigint;
+  navPerShare1e6: bigint;
+  epochPnlPerShare1e6: bigint;
+}
+
+export interface EpochRecordState {
+  address: PublicKey;
+  vault: PublicKey;
+  epoch: number;
+  rolledAt: bigint;
+  sharesPerRaw1e12: bigint;
+  collateralPerShare1e12: bigint;
+  otherPerShare1e12: bigint;
+  navCollateralRaw: bigint;
+  navOther: bigint;
+  markUsdcPerLot: bigint;
+  totalSharesAfter: bigint;
+  premiumIn: bigint;
+  buybackOut: bigint;
+  assignedLots6: bigint;
+  pnlPerShare1e6: bigint;
+}
+
+export interface VaultPositionState {
+  address: PublicKey;
+  owner: PublicKey;
+  queuedDepositRaw: bigint;
+  queuedDepositEpoch: number;
+  queuedWithdrawShares: bigint;
+  queuedWithdrawEpoch: number;
+}
+
+export interface VaultBidState {
+  address: PublicKey;
+  series: PublicKey;
+  bidPerLot: bigint;
+  maxLots6: bigint;
+  postedAt: bigint;
+  expiresAt: bigint;
 }
 
 export interface SeriesState {
@@ -383,6 +453,162 @@ export class RosterClient {
    * Sign with the provider wallet, send, confirm by polling. Anchor's `.rpc()` gives up after 30 s; this waits until the
    * blockhash expires and re-sends the same signature meanwhile.
    */
+  // ---------- Part 3: the vaults ----------
+
+  vault(market: PublicKey, kind: VaultKind): PublicKey {
+    return vaultPda(this.programId, market, kind);
+  }
+
+  /** A vault's own token accounts: collateral, the other asset, and the share escrow, all associated to the PDA. */
+  vaultAccounts(m: MarketState, kind: VaultKind) {
+    const vault = this.vault(m.address, kind);
+    const shareMint = vaultShareMint(this.programId, vault);
+    const cc = kind === "covered_call";
+    const collateralMint = cc ? m.mint : m.quoteMint;
+    const otherMint = cc ? m.quoteMint : m.mint;
+    const collateralProgram = cc ? m.tokenProgram : TOKEN_PROGRAM_ID;
+    const otherProgram = cc ? TOKEN_PROGRAM_ID : m.tokenProgram;
+    return {
+      vault, shareMint, collateralMint, otherMint, collateralProgram, otherProgram,
+      collateralAta: getAssociatedTokenAddressSync(collateralMint, vault, true, collateralProgram),
+      otherAta: getAssociatedTokenAddressSync(otherMint, vault, true, otherProgram),
+      shareEscrow: getAssociatedTokenAddressSync(shareMint, vault, true, TOKEN_2022_PROGRAM_ID),
+      underlyingAta: getAssociatedTokenAddressSync(m.mint, vault, true, m.tokenProgram),
+      quoteAta: getAssociatedTokenAddressSync(m.quoteMint, vault, true, TOKEN_PROGRAM_ID),
+    };
+  }
+
+  async fetchVault(m: MarketState, kind: VaultKind): Promise<VaultState | null> {
+    const address = this.vault(m.address, kind);
+    const v = await this.program.account.vault.fetchNullable(address);
+    if (!v) return null;
+    return {
+      address, market: v.market, kind: v.kind === 0 ? "covered_call" : "cash_secured_put", halted: v.state === 2, collateralMint: v.collateralMint, otherMint: v.otherMint,
+      manager: v.manager, shareMint: v.shareMint, collateralAta: v.collateralAta, otherAta: v.otherAta, epoch: v.epoch, epochStartTs: big(v.epochStartTs), nextRollTs: big(v.nextRollTs),
+      rollIntervalSecs: big(v.rollIntervalSecs), totalShares: big(v.totalShares), lockedRaw: big(v.lockedRaw), pendingDepositRaw: big(v.pendingDepositRaw), pendingWithdrawShares: big(v.pendingWithdrawShares),
+      reservedCollateralRaw: big(v.reservedCollateralRaw), reservedOther: big(v.reservedOther), capPerSeriesLots6: big(v.capPerSeriesLots6), capTotalLots6: big(v.capTotalLots6), spreadBps: v.spreadBps,
+      lastMarkUsdcPerLot: big(v.lastMarkUsdcPerLot), markBandBps: v.markBandBps, epochPremiumIn: big(v.epochPremiumIn), epochBuybackOut: big(v.epochBuybackOut), epochAssignedLots6: big(v.epochAssignedLots6),
+      navPerShare1e6: big(v.navPerShare1e6), epochPnlPerShare1e6: big(v.epochPnlPerShare1e6),
+    };
+  }
+
+  async fetchEpochRecords(vault: PublicKey, epochs: number[]): Promise<EpochRecordState[]> {
+    const addresses = epochs.map((e) => epochRecordPda(this.programId, vault, e));
+    const rows = await this.program.account.epochRecord.fetchMultiple(addresses);
+    const out: EpochRecordState[] = [];
+    rows.forEach((r, i) => {
+      if (!r) return;
+      out.push({ address: addresses[i]!, vault: r.vault, epoch: r.epoch, rolledAt: big(r.rolledAt), sharesPerRaw1e12: big(r.sharesPerRaw1e12), collateralPerShare1e12: big(r.collateralPerShare1e12), otherPerShare1e12: big(r.otherPerShare1e12), navCollateralRaw: big(r.navCollateralRaw), navOther: big(r.navOther), markUsdcPerLot: big(r.markUsdcPerLot), totalSharesAfter: big(r.totalSharesAfter), premiumIn: big(r.premiumIn), buybackOut: big(r.buybackOut), assignedLots6: big(r.assignedLots6), pnlPerShare1e6: big(r.pnlPerShare1e6) });
+    });
+    return out;
+  }
+
+  async fetchVaultPosition(vault: PublicKey, owner: PublicKey): Promise<VaultPositionState | null> {
+    const address = vaultPositionPda(this.programId, vault, owner);
+    const p = await this.program.account.vaultPosition.fetchNullable(address);
+    if (!p) return null;
+    return { address, owner: p.owner, queuedDepositRaw: big(p.queuedDepositRaw), queuedDepositEpoch: p.queuedDepositEpoch, queuedWithdrawShares: big(p.queuedWithdrawShares), queuedWithdrawEpoch: p.queuedWithdrawEpoch };
+  }
+
+  async fetchVaultBid(vault: PublicKey, series: PublicKey): Promise<VaultBidState | null> {
+    const address = vaultBidPda(this.programId, vault, series);
+    const b = await this.program.account.vaultBid.fetchNullable(address);
+    if (!b) return null;
+    return { address, series: b.series, bidPerLot: big(b.bidPerLot), maxLots6: big(b.maxLots6), postedAt: big(b.postedAt), expiresAt: big(b.expiresAt) };
+  }
+
+  async initVault(m: MarketState, kind: VaultKind, params: { manager: PublicKey; rollIntervalSecs: bigint; firstRollTs: bigint; capPerSeriesLots6: bigint; capTotalLots6: bigint; spreadBps: number; markBandBps: number }): Promise<Transaction> {
+    const a = this.vaultAccounts(m, kind);
+    return this.program.methods
+      .initVault({ kind: vaultKindByte(kind), manager: params.manager, rollIntervalSecs: bn(params.rollIntervalSecs), firstRollTs: bn(params.firstRollTs), capPerSeriesLots6: bn(params.capPerSeriesLots6), capTotalLots6: bn(params.capTotalLots6), spreadBps: params.spreadBps, markBandBps: params.markBandBps })
+      .accountsPartial({ authority: this.wallet, protocol: this.protocol, market: m.address, vault: a.vault, collateralMint: a.collateralMint, otherMint: a.otherMint, shareMint: a.shareMint, collateralAta: a.collateralAta, otherAta: a.otherAta, shareEscrow: a.shareEscrow, collateralTokenProgram: a.collateralProgram, otherTokenProgram: a.otherProgram, token2022Program: TOKEN_2022_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
+      .transaction();
+  }
+
+  async setVaultParams(m: MarketState, kind: VaultKind, u: { manager?: PublicKey; capPerSeriesLots6?: bigint; capTotalLots6?: bigint; spreadBps?: number; markBandBps?: number; rollIntervalSecs?: bigint; nextRollTs?: bigint }): Promise<Transaction> {
+    return this.program.methods
+      .setVaultParams({ manager: u.manager ?? null, capPerSeriesLots6: u.capPerSeriesLots6 === undefined ? null : bn(u.capPerSeriesLots6), capTotalLots6: u.capTotalLots6 === undefined ? null : bn(u.capTotalLots6), spreadBps: u.spreadBps ?? null, markBandBps: u.markBandBps ?? null, rollIntervalSecs: u.rollIntervalSecs === undefined ? null : bn(u.rollIntervalSecs), nextRollTs: u.nextRollTs === undefined ? null : bn(u.nextRollTs) })
+      .accountsPartial({ authority: this.wallet, protocol: this.protocol, vault: this.vault(m.address, kind) })
+      .transaction();
+  }
+
+  async vaultDeposit(m: MarketState, kind: VaultKind, raw: bigint): Promise<Transaction> {
+    const a = this.vaultAccounts(m, kind);
+    return this.program.methods
+      .vaultDeposit(bn(raw))
+      .accountsPartial({ owner: this.wallet, vault: a.vault, position: vaultPositionPda(this.programId, a.vault, this.wallet), collateralMint: a.collateralMint, collateralAta: a.collateralAta, ownerCollateralAta: getAssociatedTokenAddressSync(a.collateralMint, this.wallet, false, a.collateralProgram), collateralTokenProgram: a.collateralProgram, systemProgram: SystemProgram.programId })
+      .transaction();
+  }
+
+  async vaultRequestWithdraw(m: MarketState, kind: VaultKind, shares: bigint): Promise<Transaction> {
+    const a = this.vaultAccounts(m, kind);
+    return this.program.methods
+      .vaultRequestWithdraw(bn(shares))
+      .accountsPartial({ owner: this.wallet, vault: a.vault, position: vaultPositionPda(this.programId, a.vault, this.wallet), shareMint: a.shareMint, ownerShareAta: getAssociatedTokenAddressSync(a.shareMint, this.wallet, false, TOKEN_2022_PROGRAM_ID), shareEscrow: a.shareEscrow, token2022Program: TOKEN_2022_PROGRAM_ID, systemProgram: SystemProgram.programId })
+      .transaction();
+  }
+
+  async vaultClaim(m: MarketState, kind: VaultKind, epoch: number): Promise<Transaction> {
+    const a = this.vaultAccounts(m, kind);
+    return this.program.methods
+      .vaultClaim(epoch)
+      .accountsPartial({ owner: this.wallet, vault: a.vault, position: vaultPositionPda(this.programId, a.vault, this.wallet), record: epochRecordPda(this.programId, a.vault, epoch), shareMint: a.shareMint, collateralMint: a.collateralMint, otherMint: a.otherMint, collateralAta: a.collateralAta, otherAta: a.otherAta, shareEscrow: a.shareEscrow, ownerShareAta: getAssociatedTokenAddressSync(a.shareMint, this.wallet, false, TOKEN_2022_PROGRAM_ID), ownerCollateralAta: getAssociatedTokenAddressSync(a.collateralMint, this.wallet, false, a.collateralProgram), ownerOtherAta: getAssociatedTokenAddressSync(a.otherMint, this.wallet, false, a.otherProgram), collateralTokenProgram: a.collateralProgram, otherTokenProgram: a.otherProgram, token2022Program: TOKEN_2022_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
+      .transaction();
+  }
+
+  async vaultRoll(m: MarketState, v: VaultState, markUsdcPerLot: bigint): Promise<Transaction> {
+    const a = this.vaultAccounts(m, v.kind);
+    return this.program.methods
+      .vaultRoll(bn(markUsdcPerLot))
+      .accountsPartial({ cranker: this.wallet, market: m.address, vault: a.vault, record: epochRecordPda(this.programId, a.vault, v.epoch), shareMint: a.shareMint, collateralAta: a.collateralAta, otherAta: a.otherAta, shareEscrow: a.shareEscrow, token2022Program: TOKEN_2022_PROGRAM_ID, systemProgram: SystemProgram.programId })
+      .transaction();
+  }
+
+  private vaultWriteAccounts(m: MarketState, kind: VaultKind, s: SeriesState) {
+    const a = this.vaultAccounts(m, kind);
+    return { manager: this.wallet, protocol: this.protocol, market: m.address, vault: a.vault, series: s.address, collateralMint: a.collateralMint, collateralVault: s.collateralVault, collateralAta: a.collateralAta, collateralTokenProgram: a.collateralProgram };
+  }
+
+  async vaultQuote(m: MarketState, kind: VaultKind, s: SeriesState, depositLots6: bigint, askLots6: bigint, askPerLot: bigint): Promise<Transaction> {
+    return this.program.methods.vaultQuote(bn(depositLots6), bn(askLots6), bn(askPerLot)).accountsPartial(this.vaultWriteAccounts(m, kind, s)).transaction();
+  }
+
+  async vaultWithdrawUnsold(m: MarketState, kind: VaultKind, s: SeriesState, lots6: bigint): Promise<Transaction> {
+    return this.program.methods.vaultWithdrawUnsold(bn(lots6)).accountsPartial(this.vaultWriteAccounts(m, kind, s)).transaction();
+  }
+
+  async vaultCancelAsk(m: MarketState, kind: VaultKind, s: SeriesState, seq: bigint): Promise<Transaction> {
+    return this.program.methods.vaultCancelAsk(bn(seq)).accountsPartial({ manager: this.wallet, vault: this.vault(m.address, kind), market: m.address, series: s.address }).transaction();
+  }
+
+  async vaultSettle(m: MarketState, kind: VaultKind, s: SeriesState): Promise<Transaction> {
+    const a = this.vaultAccounts(m, kind);
+    return this.program.methods
+      .vaultSettle()
+      .accountsPartial({ cranker: this.wallet, market: m.address, vault: a.vault, series: s.address, underlyingMint: m.mint, quoteMint: m.quoteMint, collateralVault: s.collateralVault, settlementVault: s.settlementVault, quoteVault: s.quoteVault, vaultUnderlyingAta: a.underlyingAta, vaultQuoteAta: a.quoteAta, underlyingTokenProgram: m.tokenProgram, quoteTokenProgram: TOKEN_PROGRAM_ID })
+      .transaction();
+  }
+
+  async vaultPostBid(m: MarketState, kind: VaultKind, s: SeriesState, bidPerLot: bigint, maxLots6: bigint, ttlSecs: bigint): Promise<Transaction> {
+    const vault = this.vault(m.address, kind);
+    return this.program.methods
+      .vaultPostBid(bn(bidPerLot), bn(maxLots6), bn(ttlSecs))
+      .accountsPartial({ manager: this.wallet, vault, market: m.address, series: s.address, bid: vaultBidPda(this.programId, vault, s.address), systemProgram: SystemProgram.programId })
+      .transaction();
+  }
+
+  async sellToVault(m: MarketState, kind: VaultKind, s: SeriesState, lots6: bigint, minBidPerLot: bigint): Promise<Transaction> {
+    const a = this.vaultAccounts(m, kind);
+    return this.program.methods
+      .sellToVault(bn(lots6), bn(minBidPerLot))
+      .accountsPartial({ holder: this.wallet, market: m.address, vault: a.vault, series: s.address, bid: vaultBidPda(this.programId, a.vault, s.address), positionMint: s.positionMint, holderPositionAta: getAssociatedTokenAddressSync(s.positionMint, this.wallet, false, TOKEN_2022_PROGRAM_ID), quoteMint: m.quoteMint, vaultQuoteAta: a.quoteAta, holderQuoteAta: getAssociatedTokenAddressSync(m.quoteMint, this.wallet, false, TOKEN_PROGRAM_ID), quoteTokenProgram: TOKEN_PROGRAM_ID, token2022Program: TOKEN_2022_PROGRAM_ID })
+      .transaction();
+  }
+
+  async vaultSetHalt(m: MarketState, kind: VaultKind, halted: boolean, reason: number): Promise<Transaction> {
+    return this.program.methods.vaultSetHalt(halted, reason).accountsPartial({ signer: this.wallet, protocol: this.protocol, vault: this.vault(m.address, kind) }).transaction();
+  }
+
   async send(tx: Transaction): Promise<string> {
     const { tx: prepared, lastValidBlockHeight } = await this.prepare(tx);
     const signed = await this.provider.wallet.signTransaction(prepared);

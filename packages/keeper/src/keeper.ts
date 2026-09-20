@@ -7,12 +7,12 @@
 import type { PublicKey } from "@solana/web3.js";
 import { ExtensionType, getAccount, getAssociatedTokenAddressSync, getExtensionData, getMint, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import type { RosterClient} from "@roster/sdk";
-import { type MarketState, type SeriesState, autoExercisePda } from "@roster/sdk";
+import { type MarketState, type SeriesState, type VaultState, autoExercisePda } from "@roster/sdk";
 import { limiter, mapLimit, nextExpiries } from "@roster/core";
 
 export interface KeeperLogLine {
   at: number;
-  action: "roll_grid" | "observe_halt" | "settle" | "close" | "auto_exercise" | "skip";
+  action: "roll_grid" | "observe_halt" | "settle" | "close" | "auto_exercise" | "vault_settle" | "vault_roll" | "vault_claim" | "skip";
   target: string;
   detail: string;
 }
@@ -107,6 +107,57 @@ export class Keeper {
         }
       }
     });
+    return sent;
+  }
+
+  /*
+   * Part 3: the vault's cranks, all permissionless. Settle the vault's slot in every expired series it wrote, then,
+   * once the roll is due and nothing is locked, roll the epoch at the mark, and claim the treasury's own queued
+   * deposit so its shares exist. `markUsdcPerLot` is the mark per lot in micro-USDC; the program bands it against the
+   * previous roll's.
+   */
+  async vaultCycle(m: MarketState, v: VaultState, series: SeriesState[], nowTs: number, markUsdcPerLot: bigint): Promise<number> {
+    let sent = 0;
+    const tag = `${v.address.toBase58()}`;
+    for (const s of series) {
+      if (BigInt(nowTs) < s.expiryTs) continue;
+      const slot = s.writers.find((w) => w.writer.equals(v.address));
+      if (!slot || slot.settled) continue;
+      try {
+        await this.gate(async () => this.client.send(await this.client.vaultSettle(m, v.kind, s)));
+        sent += 1;
+        this.say({ at: nowTs, action: "vault_settle", target: tag, detail: `series ${s.address.toBase58().slice(0, 8)}` });
+      } catch (e) {
+        this.say({ at: nowTs, action: "skip", target: tag, detail: `vault_settle ${s.address.toBase58().slice(0, 8)} failed: ${reason(e)}` });
+      }
+    }
+    if (BigInt(nowTs) >= v.nextRollTs) {
+      const fresh = await this.client.fetchVault(m, v.kind);
+      if (fresh && fresh.lockedRaw === 0n) {
+        try {
+          await this.gate(async () => this.client.send(await this.client.vaultRoll(m, fresh, markUsdcPerLot)));
+          sent += 1;
+          this.say({ at: nowTs, action: "vault_roll", target: tag, detail: `epoch ${fresh.epoch} closed at mark ${Number(markUsdcPerLot) / 1e6}` });
+        } catch (e) {
+          this.say({ at: nowTs, action: "skip", target: tag, detail: `vault_roll failed: ${reason(e)}` });
+        }
+      } else if (fresh) {
+        this.say({ at: nowTs, action: "skip", target: tag, detail: `roll due but ${fresh.lockedRaw} raw still locked in unsettled series` });
+      }
+    }
+    // The treasury's own queued deposit or withdrawal, claimed as soon as its epoch has rolled.
+    const me = await this.client.fetchVaultPosition(v.address, this.client.wallet).catch(() => null);
+    const current = (await this.client.fetchVault(m, v.kind))?.epoch ?? v.epoch;
+    if (me && ((me.queuedDepositRaw > 0n && me.queuedDepositEpoch < current) || (me.queuedWithdrawShares > 0n && me.queuedWithdrawEpoch < current))) {
+      const epoch = me.queuedDepositRaw > 0n ? me.queuedDepositEpoch : me.queuedWithdrawEpoch;
+      try {
+        await this.gate(async () => this.client.send(await this.client.vaultClaim(m, v.kind, epoch)));
+        sent += 1;
+        this.say({ at: nowTs, action: "vault_claim", target: tag, detail: `epoch ${epoch} claimed for the treasury` });
+      } catch (e) {
+        this.say({ at: nowTs, action: "skip", target: tag, detail: `vault_claim failed: ${reason(e)}` });
+      }
+    }
     return sent;
   }
 

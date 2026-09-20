@@ -86,3 +86,49 @@ export function gridStrikes(side: "call" | "put", forwardPerLot: number, stepMic
     return BigInt(Math.round(rounded * 1e6));
   });
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Part 3: the vault's two-sided quote.
+
+export interface VaultQuoteInputs extends Omit<QuoteInputs, "inventoryLots"> {
+  /** Lots the vault has sold in this series, net of buybacks, against its per-series cap. */
+  soldLots: number;
+  capLots: number;
+  /** The bid's half-spread below theoretical at the regular session, before the session multiplier. */
+  bidSpread: number;
+}
+
+export interface VaultQuoteDecision extends QuoteDecision {
+  /** Null when the vault is at capacity on this series: it stops asking and says so. */
+  askPerLot: bigint;
+  atCapacity: boolean;
+  utilisation: number;
+  skew: number;
+  bidPerLot: bigint;
+  intrinsicPerLot: number;
+  sessionMultiplier: number;
+}
+
+/**
+ * Utilisation skew: the more of a series the vault has sold, the higher its ask, on a convex curve that rises steeply
+ * toward the cap. `1 + 3u²` is 1.03 at a tenth sold, 1.75 at half, 3.4 at nine tenths; at the cap the vault stops.
+ * This is the direct fix for what hurt Hegic: a pool that sells at one implied volatility whatever the flow.
+ */
+export function utilisationSkew(soldLots: number, capLots: number): { u: number; skew: number; atCapacity: boolean } {
+  if (capLots <= 0) return { u: 0, skew: 1, atCapacity: false };
+  const u = Math.max(0, Math.min(1, soldLots / capLots));
+  return { u, skew: 1 + 3 * u * u, atCapacity: u >= 1 };
+}
+
+export function decideVaultQuote(i: VaultQuoteInputs): VaultQuoteDecision {
+  const base = decideAsk({ ...i, inventoryLots: 0 });
+  const { u, skew, atCapacity } = utilisationSkew(i.soldLots, i.capLots);
+  const sessionMultiplier = SESSION_SPREAD[i.session] * (i.inActivationWindow ? ACTIVATION_SPREAD : 1);
+  const askMicro = BigInt(Math.ceil(base.theoretical * (1 + base.spread) * skew * 1e6));
+  const askPerLot = askMicro > i.minAskPerLot ? askMicro : i.minAskPerLot;
+  // The bid: theoretical less the bid spread, widened by the session, never below intrinsic.
+  const intrinsic = Math.max(0, i.side === "call" ? base.forwardPerLot - base.strikePerLot : base.strikePerLot - base.forwardPerLot);
+  const bid = Math.max(intrinsic, base.theoretical * (1 - i.bidSpread * sessionMultiplier));
+  const bidPerLot = BigInt(Math.floor(bid * 1e6));
+  return { ...base, askPerLot, atCapacity, utilisation: u, skew, bidPerLot, intrinsicPerLot: intrinsic, sessionMultiplier, reason: `${base.reason} x skew ${skew.toFixed(3)} (u=${u.toFixed(2)}) · bid ${(bid).toFixed(4)} (intrinsic ${intrinsic.toFixed(4)}, session x${sessionMultiplier.toFixed(1)})` };
+}

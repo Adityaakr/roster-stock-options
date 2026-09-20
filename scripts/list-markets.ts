@@ -39,7 +39,7 @@ function marketParams(tier: number, quote: number) {
     // so the next expiry needs room while the old one waits (feedback finding, docs/BUILD_LOG.md M8.1).
     // Each live series costs about 0.045 SOL of rent (docs/RENT.md), reclaimed at close. Devnet runs on a faucet
     // balance, so its caps are the smallest that still show both sides at two expiries.
-    maxLiveSeries: DEVNET ? (tier === 1 ? 4 : 2) : tier === 1 ? 18 : tier === 2 ? 12 : 6,
+    maxLiveSeries: DEVNET ? (tier === 1 ? 16 : 8) : tier === 1 ? 18 : tier === 2 ? 12 : 6,
     minLots6: LOT / 100n,
     maxLots6: (tier === 1 ? 10_000n : 2_000n) * LOT,
     maxWriterLots6: (tier === 1 ? 5_000n : 1_000n) * LOT
@@ -63,7 +63,8 @@ async function main() {
     console.log("protocol initialised");
   }
   const now = await clockUnix(connection);
-  const expiries = nextExpiries(now, 2).map(BigInt);
+  // Devnet's compressed calendar: an expiry every day (docs/DEVNET.md); mainnet keeps Fridays.
+  const expiries = nextExpiries(now, 2, DEVNET ? [0, 1, 2, 3, 4, 5, 6] : [5]).map(BigInt);
   // The quoter wallet creates series on Tier 1 and 2 markets (the program limits creation there to the authority and
   // the series creator; Tier 3 is open).
   const protocol = await c.fetchProtocol();

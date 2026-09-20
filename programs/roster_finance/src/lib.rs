@@ -112,6 +112,9 @@ pub mod roster_finance {
     pub fn init_vault(ctx: Context<InitVault>, params: VaultParams) -> Result<()> {
         handle_init_vault(ctx, params)
     }
+    pub fn set_vault_params(ctx: Context<SetVaultParams>, update: VaultUpdate) -> Result<()> {
+        handle_set_vault_params(ctx, update)
+    }
     pub fn vault_deposit(ctx: Context<VaultDeposit>, raw: u64) -> Result<()> {
         handle_vault_deposit(ctx, raw)
     }

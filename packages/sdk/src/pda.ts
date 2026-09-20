@@ -42,3 +42,28 @@ export function autoExercisePda(programId: PublicKey, holder: PublicKey, series:
 export function autoExerciseAuthority(programId: PublicKey): PublicKey {
   return PublicKey.findProgramAddressSync([AUTOEX_AUTHORITY], programId)[0];
 }
+
+// Part 3: the vaults.
+export const VAULT_COVERED_CALL = 0;
+export const VAULT_CASH_SECURED_PUT = 1;
+export type VaultKind = "covered_call" | "cash_secured_put";
+export function vaultKindByte(kind: VaultKind): number {
+  return kind === "covered_call" ? VAULT_COVERED_CALL : VAULT_CASH_SECURED_PUT;
+}
+export function vaultPda(programId: PublicKey, market: PublicKey, kind: VaultKind): PublicKey {
+  return PublicKey.findProgramAddressSync([Buffer.from("vault"), market.toBuffer(), Buffer.from([vaultKindByte(kind)])], programId)[0];
+}
+export function vaultShareMint(programId: PublicKey, vault: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync([Buffer.from("vshares"), vault.toBuffer()], programId)[0];
+}
+export function vaultPositionPda(programId: PublicKey, vault: PublicKey, owner: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync([Buffer.from("vpos"), vault.toBuffer(), owner.toBuffer()], programId)[0];
+}
+export function epochRecordPda(programId: PublicKey, vault: PublicKey, epoch: number): PublicKey {
+  const e = Buffer.alloc(4);
+  e.writeUInt32LE(epoch);
+  return PublicKey.findProgramAddressSync([Buffer.from("vepoch"), vault.toBuffer(), e], programId)[0];
+}
+export function vaultBidPda(programId: PublicKey, vault: PublicKey, series: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync([Buffer.from("vbid"), vault.toBuffer(), series.toBuffer()], programId)[0];
+}

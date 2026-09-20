@@ -15,6 +15,7 @@
     "devnet:mints": "tsx scripts/devnet-mints.ts",
     "devnet:registry": "tsx scripts/devnet-registry.ts",
     "devnet:seed": "tsx scripts/devnet-seed.ts",
+    "devnet:vaults": "tsx scripts/devnet-vaults.ts",
     "registry": "tsx scripts/eligibility.ts",
     "list-markets": "tsx scripts/list-markets.ts",
     "probe:mint": "tsx scripts/probe-mint.ts",

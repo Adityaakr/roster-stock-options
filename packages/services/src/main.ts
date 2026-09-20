@@ -11,10 +11,10 @@ import "../../../scripts/env-load";
 import { createServer } from "node:http";
 import { Connection, Keypair, PublicKey, type AccountInfo } from "@solana/web3.js";
 import * as anchorNs from "@anchor-lang/core";
-import { RosterClient, ROSTER_PROGRAM_ID, type MarketState } from "@roster/sdk";
+import { RosterClient, ROSTER_PROGRAM_ID, type MarketState, type VaultState, type VaultKind } from "@roster/sdk";
 import { Hermes, HermesError, estimateVol, readMultiplier, sessionAt } from "@roster/oracle";
 import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
-import { Quoter, DEFAULT_QUOTER } from "@roster/quoter";
+import { Quoter, DEFAULT_QUOTER, VaultQuoter, DEFAULT_VAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
 import { loadSecretKey, mapLimit } from "@roster/core";
 import { issuerMark, jupiterPrice, launchSet, refreshSnapshots, snapshotOf, snapshotPrice, xstocksQuote } from "./registry";
@@ -99,7 +99,15 @@ async function main() {
   }
   // QUOTER_LOTS_PER_SERIES caps the treasury's ask per series (docs/SEEDING.md sets it for the first mainnet week).
   const quoter = new Quoter(quoterClient, { ...DEFAULT_QUOTER, lotsPerSeries: BigInt(Math.round(Number(process.env.QUOTER_LOTS_PER_SERIES ?? 50) * 1e6)) });
-  const keeper = new Keeper(keeperClient, deployer.publicKey, DEFAULT_KEEPER);
+  // The expiry calendar. Mainnet expires on Fridays at 16:00 New York. Devnet runs a compressed calendar, an expiry
+  // every day at 16:00 New York, so a whole cycle (quote, fill, exercise, settle, vault roll, published P&L) happens
+  // daily and a week of judging shows a week of epochs. `KEEPER_EXPIRY_WEEKDAYS` overrides either.
+  const weekdays = process.env.KEEPER_EXPIRY_WEEKDAYS ? process.env.KEEPER_EXPIRY_WEEKDAYS.split(",").map(Number).filter((d) => d >= 0 && d <= 6) : isDevnet ? [0, 1, 2, 3, 4, 5, 6] : DEFAULT_KEEPER.expiryWeekdays;
+  const keeper = new Keeper(keeperClient, deployer.publicKey, { ...DEFAULT_KEEPER, expiryWeekdays: weekdays });
+  // Part 3: the vault's leg of the quoter, signed by the vault's manager (the quoter wallet; the deployer on devnet).
+  const vaultQuoter = new VaultQuoter(quoterClient, { ...DEFAULT_QUOTER, lotsPerSeries: BigInt(Math.round(Number(process.env.QUOTER_LOTS_PER_SERIES ?? 50) * 1e6)) }, DEFAULT_VAULT_QUOTER);
+  /** The vaults seen on the last tick, by market, for the REST. */
+  const vaultsLive = new Map<string, VaultState[]>();
   const live = new Map<string, MarketLive>();
   let lastTick = 0;
   let blocked: string | null = null;
@@ -240,6 +248,30 @@ async function main() {
         await quoter.cycle({ market: fresh, symbol: l.symbol, tier: l.tier, feeBps: l.feeBps, graceSecs: Number((await reader.fetchProtocol()).graceSecs), price, priceAgeSecs: ageSecs, equityPrice, multiplier: mult.onChain, pendingDividendMultiplier: state.pendingDividendMultiplier, inActivationWindow: mult.inWindow, vol: vol.blended, nowTs });
         }
       }
+      // Part 3: the vaults on this market. Cranks first (settle, roll, claim), then the two-sided quote.
+      const vaults: VaultState[] = [];
+      for (const kind of ["covered_call", "cash_secured_put"] as VaultKind[]) {
+        const v = await reader.fetchVault(market, kind).catch(() => null);
+        if (v) vaults.push(v);
+      }
+      if (vaults.length) {
+        const fresh = (await reader.fetchMarket(l.mint)) ?? market;
+        const series = await reader.fetchSeriesForMarket(fresh.address);
+        const markPerLot = price !== null ? BigInt(Math.round(price * (mult.onChain || 1) * 1e6)) : 0n;
+        for (const v of vaults) {
+          if (!flag("--no-keeper") && markPerLot > 0n) await keeper.vaultCycle(fresh, v, series, nowTs, markPerLot);
+          if (!flag("--no-quoter") && price !== null && canQuote && volOk) {
+            const again = (await reader.fetchVault(fresh, v.kind)) ?? v;
+            const ageSecs = priceSource === "hermes" ? Math.max(0, Math.floor(Date.now() / 1000) - priceAt) : 0;
+            await vaultQuoter.cycle({ market: fresh, symbol: l.symbol, tier: l.tier, feeBps: l.feeBps, graceSecs: Number((await reader.fetchProtocol()).graceSecs), price, priceAgeSecs: ageSecs, equityPrice, multiplier: mult.onChain, pendingDividendMultiplier: state.pendingDividendMultiplier, inActivationWindow: mult.inWindow, vol: vol.blended, nowTs }, again, await reader.fetchSeriesForMarket(fresh.address));
+          }
+        }
+        const after: VaultState[] = [];
+        for (const v of vaults) after.push((await reader.fetchVault(market, v.kind)) ?? v);
+        vaultsLive.set(l.symbol, after);
+      } else {
+        vaultsLive.delete(l.symbol);
+      }
       await indexer.snapshotMarket((await reader.fetchMarket(l.mint)) ?? market);
     });
     await pullEvents();
@@ -297,6 +329,43 @@ async function main() {
           equity: /^0+$/.test(equity) ? [] : store.priceHistory(equity, since).map((p) => [p.publish_time, p.price]),
           basis: store.basisHistory(mintKey, since)
         });
+      }
+      if (url.pathname === "/v1/vaults") {
+        const out = [];
+        for (const [symbol, vs] of vaultsLive) {
+          for (const v of vs) {
+            const epochs = v.epoch > 0 ? await reader.fetchEpochRecords(v.address, Array.from({ length: Math.min(v.epoch, 30) }, (_, i) => v.epoch - 1 - i)).catch(() => []) : [];
+            const [collateral, other] = await Promise.all([connection.getAccountInfo(v.collateralAta, "confirmed"), connection.getAccountInfo(v.otherAta, "confirmed")]);
+            out.push({
+              symbol, address: v.address.toBase58(), kind: v.kind, halted: v.halted, manager: v.manager.toBase58(), shareMint: v.shareMint.toBase58(),
+              collateralMint: v.collateralMint.toBase58(), otherMint: v.otherMint.toBase58(), collateralAta: v.collateralAta.toBase58(), otherAta: v.otherAta.toBase58(),
+              collateralBalance: collateral ? collateral.data.readBigUInt64LE(64).toString() : "0", otherBalance: other ? other.data.readBigUInt64LE(64).toString() : "0",
+              epoch: v.epoch, epochStartTs: Number(v.epochStartTs), nextRollTs: Number(v.nextRollTs), rollIntervalSecs: Number(v.rollIntervalSecs),
+              totalShares: v.totalShares.toString(), lockedRaw: v.lockedRaw.toString(), pendingDepositRaw: v.pendingDepositRaw.toString(), pendingWithdrawShares: v.pendingWithdrawShares.toString(),
+              reservedCollateralRaw: v.reservedCollateralRaw.toString(), reservedOther: v.reservedOther.toString(), capPerSeriesLots6: v.capPerSeriesLots6.toString(), spreadBps: v.spreadBps,
+              lastMarkUsdcPerLot: v.lastMarkUsdcPerLot.toString(), markBandBps: v.markBandBps, epochPremiumIn: v.epochPremiumIn.toString(), epochBuybackOut: v.epochBuybackOut.toString(), epochAssignedLots6: v.epochAssignedLots6.toString(),
+              navPerShare1e6: v.navPerShare1e6.toString(), epochPnlPerShare1e6: v.epochPnlPerShare1e6.toString(),
+              epochs: epochs.sort((a, b) => a.epoch - b.epoch).map((r) => ({ epoch: r.epoch, rolledAt: Number(r.rolledAt), navCollateralRaw: r.navCollateralRaw.toString(), navOther: r.navOther.toString(), markUsdcPerLot: r.markUsdcPerLot.toString(), totalSharesAfter: r.totalSharesAfter.toString(), premiumIn: r.premiumIn.toString(), buybackOut: r.buybackOut.toString(), assignedLots6: r.assignedLots6.toString(), pnlPerShare1e6: r.pnlPerShare1e6.toString(), sharesPerRaw1e12: r.sharesPerRaw1e12.toString(), collateralPerShare1e12: r.collateralPerShare1e12.toString(), otherPerShare1e12: r.otherPerShare1e12.toString() })),
+            });
+          }
+        }
+        return json(200, out);
+      }
+      const vbid = url.pathname.match(/^\/v1\/vaults\/([1-9A-HJ-NP-Za-km-z]+)\/bid\/([1-9A-HJ-NP-Za-km-z]+)$/);
+      if (vbid) {
+        const b = await reader.fetchVaultBid(new PublicKey(vbid[1]!), new PublicKey(vbid[2]!)).catch(() => null);
+        return json(200, b ? { series: b.series.toBase58(), bidPerLot: b.bidPerLot.toString(), maxLots6: b.maxLots6.toString(), postedAt: Number(b.postedAt), expiresAt: Number(b.expiresAt) } : null);
+      }
+      const vpos = url.pathname.match(/^\/v1\/vaults\/([1-9A-HJ-NP-Za-km-z]+)\/position\/([1-9A-HJ-NP-Za-km-z]+)$/);
+      if (vpos) {
+        const vaultKey = new PublicKey(vpos[1]!);
+        const owner = new PublicKey(vpos[2]!);
+        const p = await reader.fetchVaultPosition(vaultKey, owner).catch(() => null);
+        const vs = [...vaultsLive.values()].flat().find((x) => x.address.equals(vaultKey));
+        const { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } = await import("@solana/spl-token");
+        const shareAta = vs ? getAssociatedTokenAddressSync(vs.shareMint, owner, false, TOKEN_2022_PROGRAM_ID) : null;
+        const info = shareAta ? await connection.getAccountInfo(shareAta, "confirmed") : null;
+        return json(200, { shares: info ? info.data.readBigUInt64LE(64).toString() : "0", queuedDepositRaw: p?.queuedDepositRaw.toString() ?? "0", queuedDepositEpoch: p?.queuedDepositEpoch ?? null, queuedWithdrawShares: p?.queuedWithdrawShares.toString() ?? "0", queuedWithdrawEpoch: p?.queuedWithdrawEpoch ?? null });
       }
       if (url.pathname === "/v1/events") return json(200, store.events({ name: url.searchParams.get("name") ?? undefined, series: url.searchParams.get("series") ?? undefined, limit: Number(url.searchParams.get("limit") ?? 100) }));
       if (url.pathname === "/v1/basis") return json(200, [...live.values()].map((m) => ({ symbol: m.meta.symbol, basisBps: m.basisBps, history: store.basisHistory(m.market.mint.toBase58(), Math.floor(Date.now() / 1000) - 86_400) })));

@@ -114,6 +114,43 @@ pub fn handle_init_vault(ctx: Context<InitVault>, params: VaultParams) -> Result
     Ok(())
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug)]
+pub struct VaultUpdate {
+    pub manager: Option<Pubkey>,
+    pub cap_per_series_lots6: Option<u64>,
+    pub cap_total_lots6: Option<u64>,
+    pub spread_bps: Option<u16>,
+    pub mark_band_bps: Option<u16>,
+    pub roll_interval_secs: Option<i64>,
+    /// Bring the next roll forward or push it back. Never earlier than now; the roll itself still needs `locked_raw` to be zero.
+    pub next_roll_ts: Option<i64>,
+}
+
+#[derive(Accounts)]
+pub struct SetVaultParams<'info> {
+    pub authority: Signer<'info>,
+    #[account(seeds = [Protocol::SEED], bump = protocol.bump)]
+    pub protocol: Account<'info, Protocol>,
+    #[account(mut)]
+    pub vault: Account<'info, Vault>,
+}
+
+/// The protocol authority or the vault's manager adjusts its parameters. Caps only ever bound new writing.
+pub fn handle_set_vault_params(ctx: Context<SetVaultParams>, u: VaultUpdate) -> Result<()> {
+    let signer = ctx.accounts.authority.key();
+    let v = &mut ctx.accounts.vault;
+    require!(signer == ctx.accounts.protocol.authority || signer == v.manager, RosterError::Unauthorized);
+    let clock = Clock::get()?;
+    if let Some(m) = u.manager { require!(signer == ctx.accounts.protocol.authority, RosterError::Unauthorized); v.manager = m; }
+    if let Some(c) = u.cap_per_series_lots6 { v.cap_per_series_lots6 = c; }
+    if let Some(c) = u.cap_total_lots6 { v.cap_total_lots6 = c; }
+    if let Some(b) = u.spread_bps { require!(b <= 10_000, RosterError::SizeOutOfRange); v.spread_bps = b; }
+    if let Some(b) = u.mark_band_bps { require!(b <= 10_000, RosterError::SizeOutOfRange); v.mark_band_bps = b; }
+    if let Some(i) = u.roll_interval_secs { require!(i >= 3600, RosterError::SizeOutOfRange); v.roll_interval_secs = i; }
+    if let Some(t) = u.next_roll_ts { v.next_roll_ts = t.max(clock.unix_timestamp); }
+    Ok(())
+}
+
 // --------------------------------------------------------------------------------------------------------------------
 // Depositor side: deposit, request withdraw, claim
 

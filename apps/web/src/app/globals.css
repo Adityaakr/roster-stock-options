@@ -752,7 +752,7 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 /* Vault cards: a header with the roll, a figure strip, then the epoch on the left and the actions on the right. */
 .vcard { overflow: hidden; }
 .vcard-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding: 18px 20px 14px; border-bottom: 1px solid var(--line); }
-.vcard-roll { text-align: right; min-width: 200px; }
+.vcard-roll { margin-left: auto; min-width: 200px; }
 .vcard-figures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
 .vcard-figures .fig { padding: 14px 20px; border-right: 1px solid var(--line); min-width: 0; }
 .vcard-figures .fig:last-child { border-right: 0; }
@@ -773,5 +773,5 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .vtable th, .vtable td { padding: 8px 10px; font-size: 13px; }
 .vtable .nowrap { white-space: nowrap; }
 @media (max-width: 1100px) { .vcard-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); } .vcard-figures .fig:nth-child(2) { border-right: 0; } .vcard-figures .fig:nth-child(-n + 2) { border-bottom: 1px solid var(--line); } }
-@media (max-width: 960px) { .vcard-body { grid-template-columns: minmax(0, 1fr); } .vcard-roll { text-align: left; } }
+@media (max-width: 960px) { .vcard-body { grid-template-columns: minmax(0, 1fr); } .vcard-roll { margin-left: 0; } }
 @media (max-width: 559px) { .vcard-figures { grid-template-columns: minmax(0, 1fr); } .vcard-figures .fig { border-right: 0; border-bottom: 1px solid var(--line); } .vcard-figures .fig:last-child { border-bottom: 0; } }

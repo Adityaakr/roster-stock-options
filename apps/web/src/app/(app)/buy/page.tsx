@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
@@ -31,6 +31,7 @@ interface SwapQuote { tokensOutRaw: string; minOutRaw: string; route: string; pr
 
 function BuyInner() {
   const params = useSearchParams();
+  const router = useRouter();
   const { data, error } = useRoster(params.get("m"));
   const cluster = useCluster();
   const { publicKey } = useWallet();
@@ -65,7 +66,8 @@ function BuyInner() {
   const u = data.underlying;
   const market = data.markets.find((m) => m.symbol === u.symbol);
   const decimals = market?.decimals ?? 8;
-  const floors = data.terms.filter((t) => t.side === "put" && t.asks.length > 0 && !t.halted);
+  // Only Floors with a resident ask that can actually fill: a series whose asks are all spent is not a floor to buy.
+  const floors = data.terms.filter((t) => t.side === "put" && !t.halted && t.capacity > 0 && t.ladder[0]?.ask !== null);
   const f = floors.find((x) => x.id === floorId) ?? floors[0];
   const tokens = swap ? Number(swap.tokensOutRaw) / 10 ** decimals : null;
   const minTokens = swap ? Number(swap.minOutRaw) / 10 ** decimals : null;
@@ -76,8 +78,10 @@ function BuyInner() {
   // figure that depends on it is marked as an estimate.
   const lots6 = swap ? ((BigInt(swap.minOutRaw) * 1_000_000n) / 10n ** BigInt(decimals) / minLots6) * minLots6 : u.mark > 0 ? (lots6ForShares(usdcIn / u.mark, u.multiplier) / minLots6) * minLots6 : 0n;
   const w = f && lots6 > 0n ? walkAsks(f.asks, lots6) : null;
-  const premium = w ? Number(w.premium) / 1e6 : null;
-  const fee = w ? Number(feeCeil(w.premium, data.feeBps)) / 1e6 : null;
+  // A walk that cannot fill the whole size yields no price: every figure that depends on it waits rather than misleads.
+  const premium = w && w.fillable ? Number(w.premium) / 1e6 : null;
+  const fee = w && w.fillable ? Number(feeCeil(w.premium, data.feeBps)) / 1e6 : null;
+  const unfillable = !!w && !w.fillable;
   const protectedAt = f && lots6 > 0n ? (Number(lots6) / 1e6) * (f.strike * u.multiplier) : null;
   const busy = tx.state.status === "building" || tx.state.status === "signing" || tx.state.status === "sending";
   const ready = !!publicKey && cluster.programDeployed && !!swap && !busy && !!mint;
@@ -102,19 +106,28 @@ function BuyInner() {
   const X = (p: number) => PAD + ((p - band[0]!) / (band[band.length - 1]! - band[0]!)) * (W - 2 * PAD);
   const Y = (v: number) => H - PAD - ((v - yMin) / Math.max(1e-9, yMax - yMin)) * (H - 2 * PAD);
   const path = (withFloor: boolean) => band.map((p, i) => `${i ? "L" : "M"}${X(p).toFixed(1)},${Y(valueAt(p, withFloor)).toFixed(1)}`).join(" ");
-  const scen = [-0.2, -0.1, 0.1].map((d) => ({ d, p: u.mark * (1 + d), plain: valueAt(u.mark * (1 + d), false) - usdcIn, floor: valueAt(u.mark * (1 + d), true) - usdcIn }));
+  const scen = [-0.25, -0.1, 0, 0.1, 0.25].map((d) => ({ d, p: u.mark * (1 + d), plain: valueAt(u.mark * (1 + d), false) - usdcIn, floor: valueAt(u.mark * (1 + d), true) - usdcIn }));
 
   return (
     <div>
       <div className="page-head">
         <div>
           <h1>Protected Buy</h1>
-          <p>Buy {u.symbol}, or buy {u.symbol} with a floor through a date, in one transaction: a Jupiter swap and a Floor on what the swap delivers.</p>
+          <p>Buy the token, or buy it with a floor through a date, in one transaction: a Jupiter swap and a Floor on what the swap delivers. The floor is bought before the tokens land, so nothing is ever uncovered.</p>
         </div>
         <div className="flex items-center gap-3">
           {market ? <MarketLogo m={market} size={36} /> : null}
           <div><div style={{ fontWeight: 500 }}>{u.symbol} <span className="muted" style={{ fontWeight: 400 }}>{u.name}</span></div><div className="small muted">mark <span className="mono ink">${usd(u.mark)}</span></div></div>
         </div>
+      </div>
+
+      <div className="uexplore pb-markets" style={{ marginTop: 18 }}>
+        {data.markets.filter((m) => m.tier <= 2).sort((a, b) => a.tier - b.tier || b.depthUsdc - a.depthUsdc).map((m) => (
+          <button key={m.symbol} className={`utile ${m.symbol === u.symbol ? "on" : ""}`} onClick={() => router.replace(`/buy?m=${m.symbol}`)}>
+            <span className="t flex items-center gap-2"><MarketLogo m={m} size={18} />{m.symbol}</span>
+            <span className="s">${usd(m.mark ?? 0)} · {data.ideas.filter((i) => i.market === m.symbol && i.side === "put").length ? "floor" : "no floor"}</span>
+          </button>
+        ))}
       </div>
 
       <div className="grid-2 split-right" style={{ marginTop: 22 }}>
@@ -141,11 +154,17 @@ function BuyInner() {
               <select className="field" value={f?.id ?? ""} onChange={(e) => setFloorId(e.target.value)} aria-label="Floor" data-testid="floor">
                 {floors.length === 0 ? <option value="">No Floor quoted on {u.symbol} right now</option> : floors.map((x) => <option key={x.id} value={x.id}>${usdK(x.strike)} through {dayLabel(x.expiryTs)} · ${usd(x.ask)} per share</option>)}
               </select>
+              <div className="intent-figs pb-figs" style={{ marginTop: 14 }}>
+                <div><span>You get</span><b className="mono">{shares === null ? `~${estShares.toFixed(2)}` : shares.toFixed(2)} {u.symbol}</b><i className="small muted">{estimated ? "at the mark" : "from the swap"}</i></div>
+                <div><span>Total</span><b className="mono" data-testid="pb-total">{premium === null ? "…" : `$${usdSmart(usdcIn + premium + (fee ?? 0))}`}</b><i className="small muted">purchase plus the floor</i></div>
+                <div><span>Floor pays at least</span><b className="mono up">{protectedAt === null ? "…" : `$${usdSmart(protectedAt)}`}</b><i className="small muted">through {f ? dayLabel(f.expiryTs) : "expiry"}</i></div>
+                <div><span>Worst case</span><b className="mono down">{protectedAt === null || premium === null ? "…" : `−$${usdSmart(usdcIn + premium + (fee ?? 0) - protectedAt)}`}</b><i className="small muted">{protectedAt !== null && premium !== null ? `${(((usdcIn + premium + (fee ?? 0) - protectedAt) / usdcIn) * 100).toFixed(1)}% of what you spend` : ""}</i></div>
+              </div>
               <div style={{ marginTop: 14 }}>
                 <KV items={[
                   { k: `Purchase, ${shares === null ? `about ${estShares.toFixed(2)}` : shares.toFixed(2)} ${u.symbol}`, v: <span className="mono">${usdSmart(usdcIn)}</span> },
-                  { k: `Premium${fee !== null ? ` and ${data.feeBps} bps fee` : ""}`, v: <span className="mono">{premium === null ? "…" : w && !w.fillable ? "not fillable at this size" : `$${usdSmart(premium + (fee ?? 0))}`}</span> },
-                  { k: "Total", v: <span className="mono ink" style={{ fontWeight: 500 }} data-testid="pb-total">{premium === null ? "…" : `$${usdSmart(usdcIn + premium + (fee ?? 0))}`}</span> },
+                  { k: `Premium${fee !== null ? ` and ${data.feeBps} bps fee` : ""}`, v: <span className="mono">{unfillable ? "not fillable at this size" : premium === null ? "…" : `$${usdSmart(premium + (fee ?? 0))}`}</span> },
+                  { k: "Total", v: <span className="mono ink" style={{ fontWeight: 500 }}>{premium === null ? "…" : `$${usdSmart(usdcIn + premium + (fee ?? 0))}`}</span> },
                   { k: `Protected proceeds through ${f ? dayLabel(f.expiryTs) : "expiry"}`, v: <span className="mono up">{protectedAt === null ? "…" : `$${usdSmart(protectedAt)}`}</span> },
                   { k: "Worst case", v: <span className="mono down">{protectedAt === null || premium === null ? "…" : `−$${usdSmart(usdcIn + premium + (fee ?? 0) - protectedAt)}`}</span> }
                 ]} />
@@ -176,22 +195,28 @@ function BuyInner() {
           </div>
           <div style={{ padding: "16px 20px" }}>
             <svg viewBox={`0 0 ${W} ${H}`} className="pb-sketch" role="img" aria-label="Value at expiry with and without the floor">
+              {f && f.strike > band[0]! ? <rect x={X(band[0]!)} y={PAD} width={X(f.strike) - X(band[0]!)} height={H - 2 * PAD} fill="var(--surface)" /> : null}
+              <line x1={PAD} x2={W - PAD} y1={Y(usdcIn)} y2={Y(usdcIn)} stroke="var(--line)" />
+              <text x={W - PAD} y={Y(usdcIn) - 4} textAnchor="end" className="pb-lbl">what you spend</text>
               <line x1={X(u.mark)} x2={X(u.mark)} y1={PAD} y2={H - PAD} stroke="var(--line)" strokeDasharray="3 3" />
-              {f ? <line x1={X(f.strike)} x2={X(f.strike)} y1={PAD} y2={H - PAD} stroke="var(--line-strong)" strokeDasharray="3 3" /> : null}
+              <text x={X(u.mark) + 4} y={H - PAD - 4} className="pb-lbl">mark ${usdK(u.mark)}</text>
+              {f ? <><line x1={X(f.strike)} x2={X(f.strike)} y1={PAD} y2={H - PAD} stroke="var(--ink)" strokeDasharray="3 3" /><text x={X(f.strike) - 4} y={PAD + 10} textAnchor="end" className="pb-lbl ink">floor ${usdK(f.strike)}</text></> : null}
               <path d={path(false)} fill="none" stroke="var(--slate)" strokeWidth="1.5" />
               {f ? <motion.path key={`${f.id}-${usdcIn}`} d={path(true)} fill="none" stroke="var(--ink)" strokeWidth="2" initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, ease: [0.2, 0, 0, 1] }} /> : null}
+              {f && protectedAt !== null ? <text x={X(band[0]!) + 4} y={Y(valueAt(band[0]!, true)) + 13} className="pb-lbl ink">floor pays ${usdK(protectedAt)}, whatever happens below</text> : null}
             </svg>
-            <div className="flex items-center justify-between small muted mono" style={{ marginTop: 4 }}><span>${usdK(band[0]!)}</span><span>mark ${usdK(u.mark)}</span><span>${usdK(band[band.length - 1]!)}</span></div>
-            <div className="flex items-center gap-4 small" style={{ marginTop: 10 }}><span className="flex items-center gap-2"><i className="pb-key" style={{ background: "var(--ink)" }} />With the floor</span><span className="flex items-center gap-2"><i className="pb-key" style={{ background: "var(--slate)" }} />Without</span></div>
+            <div className="flex items-center justify-between small muted mono" style={{ marginTop: 4 }}><span>${usdK(band[0]!)} <span className="sans">(−25%)</span></span><span>{u.symbol} at expiry</span><span><span className="sans">(+25%)</span> ${usdK(band[band.length - 1]!)}</span></div>
+            <div className="flex items-center gap-4 small" style={{ marginTop: 10 }}><span className="flex items-center gap-2"><i className="pb-key" style={{ background: "var(--ink)" }} />With the floor</span><span className="flex items-center gap-2"><i className="pb-key" style={{ background: "var(--slate)" }} />Without</span><span className="flex items-center gap-2"><i className="pb-key" style={{ background: "var(--surface)", height: 10, border: "1px solid var(--line)" }} />Below the floor</span></div>
           </div>
           <table className="table">
-            <thead><tr><th>{u.symbol} at expiry</th><th className="num">Without</th><th className="num">With the floor</th></tr></thead>
+            <thead><tr><th>{u.symbol} at expiry</th><th className="num">Without</th><th className="num">With the floor</th><th className="hide-sm">Which means</th></tr></thead>
             <tbody>
               {scen.map((r) => (
                 <tr key={r.d}>
-                  <td><span className="mono">${usd(r.p)}</span> <span className="small muted">({r.d > 0 ? "+" : "−"}{Math.abs(r.d * 100).toFixed(0)}%)</span></td>
-                  <td className={`num mono ${r.plain < 0 ? "down" : "up"}`}>{r.plain < 0 ? "−" : "+"}${usdSmart(Math.abs(r.plain))}</td>
+                  <td className="nowrap"><span className="mono">${usd(r.p)}</span> <span className="small muted">({r.d === 0 ? "mark" : `${r.d > 0 ? "+" : "−"}${Math.abs(r.d * 100).toFixed(0)}%`})</span></td>
+                  <td className={`num mono ${r.plain < 0 ? "down" : r.plain > 0 ? "up" : ""}`}>{r.plain === 0 ? "0" : `${r.plain < 0 ? "−" : "+"}$${usdSmart(Math.abs(r.plain))}`}</td>
                   <td className={`num mono ${!f ? "muted" : r.floor < 0 ? "down" : "up"}`}>{!f ? "no floor quoted" : `${r.floor < 0 ? "−" : "+"}$${usdSmart(Math.abs(r.floor))}`}</td>
+                  <td className="small muted hide-sm">{!f ? "" : r.p < f.strike ? `sell at $${usdK(f.strike)} while it trades at $${usdK(r.p)}` : "the floor expires unused; you keep the tokens"}</td>
                 </tr>
               ))}
             </tbody>

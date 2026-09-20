@@ -21,7 +21,9 @@ test("a Protected Buy delivers the tokens and the floor in one transaction", asy
   test.setTimeout(300_000);
   const up = await forkReachable();
   const services = await servicesWarm();
-  test.skip(!up || !services, "fork or services not running");
+  // The swap leg needs the fork (a devnet replica has no route), so the services must be the fork's.
+  const health = await fetch("http://127.0.0.1:8787/v1/health").then((r) => (r.ok ? r.json() : null)).catch(() => null) as { cluster?: string } | null;
+  test.skip(!up || !services || health?.cluster !== "fork", "fork or its services not running");
   await page.goto("/buy?m=NVDAx");
   await expect(page.getByRole("heading", { level: 1, name: "Protected Buy" })).toBeVisible();
   const wallet = await connectBurner(page);

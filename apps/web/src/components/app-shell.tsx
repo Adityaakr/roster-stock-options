@@ -68,9 +68,11 @@ function Shell({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
-        <div className="foot mt-auto small" style={{ padding: "0 10px" }}>
-          <p style={{ margin: 0 }}>{cluster.programDeployed ? "Fully collateralized contracts on tokenized stocks. Contracts can expire worthless." : "Program not deployed on this cluster. Premiums, reserves and positions are fixtures; expiries follow the clock."}</p>
-        </div>
+        {!cluster.programDeployed ? (
+          <div className="foot mt-auto small" style={{ padding: "0 10px" }}>
+            <p style={{ margin: 0 }}>Program not deployed on this cluster. Premiums, reserves and positions are fixtures; expiries follow the clock.</p>
+          </div>
+        ) : null}
       </aside>
       <div className="min-w-0">
         <header className="topbar">

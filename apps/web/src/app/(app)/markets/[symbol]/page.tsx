@@ -111,7 +111,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
               {bestGap[0] ? <Link className="term-pick" href={`/trade/${bestGap[0].id}`} data-testid="buy-gap"><span><b>Buy a Gap</b> <span className="muted">${usdK(bestGap[0].strike)} · {dayLabel(bestGap[0].expiryTs)}</span></span><span className="mono">${usd(bestGap[0].ladder[0]!.ask!)} / share</span><span className="pick-go">Buy →</span></Link> : <div className="small muted">No Gap quoted right now.</div>}
               {bestFloor[0] ? <Link className="term-pick" href={`/trade/${bestFloor[0].id}`} data-testid="buy-floor"><span><b>Buy a Floor</b> <span className="muted">${usdK(bestFloor[0].strike)} · {dayLabel(bestFloor[0].expiryTs)}</span></span><span className="mono">${usd(bestFloor[0].ladder[0]!.ask!)} / share</span><span className="pick-go">Buy →</span></Link> : <div className="small muted">No Floor quoted right now.</div>}
-              <Link className="btn secondary sm" href={`/underwrite?m=${m.symbol}`} style={{ justifySelf: "start", marginTop: 4 }}>Underwrite {m.symbol}</Link>
+              <Link className="btn secondary sm" href={`/underwrite?m=${m.symbol}`} style={{ justifySelf: "start", marginTop: 4 }}>Earn on {m.symbol}</Link>
             </div>
           </div>
         </div>

@@ -69,8 +69,8 @@ test("devnet: fund a wallet from the faucet, buy a Gap, buy a Floor, write and e
   await waitDone(page);
 
   // Commit: write a Floor of the same size the faucet handed out.
-  await page.getByRole("link", { name: "Underwrite" }).first().click();
-  await expect(page.getByRole("heading", { level: 1, name: "Underwrite" })).toBeVisible();
+  await page.getByRole("link", { name: "Earn" }).first().click();
+  await expect(page.getByRole("heading", { level: 1, name: "Get paid to take the other side" })).toBeVisible();
   const termSelect = page.getByTestId("term");
   const written = await termSelect.inputValue();
   await page.getByTestId("write-size").fill("1");

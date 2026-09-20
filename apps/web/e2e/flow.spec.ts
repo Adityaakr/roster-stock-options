@@ -75,8 +75,8 @@ test("buy a Gap, buy a Floor, write a Floor, exercise, see the release", async (
   await waitDone(page);
 
   // Commit: write a Floor, 3 shares at 1.00 per share; the slot appears with the ask resident.
-  await page.getByRole("link", { name: "Underwrite" }).first().click();
-  await expect(page.getByRole("heading", { level: 1, name: "Underwrite" })).toBeVisible();
+  await page.getByRole("link", { name: "Earn" }).first().click();
+  await expect(page.getByRole("heading", { level: 1, name: "Get paid to take the other side" })).toBeVisible();
   const termSelect = page.getByTestId("term");
   const written = await termSelect.inputValue();
   await page.getByTestId("write-size").fill("3");

@@ -34,7 +34,7 @@ export function SiteFooter({ network, source }: { network?: string; source?: str
           </div>
           <div>
             <h6>Product</h6>
-            <ul><li><Link className="navlink" href="/markets">App</Link></li><li><Link className="navlink" href="/positions">Positions</Link></li><li><Link className="navlink" href="/roster">Roster</Link></li><li><Link className="navlink" href="/underwrite">Underwrite</Link></li><li><Link className="navlink" href="/pre-ipo">First Print</Link></li></ul>
+            <ul><li><Link className="navlink" href="/markets">App</Link></li><li><Link className="navlink" href="/positions">Positions</Link></li><li><Link className="navlink" href="/roster">Roster</Link></li><li><Link className="navlink" href="/underwrite">Earn</Link></li><li><Link className="navlink" href="/pre-ipo">PreStocks</Link></li></ul>
           </div>
           <div>
             <h6>Read</h6>

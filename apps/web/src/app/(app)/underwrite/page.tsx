@@ -113,8 +113,8 @@ function UnderwriteInner() {
     <div>
       <div className="page-head">
         <div>
-          <h1>Underwrite</h1>
-          <p>Get paid to take the other side. Lock the collateral, publish an ask, collect the premium when it fills. Paid risk, disclosed as such.</p>
+          <h1>Get paid to take the other side</h1>
+          <p>Lock the collateral, publish an ask, collect the premium when it fills. Paid risk, disclosed as such: what you collect is yours only if you are not assigned.</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="hstat"><span>Executable depth</span><b className="mono">${usd0(depthUsd)}</b></div>

@@ -122,7 +122,7 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
             <div className="h6">A known price on a known date, on {token.symbol}</div>
             <div className="small muted" style={{ marginTop: 2 }}>{listed ? `${calls} Gap and ${puts} Floor terms quoted · $${usd0(token.market!.depthUsdc)} executable depth${token.market!.bestAsk !== null ? ` · best ask $${usd(token.market!.bestAsk)} per token` : ""}. A Floor is the funded exit: sell at the strike any time through the date, USDC already locked.` : "Not listed on this cluster. Tier 3 names can be quoted by any underwriter once their escrow is proven."}</div>
           </div>
-          {listed ? <div className="flex items-center gap-2"><Link href={`/underwrite?m=${token.symbol}`} className="btn secondary sm">Write on {token.symbol}</Link><Link href={`/vaults`} className="btn secondary sm">Vaults</Link></div> : null}
+          {listed ? <div className="flex items-center gap-2"><Link href={`/underwrite?m=${token.symbol}`} className="btn secondary sm">Earn on {token.symbol}</Link><Link href={`/vaults`} className="btn secondary sm">Vaults</Link></div> : null}
         </div>
         {listed && data ? <div style={{ padding: "14px 16px 6px" }}><DiscoverTable data={data} initialSide="put" /></div> : null}
         {listed && token.feeBps ? <p className="small muted" style={{ padding: "0 20px 14px", margin: 0 }}>The mint&apos;s {(token.feeBps / 100).toFixed(2)}% fee is the holder&apos;s on both sides: a Gap delivers the tokens less the fee; a Floor has you deliver the fee on top so the writers receive every unit they are owed. The ticket states both in numbers.</p> : null}

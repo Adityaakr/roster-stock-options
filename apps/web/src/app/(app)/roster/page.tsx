@@ -166,7 +166,7 @@ function RosterInner() {
           <div className="h6">Want to be on the roster?</div>
           <div className="small" style={{ marginTop: 4 }}>Lock USDC or {sym}, publish an ask, get paid when it fills. Paid risk, disclosed as such.</div>
         </div>
-        <Link href={`/underwrite?m=${sym}`} className="btn primary">Underwrite a term</Link>
+        <Link href={`/underwrite?m=${sym}`} className="btn primary">Earn on {sym}</Link>
       </div>
       <p className="small" style={{ marginTop: 14 }}>{data.source}</p>
     </div>

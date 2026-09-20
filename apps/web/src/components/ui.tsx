@@ -1,5 +1,7 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
+
 import Image from "next/image";
 import { useState, type ReactNode } from "react";
 
@@ -115,11 +117,14 @@ export function ErrorState({ message, next }: { message: string; next?: React.Re
   );
 }
 
+/** The wait, in the middle of the page: the mark turns while the data loads, with one quiet line under it. */
 export function Loading({ what }: { what: string }) {
+  const reduce = useReducedMotion();
   return (
-    <p className="msg" role="status" aria-live="polite">
-      Loading {what}.
-    </p>
+    <div className="loading" role="status" aria-live="polite">
+      {reduce ? <i className="mark" aria-hidden /> : <motion.i className="mark" aria-hidden animate={{ scale: [1, 0.82, 1], rotate: [0, 90, 90, 180, 180] }} transition={{ duration: 1.6, repeat: Infinity, ease: [0.2, 0, 0, 1], times: [0, 0.5, 0.55, 1, 1] }} />}
+      <span>Reading {what}</span>
+    </div>
   );
 }
 

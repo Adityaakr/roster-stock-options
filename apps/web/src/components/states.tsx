@@ -1,11 +1,5 @@
 /** Explicit loading, empty and error states, written as directions. */
-export function Loading({ what }: { what: string }) {
-  return (
-    <p className="msg" role="status" aria-live="polite">
-      Loading {what}.
-    </p>
-  );
-}
+export { Loading } from "./ui";
 
 export function Empty({ title, action }: { title: string; action?: string }) {
   return (

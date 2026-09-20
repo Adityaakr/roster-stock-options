@@ -1008,3 +1008,8 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 @media (max-width: 767px) { .spread-row { grid-template-columns: 96px minmax(0, 1fr) 90px; } }
 .ask-answer { padding: 18px 20px; margin-top: 22px; }
 .ask-answer-text { margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink); }
+
+/* Loading: the mark turning in the middle of the page, not a sentence in the corner. */
+.loading { min-height: 46vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: var(--slate); font-size: 14px; }
+.loading .mark { width: 28px; height: 28px; border-radius: 6px; background: var(--ink); display: inline-block; position: relative; }
+.loading .mark::after { content: ""; position: absolute; inset: 8px 8px 8px 14px; background: var(--paper); border-radius: 1px; }

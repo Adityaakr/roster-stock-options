@@ -222,10 +222,16 @@ function UnderwriteInner() {
         <div className="wgrid">
           <div className="wform">
             <label className="lbl">Term</label>
-            <select className="field" value={t.id} onChange={(e) => { setTermId(e.target.value); setAsk(null); tx.reset(); }} aria-label="Term" data-testid="term">
-              {terms.map((x) => <option key={x.id} value={x.id}>${usdK(x.strike)} through {dayLabel(x.expiryTs)} · {x.ask ? `best ask $${usd(x.ask)}` : "no ask yet"}</option>)}
-            </select>
-            <div className="small muted" style={{ marginTop: 6 }}>Expires {dayLabel(t.expiryTs)}, in {countdown(t.expiryTs, data.nowTs)} · {t.writers.filter((w) => w.live).length} underwriter{t.writers.filter((w) => w.live).length === 1 ? "" : "s"} live · {Math.floor(t.capacity)} {sym} fillable</div>
+            <div className="wterms" role="radiogroup" aria-label="Term" data-testid="term" data-value={t.id}>
+              {terms.map((x) => (
+                <button key={x.id} type="button" role="radio" aria-checked={x.id === t.id} className={`wterm ${x.id === t.id ? "on" : ""}`} onClick={() => { setTermId(x.id); setAsk(null); tx.reset(); }} data-testid="term-option" data-term={x.id}>
+                  <span className="k"><b className="mono">${usdK(x.strike)}</b><span className="small muted">{dayLabel(x.expiryTs)}</span></span>
+                  <span className="a"><b className="mono">{x.ask ? `$${usd(x.ask)}` : "none"}</b><span className="small muted">{x.ask ? "best ask" : "no ask yet"}</span></span>
+                  <span className="f"><b className="mono">{Math.floor(x.capacity)}</b><span className="small muted">fillable</span></span>
+                </button>
+              ))}
+            </div>
+            <div className="small muted" style={{ marginTop: 8 }}>Expires {dayLabel(t.expiryTs)}, in {countdown(t.expiryTs, data.nowTs)} · {t.writers.filter((w) => w.live).length} underwriter{t.writers.filter((w) => w.live).length === 1 ? "" : "s"} live</div>
 
             <label className="lbl" style={{ marginTop: 16 }}>Size</label>
             <div className="pb-amount">

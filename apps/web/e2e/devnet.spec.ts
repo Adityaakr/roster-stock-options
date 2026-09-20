@@ -72,7 +72,7 @@ test("devnet: fund a wallet from the faucet, buy a Gap, buy a Floor, write and e
   await page.getByRole("link", { name: "Earn" }).first().click();
   await expect(page.getByRole("heading", { level: 1, name: "Get paid to take the other side" })).toBeVisible();
   const termSelect = page.getByTestId("term");
-  const written = await termSelect.inputValue();
+  const written = (await termSelect.getAttribute("data-value"))!;
   await page.getByTestId("write-size").fill("1");
   await page.getByTestId("write-ask").fill("1.00");
   await page.getByTestId("write").click();
@@ -80,7 +80,7 @@ test("devnet: fund a wallet from the faucet, buy a Gap, buy a Floor, write and e
   // The slot appears once the indexer has read the deposit back; the term selection is restored first, because a
   // reload can land on a different term and the slot belongs to the one that was written.
   await expect.poll(async () => {
-    await termSelect.selectOption(written).catch(() => undefined);
+    await page.getByTestId("term-option").filter({ has: page.locator(`[data-term="${written}"]`) }).or(page.locator(`[data-term="${written}"]`)).first().click().catch(() => undefined);
     await page.waitForTimeout(2_000);
     return await page.getByTestId("my-slot").isVisible().catch(() => false);
   }, { timeout: 120_000, intervals: [5_000] }).toBe(true);

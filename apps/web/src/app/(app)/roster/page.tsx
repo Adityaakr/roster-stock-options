@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Address, Badge, ErrorState, Loading, Stat } from "@/components/ui";
 import { useCluster, explorerUrl } from "@/lib/cluster";
 import { usd, usd0, usdK, dayLabel, timeLabel } from "@/lib/format";
 import { productName, TIER_LABEL } from "@/lib/model";
+import type { ServicesVault } from "@/lib/services";
 import { useRoster } from "@/lib/use-roster";
 
 /*
@@ -144,6 +145,7 @@ function RosterInner() {
           </div>
         </div>
       </div>
+      <VaultLedger nowTs={data.nowTs} decimalsOf={(symbol) => data.markets.find((m) => m.symbol === symbol)?.decimals ?? 8} />
       <div className="card pad flex items-center justify-between gap-4 flex-wrap" style={{ marginTop: 16 }}>
         <div>
           <div className="h6">Want to be on the roster?</div>
@@ -152,6 +154,62 @@ function RosterInner() {
         <Link href={`/underwrite?m=${sym}`} className="btn primary">Underwrite a term</Link>
       </div>
       <p className="small" style={{ marginTop: 14 }}>{data.source}</p>
+    </div>
+  );
+}
+
+/*
+ * The vaults' own ledger (Part 3 section 6): every epoch of every vault, its sign included, from the first one. A
+ * vault that is short volatility with no hedge will have losing epochs, and a venue that publishes them is the one
+ * that keeps its depositors when they come.
+ */
+function VaultLedger({ nowTs, decimalsOf }: { nowTs: number; decimalsOf: (symbol: string) => number }) {
+  const [vaults, setVaults] = useState<ServicesVault[]>([]);
+  useEffect(() => {
+    fetch("/api/vaults", { cache: "no-store" }).then((r) => (r.ok ? (r.json() as Promise<ServicesVault[] | { error: string }>) : [])).then((j) => { if (Array.isArray(j)) setVaults(j); }).catch(() => undefined);
+  }, []);
+  if (!vaults.length) return null;
+  const rows = vaults.flatMap((v) => v.epochs.map((e) => ({ v, e })));
+  const totalPremium = vaults.reduce((a, v) => a + v.epochs.reduce((b, e) => b + Number(e.premiumIn), 0) + Number(v.epochPremiumIn), 0) / 1e6;
+  const totalBuyback = vaults.reduce((a, v) => a + v.epochs.reduce((b, e) => b + Number(e.buybackOut), 0) + Number(v.epochBuybackOut), 0) / 1e6;
+  const losing = rows.filter(({ e }) => Number(e.pnlPerShare1e6) < 0).length;
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }} className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <div className="h6">The vaults, epoch by epoch</div>
+          <div className="small muted">Short volatility with no hedge: losing epochs are published like any other. {rows.length} rolled so far, {losing} of them losing.</div>
+        </div>
+        <div className="flex items-center gap-4">
+          <Stat k="Premium collected" v={`$${usd(totalPremium)}`} />
+          <Stat k="Paid on buybacks" v={`$${usd(totalBuyback)}`} />
+          <Link href="/vaults" className="btn secondary sm">Deposit</Link>
+        </div>
+      </div>
+      {rows.length === 0 ? <p className="small muted" style={{ padding: "12px 20px" }}>No epoch has rolled yet; the next rolls at {timeLabel(Math.min(...vaults.map((v) => v.nextRollTs)))}, in {Math.max(0, Math.round((Math.min(...vaults.map((v) => v.nextRollTs)) - nowTs) / 60))} minutes.</p> : (
+        <table className="table">
+          <thead><tr><th>Vault</th><th>Epoch</th><th>Rolled</th><th className="num">Premium in</th><th className="num">Buybacks</th><th className="num">Assigned</th><th className="num">P&amp;L per share</th><th className="num">Shares after</th></tr></thead>
+          <tbody>
+            {rows.sort((a, b) => b.e.rolledAt - a.e.rolledAt).map(({ v, e }) => {
+              const cc = v.kind === "covered_call";
+              const unit = cc ? v.symbol : "USDC";
+              const pnl = Number(e.pnlPerShare1e6) / 1e6 / (cc ? 10 ** decimalsOf(v.symbol) / 1e6 : 1);
+              return (
+                <tr key={`${v.address}-${e.epoch}`}>
+                  <td>{cc ? "Covered Call" : "Cash-Secured Put"} · {v.symbol} <Badge tone={v.halted ? "amber" : "green"} dot>{v.halted ? "halted" : "quoting"}</Badge></td>
+                  <td className="mono">{e.epoch}</td>
+                  <td>{timeLabel(e.rolledAt)}</td>
+                  <td className="num">${usd(Number(e.premiumIn) / 1e6)}</td>
+                  <td className="num">${usd(Number(e.buybackOut) / 1e6)}</td>
+                  <td className="num">{usdK(Number(e.assignedLots6) / 1e6)} lots</td>
+                  <td className={`num ${pnl < 0 ? "down" : pnl > 0 ? "up" : ""}`}>{pnl === 0 ? "0" : `${pnl > 0 ? "+" : "−"}${Math.abs(pnl).toFixed(6)} ${unit}`}</td>
+                  <td className="num">{usdK(Number(e.totalSharesAfter) / 1e6)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

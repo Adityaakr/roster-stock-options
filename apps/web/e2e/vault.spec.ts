@@ -20,7 +20,7 @@ test("devnet: deposit into the vault, buy from it, sell back to it", async ({ pa
   await page.goto("/vaults");
   await expect(page.getByRole("heading", { level: 1, name: "Vaults" })).toBeVisible();
   await expect(page.getByTestId("vault").first()).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText(/paid risk, not yield/i)).toBeVisible();
+  await expect(page.getByText(/paid risk, not yield/i).first()).toBeVisible();
 
   // Connect the burner and take funds.
   await page.getByRole("button", { name: /connect wallet/i }).first().click();

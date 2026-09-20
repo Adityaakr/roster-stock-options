@@ -55,7 +55,7 @@ export function WalletMenu() {
         <div className="menu" role="menu">
           <div className="px-2.5 py-2 small">
             <div className="mono" style={{ color: "var(--ink)" }}>{short(active, 8)}</div>
-            <div>{wallet?.adapter.name ?? "Browser wallet"} on {cluster.label}. Transactions are built and submitted by the app.</div>
+            <div>{wallet?.adapter.name ?? "Browser wallet"}. Transactions are built and submitted by the app.</div>
           </div>
           <div className="sep" />
           <button role="menuitem" onClick={() => navigator.clipboard.writeText(active).catch(() => undefined)}>Copy address</button>

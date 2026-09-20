@@ -45,7 +45,7 @@ export default async function Landing() {
       <SaidOutLoud />
       <Risk data={d} />
       <Cta />
-      <SiteFooter network={d.clusterLabel} source={d.programDeployed ? undefined : "program not deployed, figures are fixtures"} />
+      <SiteFooter source={d.programDeployed ? undefined : "program not deployed, figures are fixtures"} />
     </div>
   );
 }

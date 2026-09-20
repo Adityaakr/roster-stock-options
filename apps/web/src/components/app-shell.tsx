@@ -6,7 +6,6 @@ import { Suspense, type ReactNode } from "react";
 import { Icon } from "@/components/icons";
 import { WalletMenu } from "@/components/wallet-menu";
 import { useCluster } from "@/lib/cluster";
-import { Badge } from "@/components/ui";
 
 const NAV = [
   { group: "Trade", items: [
@@ -37,7 +36,7 @@ function useMarketParam(pathname: string): string | null {
   return market ? decodeURIComponent(market[1]!) : null;
 }
 
-/** The product shell: sidebar with grouped nav, sticky topbar with crumbs, the cluster on every screen (CLAUDE.md 4.4). */
+/** The product shell: sidebar with grouped nav, sticky topbar with crumbs, the cluster read for the deployed check. */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <Suspense fallback={null}>
@@ -70,10 +69,7 @@ function Shell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="foot mt-auto small" style={{ padding: "0 10px" }}>
-          <div className="flex items-center gap-2">
-            <Badge tone={cluster.programDeployed ? "green" : "amber"} dot>{cluster.label}</Badge>
-          </div>
-          <p className="mt-3" style={{ margin: "12px 0 0" }}>{cluster.programDeployed ? "Fully collateralized contracts on tokenized stocks. Contracts can expire worthless." : "Program not deployed on this cluster. Premiums, reserves and positions are fixtures; expiries follow the clock."}</p>
+          <p style={{ margin: 0 }}>{cluster.programDeployed ? "Fully collateralized contracts on tokenized stocks. Contracts can expire worthless." : "Program not deployed on this cluster. Premiums, reserves and positions are fixtures; expiries follow the clock."}</p>
         </div>
       </aside>
       <div className="min-w-0">
@@ -82,8 +78,6 @@ function Shell({ children }: { children: ReactNode }) {
             <span>Roster Finance</span>
             <span>/</span>
             <b>{CRUMB[first] ?? first}</b>
-            <span>·</span>
-            <Badge tone={cluster.programDeployed ? "green" : "amber"} dot>{cluster.label}</Badge>
           </div>
           <WalletMenu />
         </header>

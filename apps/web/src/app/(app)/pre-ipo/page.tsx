@@ -38,7 +38,7 @@ export default function PreIpoPage() {
           <h1 className="h3">First Print</h1>
           <p className="body-sm">Funded exits on the assets with no exit at all. Rights profile, mark versus token price, the fee read from the mint, and the redemption cliff on every ticket. Live from Tessera and PreStocks.</p>
         </div>
-        <Badge tone={listed.length ? "green" : "amber"} dot>{listed.length} listed on {cluster.label}</Badge>
+        <Badge tone={listed.length ? "green" : "amber"} dot>{listed.length} listed</Badge>
       </div>
       <div className="card scroll-x" style={{ marginBottom: 16 }}>
         <table className="table" style={{ minWidth: 1000 }}>

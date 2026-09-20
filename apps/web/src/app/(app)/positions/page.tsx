@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { TxStatus } from "@/components/tx-status";
 import { Address, Badge, Empty, ErrorState, KV, Loading, Stat } from "@/components/ui";
 import { useCluster, explorerUrl } from "@/lib/cluster";
 import { usd, usd0, usdK, usdSmart, dayLabel, countdown, timeLabel } from "@/lib/format";
-import { buyerPnl, exerciseWords, inTheMoney, lots6ForShares, productName, type Market, type Position } from "@/lib/model";
+import { buyerPnl, exerciseWords, inTheMoney, lots6ForShares, productName, sharesOf, type Market, type Position } from "@/lib/model";
 import { useTransaction } from "@/lib/tx";
 import { usePositions } from "@/lib/use-positions";
 import { useRoster } from "@/lib/use-roster";
@@ -89,8 +89,29 @@ const RECEIPT_LABEL: Record<string, string> = { buy: "Bought", exercise: "Exerci
 function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExerciseLive, onChange }: { p: Position; market: Market | undefined; nowTs: number; keeperFeeUsd: number; programDeployed: boolean; autoExerciseLive: boolean; onChange: () => void }) {
   const tx = useTransaction();
   const auto = useTransaction();
+  const sell = useTransaction();
   const [confirm, setConfirm] = useState(false);
   const [n, setN] = useState<number | null>(null);
+  // The vault's live bid on this series (Part 3): the way out of a winning position without paying the strike.
+  const [bid, setBid] = useState<{ vault: string; perShare: number; maxShares: number; expiresAt: number } | null>(null);
+  useEffect(() => {
+    if (!p.series || !market?.address) return;
+    let live = true;
+    fetch("/api/vaults", { cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<{ address: string; symbol: string; kind: string }[]>) : []))
+      .then(async (vaults) => {
+        const v = Array.isArray(vaults) ? vaults.find((x) => x.symbol === p.market && x.kind === (p.side === "call" ? "covered_call" : "cash_secured_put")) : undefined;
+        if (!v) return null;
+        const b = await fetch(`/api/vaults/${v.address}/bid/${p.series}`, { cache: "no-store" }).then((r) => (r.ok ? (r.json() as Promise<{ bidPerLot: string; maxLots6: string; expiresAt: number } | null>) : null));
+        if (!b || Number(b.bidPerLot) <= 0 || b.expiresAt <= Math.floor(Date.now() / 1000)) return null;
+        const mult = market?.multiplier ?? 1;
+        return { vault: v.address, perShare: Number(b.bidPerLot) / 1e6 / mult, maxShares: sharesOf(b.maxLots6, mult), expiresAt: b.expiresAt };
+      })
+      .then((b) => { if (live) setBid(b); })
+      .catch(() => { if (live) setBid(null); });
+    return () => { live = false; };
+    // Not keyed on the clock: a refresh must not cancel a bid read in flight. The bid itself carries its expiry.
+  }, [p.series, p.market, p.side, market?.address, market?.multiplier]);
   const mark = market?.mark ?? null;
   const symbol = p.market;
   const itm = mark !== null && inTheMoney(p.side, p.strike, mark);
@@ -104,6 +125,14 @@ function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExer
   async function exercise() {
     if (!p.series || !market?.mint) return;
     const sig = await tx.run({ kind: "exercise", mint: market.mint, series: p.series, params: { lots6: lots6ForShares(count, market.multiplier).toString() } });
+    if (sig) { setConfirm(false); onChange(); }
+  }
+  async function sellToVault() {
+    if (!p.series || !market?.mint || !bid) return;
+    const shares = Math.min(count, bid.maxShares, remaining);
+    // The limit is the bid shown, less a hair for the multiplier's rounding: the program refuses anything below it.
+    const minPerLot = BigInt(Math.floor(bid.perShare * (market.multiplier ?? 1) * 1e6 * 0.999));
+    const sig = await sell.run({ kind: "sell_to_vault", mint: market.mint, series: p.series, params: { lots6: lots6ForShares(shares, market.multiplier).toString(), minBidPerLot: minPerLot.toString() } });
     if (sig) { setConfirm(false); onChange(); }
   }
   async function toggleAuto() {
@@ -127,6 +156,7 @@ function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExer
             { k: "Exercising requires", v: <span className="mono">{words}</span> },
             { k: "Auto-exercise", v: p.autoExercise ? (autoExerciseLive ? `on: the keeper exercises in the hour before expiry if in the money by more than $${usd(keeperFeeUsd)}, paid from the fee vault` : `on: the delegate is set, but no keeper cranks on this cluster yet (it needs a Pyth key), so exercise yourself before expiry`) : "off: nothing happens at expiry unless you exercise" },
             { k: "Bought", v: <span className="mono">{p.signature ? `${p.signature.slice(0, 8)}…${p.signature.slice(-8)}` : "no signature on this cluster"}</span> },
+            { k: "Vault bid", v: bid ? <span className="mono">${usdSmart(bid.perShare)} per share for up to {usdK(bid.maxShares)} {symbol}: sell without paying the strike</span> : <span className="muted">none right now; exercise or hold to expiry</span> },
             ...(p.exercised > 0 ? [{ k: "Exercised so far", v: <span className="mono">{p.exercised} {symbol}</span> }] : [])
           ]} />
         </div>
@@ -149,8 +179,10 @@ function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExer
           <div className="flex items-center gap-2">
             <button className="btn secondary sm" onClick={toggleAuto} disabled={!can || busy(auto.state)} data-testid="auto-toggle">{p.autoExercise ? "Revoke auto-exercise" : "Enable auto-exercise"}</button>
             <button className="btn secondary sm" onClick={() => setConfirm(true)} disabled={remaining === 0 || p.expired} data-testid="exercise">Exercise now</button>
+            {bid && bid.maxShares > 0 ? <button className="btn primary sm" onClick={sellToVault} disabled={!can || busy(sell.state)} data-testid="sell-to-vault">Sell {Math.min(count, bid.maxShares, remaining)} at ${usdSmart(bid.perShare)}</button> : null}
           </div>
         )}
+        {sell.state.status !== "idle" ? <TxStatus state={sell.state} onRetry={sell.reset} /> : null}
         {tx.state.status === "done" && !confirm ? <TxStatus state={tx.state} /> : null}
       </div>
     </div>

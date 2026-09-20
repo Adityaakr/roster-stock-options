@@ -589,6 +589,14 @@ export class RosterClient {
       .transaction();
   }
 
+  async vaultClaimPremium(m: MarketState, kind: VaultKind, s: SeriesState): Promise<Transaction> {
+    const a = this.vaultAccounts(m, kind);
+    return this.program.methods
+      .vaultClaimPremium()
+      .accountsPartial({ cranker: this.wallet, market: m.address, vault: a.vault, series: s.address, quoteMint: m.quoteMint, quoteVault: s.quoteVault, vaultQuoteAta: a.quoteAta, quoteTokenProgram: TOKEN_PROGRAM_ID })
+      .transaction();
+  }
+
   async vaultPostBid(m: MarketState, kind: VaultKind, s: SeriesState, bidPerLot: bigint, maxLots6: bigint, ttlSecs: bigint): Promise<Transaction> {
     const vault = this.vault(m.address, kind);
     return this.program.methods

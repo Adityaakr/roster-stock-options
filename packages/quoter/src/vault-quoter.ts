@@ -49,6 +49,7 @@ export class VaultQuoter {
     let sent = 0;
     // What the vault may spend on deposits right now: its balance less what is queued or reserved for others.
     const spendable = await this.spendable(m, v);
+    const usdc = await this.usdcOnHand(m, v);
     const eligible = series.filter((s) => s.side === side && !s.halted && s.expiryTs > BigInt(at) && s.expiryTs <= v.nextRollTs);
     if (!eligible.length) {
       this.say({ at, market: mk, action: "skip", detail: `no ${side} series expiring by the next roll (${v.nextRollTs}); ${series.filter((s) => s.side === side && s.expiryTs > BigInt(at)).length} live on the other side of it` });
@@ -62,16 +63,31 @@ export class VaultQuoter {
       const d = decideVaultQuote({ side, price: ctx.price, multiplier: ctx.multiplier, pendingDividendMultiplier: ctx.pendingDividendMultiplier, strikeUsdcPerLot: s.strikeUsdcPerLot, expiryTs: Number(s.expiryTs), nowTs: at, vol: ctx.vol, session, inActivationWindow: ctx.inActivationWindow, baseSpread: this.cfg.baseSpread, minAskPerLot: this.cfg.minAskPerLot, soldLots: sold, capLots, bidSpread: this.vcfg.bidSpread });
       const key = s.address.toBase58();
 
-      // The bid stands whenever the vault is short here: size is exactly its unassigned short.
-      const open = slot ? slot.openLots6 : 0n;
-      if (open > 0n && d.bidPerLot > 0n) {
+      // Premium the vault's fills have earned here funds the bid side: claimed into the vault's USDC account first.
+      if (slot && slot.premiumClaimable > 0n) {
         try {
-          await this.client.send(await this.client.vaultPostBid(m, v.kind, s, d.bidPerLot, open, this.vcfg.bidTtlSecs));
+          await this.client.send(await this.client.vaultClaimPremium(m, v.kind, s));
           sent += 1;
-          this.say({ at, market: mk, series: key, action: "post", detail: `bid ${Number(d.bidPerLot) / 1e6} for up to ${Number(open) / 1e6} lots` });
+          usdc.free += slot.premiumClaimable;
+          this.say({ at, market: mk, series: key, action: "post", detail: `claimed ${Number(slot.premiumClaimable) / 1e6} USDC of premium` });
+        } catch (e) {
+          this.say({ at, market: mk, series: key, action: "skip", detail: `claim failed: ${(e as Error).message.slice(0, 120)}` });
+        }
+      }
+      // The bid stands whenever the vault is short here, sized to its unassigned short and to the USDC it can pay with.
+      const open = slot ? slot.openLots6 : 0n;
+      const affordable = d.bidPerLot > 0n ? (usdc.free * 1_000_000n) / d.bidPerLot : 0n;
+      const bidSize = open < affordable ? open : affordable;
+      if (open > 0n && d.bidPerLot > 0n && bidSize >= m.minLots6) {
+        try {
+          await this.client.send(await this.client.vaultPostBid(m, v.kind, s, d.bidPerLot, bidSize, this.vcfg.bidTtlSecs));
+          sent += 1;
+          this.say({ at, market: mk, series: key, action: "post", detail: `bid ${Number(d.bidPerLot) / 1e6} for up to ${Number(bidSize) / 1e6} lots (short ${Number(open) / 1e6}, USDC on hand ${Number(usdc.free) / 1e6})` });
         } catch (e) {
           this.say({ at, market: mk, series: key, action: "skip", detail: `bid failed: ${(e as Error).message.slice(0, 120)}` });
         }
+      } else if (open > 0n) {
+        this.say({ at, market: mk, series: key, action: "skip", detail: `short ${Number(open) / 1e6} lots but only ${Number(usdc.free) / 1e6} USDC to bid with` });
       }
 
       // The ask.
@@ -142,6 +158,17 @@ export class VaultQuoter {
       }
     }
     return n;
+  }
+
+  /** USDC the vault may pay bids with: its USDC account less what is reserved for withdrawals and, for a put vault, less what is queued; the same rule the program applies. */
+  private async usdcOnHand(m: MarketState, v: VaultState): Promise<{ free: bigint }> {
+    const conn = this.client.provider.connection;
+    const ata = v.kind === "covered_call" ? v.otherAta : v.collateralAta;
+    const info = await conn.getAccountInfo(ata, "confirmed");
+    const amount = info ? info.data.readBigUInt64LE(64) : 0n;
+    const free = v.kind === "covered_call" ? amount - v.reservedOther : amount - v.reservedCollateralRaw - v.pendingDepositRaw;
+    void m;
+    return { free: free > 0n ? free : 0n };
   }
 
   private async spendable(m: MarketState, v: VaultState): Promise<{ raw: bigint }> {

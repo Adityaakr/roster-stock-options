@@ -39,6 +39,15 @@ export interface ServicesEvent { signature: string; ix_index: number; slot: numb
 export interface ServicesPosition { series: string; market: string; side: "call" | "put"; strike_usdc_per_lot: string; expiry_ts: number; position_mint: string; lots6: string; autoExercise: boolean }
 export interface ServicesPositions { wallet: string; positions: ServicesPosition[]; events: ServicesEvent[] }
 export interface ServicesPrices { mint: string; mark: [number, number][]; token: [number, number][]; equity: [number, number][]; basis: { bps: number; at: number }[] }
+export interface ServicesVaultEpoch { epoch: number; rolledAt: number; navCollateralRaw: string; navOther: string; markUsdcPerLot: string; totalSharesAfter: string; premiumIn: string; buybackOut: string; assignedLots6: string; pnlPerShare1e6: string; sharesPerRaw1e12: string; collateralPerShare1e12: string; otherPerShare1e12: string }
+export interface ServicesVault {
+  symbol: string; address: string; kind: "covered_call" | "cash_secured_put"; halted: boolean; manager: string; shareMint: string; collateralMint: string; otherMint: string; collateralAta: string; otherAta: string;
+  collateralBalance: string; otherBalance: string; epoch: number; epochStartTs: number; nextRollTs: number; rollIntervalSecs: number; totalShares: string; lockedRaw: string; pendingDepositRaw: string; pendingWithdrawShares: string;
+  reservedCollateralRaw: string; reservedOther: string; capPerSeriesLots6: string; spreadBps: number; lastMarkUsdcPerLot: string; markBandBps: number; epochPremiumIn: string; epochBuybackOut: string; epochAssignedLots6: string;
+  navPerShare1e6: string; epochPnlPerShare1e6: string; epochs: ServicesVaultEpoch[];
+}
+export interface ServicesVaultBid { series: string; bidPerLot: string; maxLots6: string; postedAt: number; expiresAt: number }
+export interface ServicesVaultPosition { shares: string; queuedDepositRaw: string; queuedDepositEpoch: number | null; queuedWithdrawShares: string; queuedWithdrawEpoch: number | null }
 export interface ServicesHealth { ok: boolean; cluster: string; lastTick: number; blocked: string | null; program: string; hermesKeyed: boolean }
 
 async function get<T>(path: string, timeoutMs = TIMEOUT_MS): Promise<T> {
@@ -51,6 +60,9 @@ export const services = {
   health: () => get<ServicesHealth>("/v1/health"),
   roster: () => get<ServicesRoster>("/v1/roster"),
   positions: (wallet: string) => get<ServicesPositions>(`/v1/positions/${wallet}`, 15_000),
+  vaults: () => get<ServicesVault[]>("/v1/vaults", 15_000),
+  vaultBid: (vault: string, series: string) => get<ServicesVaultBid | null>(`/v1/vaults/${vault}/bid/${series}`),
+  vaultPosition: (vault: string, wallet: string) => get<ServicesVaultPosition>(`/v1/vaults/${vault}/position/${wallet}`),
   prices: (mint: string, sinceUnix: number) => get<ServicesPrices>(`/v1/prices/${mint}?since=${sinceUnix}`),
   events: (q: { name?: string; series?: string; limit?: number }) => {
     const p = new URLSearchParams();

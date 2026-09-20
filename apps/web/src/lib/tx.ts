@@ -9,11 +9,12 @@ import { Transaction, VersionedTransaction } from "@solana/web3.js";
  * (CLAUDE.md 4.4). Every failure is turned into what happened and the next action (Part 2 section 6, Act).
  */
 
-export type TxKind = "buy" | "exercise" | "quote" | "cancel_ask" | "withdraw_unsold" | "claim_premium" | "settle_writer" | "enable_auto_exercise" | "disable_auto_exercise" | "protected_buy";
+export type TxKind = "buy" | "exercise" | "quote" | "cancel_ask" | "withdraw_unsold" | "claim_premium" | "settle_writer" | "enable_auto_exercise" | "disable_auto_exercise" | "protected_buy" | "vault_deposit" | "vault_request_withdraw" | "vault_claim" | "sell_to_vault";
 
 export interface TxRequest {
   kind: TxKind;
   mint: string;
+  /** Empty for the vault's depositor instructions, which name a vault kind in `params` instead. */
   series: string;
   params?: Record<string, string | number | null>;
 }

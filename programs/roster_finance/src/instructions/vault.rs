@@ -626,6 +626,45 @@ pub fn handle_vault_settle(ctx: Context<VaultSettle>) -> Result<()> {
     Ok(())
 }
 
+#[derive(Accounts)]
+pub struct VaultClaimPremium<'info> {
+    pub cranker: Signer<'info>,
+    #[account(seeds = [MarketConfig::SEED, market.mint.as_ref()], bump = market.bump)]
+    pub market: Account<'info, MarketConfig>,
+    #[account(mut, has_one = market @ RosterError::WrongAccount)]
+    pub vault: Account<'info, Vault>,
+    #[account(mut, has_one = market @ RosterError::WrongAccount, has_one = quote_vault @ RosterError::WrongAccount)]
+    pub series: AccountLoader<'info, Series>,
+    #[account(address = market.quote_mint @ RosterError::WrongQuoteMint)]
+    pub quote_mint: Box<InterfaceAccount<'info, Mint>>,
+    #[account(mut)]
+    pub quote_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(mut, associated_token::mint = quote_mint, associated_token::authority = vault, associated_token::token_program = quote_token_program)]
+    pub vault_quote_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub quote_token_program: Interface<'info, TokenInterface>,
+}
+
+/// Move the premium the vault's fills have earned in a series into the vault's USDC account, as a writer's
+/// `claim_premium` does. Permissionless: it is also what funds the bid side before the first settlement.
+pub fn handle_vault_claim_premium(ctx: Context<VaultClaimPremium>) -> Result<()> {
+    let vault_key = ctx.accounts.vault.key();
+    let series_key = ctx.accounts.series.key();
+    let series_info = ctx.accounts.series.to_account_info();
+    let series = ctx.accounts.series.load()?;
+    let slot = series.writer_slot(&vault_key).ok_or(RosterError::NoWriterSlot)?;
+    let amount = series.writers[slot].premium_claimable;
+    let seeds = SeriesSeeds::of(&series);
+    drop(series);
+    if amount > 0 {
+        vault_out(&series_info, &seeds, &ctx.accounts.quote_token_program, &ctx.accounts.quote_vault, &ctx.accounts.quote_mint, &ctx.accounts.vault_quote_ata, amount)?;
+        ctx.accounts.series.load_mut()?.writers[slot].premium_claimable = 0;
+        let v = &mut ctx.accounts.vault;
+        v.epoch_premium_in = v.epoch_premium_in.saturating_add(amount);
+    }
+    emit!(crate::events::PremiumClaimed { series: series_key, writer: vault_key, amount });
+    Ok(())
+}
+
 // --------------------------------------------------------------------------------------------------------------------
 // The bid side
 

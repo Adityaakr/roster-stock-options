@@ -3349,6 +3349,131 @@ export type RosterFinance = {
       ]
     },
     {
+      "name": "vaultClaimPremium",
+      "discriminator": [
+        69,
+        106,
+        14,
+        37,
+        190,
+        22,
+        120,
+        82
+      ],
+      "accounts": [
+        {
+          "name": "cranker",
+          "signer": true
+        },
+        {
+          "name": "market",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.mint",
+                "account": "marketConfig"
+              }
+            ]
+          },
+          "relations": [
+            "vault",
+            "series"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "series",
+          "writable": true
+        },
+        {
+          "name": "quoteMint"
+        },
+        {
+          "name": "quoteVault",
+          "writable": true,
+          "relations": [
+            "series"
+          ]
+        },
+        {
+          "name": "vaultQuoteAta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "quoteTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "quoteMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "quoteTokenProgram"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "vaultDeposit",
       "discriminator": [
         231,

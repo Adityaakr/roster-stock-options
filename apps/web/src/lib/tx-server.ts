@@ -44,7 +44,7 @@ function u64(p: Record<string, string | number | null> | undefined, k: string): 
   return v;
 }
 
-export type TxKind = "buy" | "exercise" | "quote" | "cancel_ask" | "withdraw_unsold" | "claim_premium" | "settle_writer" | "enable_auto_exercise" | "disable_auto_exercise" | "protected_buy";
+export type TxKind = "buy" | "exercise" | "quote" | "cancel_ask" | "withdraw_unsold" | "claim_premium" | "settle_writer" | "enable_auto_exercise" | "disable_auto_exercise" | "protected_buy" | "vault_deposit" | "vault_request_withdraw" | "vault_claim" | "sell_to_vault";
 
 export interface BuildRequest {
   kind: TxKind;
@@ -62,7 +62,7 @@ export interface BuildResponse {
   summary: string;
 }
 
-const KINDS: TxKind[] = ["buy", "exercise", "quote", "cancel_ask", "withdraw_unsold", "claim_premium", "settle_writer", "enable_auto_exercise", "disable_auto_exercise", "protected_buy"];
+const KINDS: TxKind[] = ["buy", "exercise", "quote", "cancel_ask", "withdraw_unsold", "claim_premium", "settle_writer", "enable_auto_exercise", "disable_auto_exercise", "protected_buy", "vault_deposit", "vault_request_withdraw", "vault_claim", "sell_to_vault"];
 
 /** The request shape, checked before anything touches the RPC. */
 function parseBuildRequest(body: unknown): BuildRequest {
@@ -89,6 +89,30 @@ export async function buildTransaction(body: unknown): Promise<BuildResponse> {
   if (req.kind === "protected_buy") return buildProtectedBuy(client, wallet, req);
   const market = await client.fetchMarket(new PublicKey(req.mint));
   if (!market) throw new Error("market not listed");
+  // Part 3: the vault's depositor side needs no series, only the vault's kind.
+  if (req.kind === "vault_deposit" || req.kind === "vault_request_withdraw" || req.kind === "vault_claim") {
+    const kind = req.params?.kind === "cash_secured_put" ? "cash_secured_put" : "covered_call";
+    const vault = await client.fetchVault(market, kind);
+    if (!vault) throw new Error("no such vault on this market");
+    let vtx: Transaction;
+    let vsummary: string;
+    if (req.kind === "vault_deposit") {
+      const raw = u64(req.params, "raw");
+      vtx = await client.vaultDeposit(market, kind, raw);
+      vsummary = `queue ${raw} raw units of collateral for the vault's next roll`;
+    } else if (req.kind === "vault_request_withdraw") {
+      const shares = u64(req.params, "shares");
+      vtx = await client.vaultRequestWithdraw(market, kind, shares);
+      vsummary = `queue ${Number(shares) / 1e6} shares for withdrawal at the next roll`;
+    } else {
+      const epoch = Number(u64(req.params, "epoch"));
+      vtx = await client.vaultClaim(market, kind, epoch);
+      vsummary = `claim epoch ${epoch}`;
+    }
+    const preparedV = await client.prepare(vtx);
+    remember(preparedV.tx.serializeMessage());
+    return { transaction: preparedV.tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64"), lastValidBlockHeight: preparedV.lastValidBlockHeight, summary: vsummary };
+  }
   if (!req.series) throw new Error("series is required");
   const series = await client.fetchSeries(new PublicKey(req.series));
   if (!series) throw new Error("series not found: it may have closed");
@@ -144,6 +168,15 @@ export async function buildTransaction(body: unknown): Promise<BuildResponse> {
       tx = await client.disableAutoExercise(market, series);
       summary = "disable auto-exercise";
       break;
+    case "sell_to_vault": {
+      // The vault on this series' side: a call is bought back by the covered-call vault, a put by the put vault.
+      const kind = series.side === "call" ? "covered_call" : "cash_secured_put";
+      const lots6 = u64(p, "lots6");
+      const minBid = u64(p, "minBidPerLot");
+      tx = await client.sellToVault(market, kind, series, lots6, minBid);
+      summary = `sell ${Number(lots6) / 1e6} lots back to the vault at no less than ${Number(minBid) / 1e6} USDC per lot`;
+      break;
+    }
     default:
       throw new Error(`unknown transaction kind ${String(req.kind)}`);
   }

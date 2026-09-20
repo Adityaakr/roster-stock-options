@@ -136,6 +136,9 @@ pub mod roster_finance {
     pub fn vault_withdraw_unsold(ctx: Context<VaultWrite>, lots6: u64) -> Result<()> {
         handle_vault_withdraw_unsold(ctx, lots6)
     }
+    pub fn vault_claim_premium(ctx: Context<VaultClaimPremium>) -> Result<()> {
+        handle_vault_claim_premium(ctx)
+    }
     pub fn vault_settle(ctx: Context<VaultSettle>) -> Result<()> {
         handle_vault_settle(ctx)
     }

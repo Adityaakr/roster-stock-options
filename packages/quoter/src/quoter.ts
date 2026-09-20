@@ -63,8 +63,12 @@ export class Quoter {
     console.log(`[quoter] ${line.action} ${line.market}${line.series ? " " + line.series.slice(0, 8) : ""} ${line.detail}`);
   }
 
-  /** One pass over one market. Returns the number of transactions sent. */
-  async cycle(ctx: MarketQuoteContext): Promise<number> {
+  /**
+   * One pass over one market. Returns the number of transactions sent. `vaultSides` names the sides a vault quotes on
+   * this market (Part 3): the treasury still keeps the grid populated there but posts no asks of its own, so the vault
+   * is the book on that side and external writers compete with it, not with the treasury twice over.
+   */
+  async cycle(ctx: MarketQuoteContext, vaultSides: ReadonlySet<"call" | "put"> = new Set()): Promise<number> {
     const m = ctx.market;
     const mk = ctx.symbol;
     const at = ctx.nowTs;
@@ -123,6 +127,13 @@ export class Quoter {
     for (const s of byKey.values()) {
       if (s.expiryTs <= BigInt(ctx.nowTs) || s.halted || !quotable.includes(s.expiryTs)) continue;
       const mySlot = s.writers.find((w) => w.writer.equals(me));
+      if (vaultSides.has(s.side)) {
+        // The vault writes this side. Any ask the treasury still has here is pulled once and not replaced.
+        for (const a of s.asks.filter((a) => s.writers[a.writerSlot]?.writer.equals(me))) {
+          try { await this.client.send(await this.client.cancelAsk(s, a.seq)); sent += 1; this.say({ at, market: mk, series: s.address.toBase58(), action: "cancel", detail: "the vault quotes this side" }); } catch { /* next tick */ }
+        }
+        continue;
+      }
       const sold = mySlot ? Number(mySlot.soldLots6) / 1e6 : 0;
       const d = decideAsk({ side: s.side, price: ctx.price, multiplier: ctx.multiplier, pendingDividendMultiplier: ctx.pendingDividendMultiplier, strikeUsdcPerLot: s.strikeUsdcPerLot, expiryTs: Number(s.expiryTs), nowTs: ctx.nowTs, vol: ctx.vol, session, inActivationWindow: ctx.inActivationWindow, inventoryLots: sold, baseSpread: this.cfg.baseSpread, minAskPerLot: this.cfg.minAskPerLot });
       const myAsks = s.asks.filter((a) => s.writers[a.writerSlot]?.writer.equals(me));

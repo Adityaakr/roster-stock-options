@@ -245,7 +245,13 @@ async function main() {
         const fresh = (await reader.fetchMarket(l.mint)) ?? market;
         // Price age against the wall clock: the chain clock can be time-travelled on a fork, publish times cannot.
         const ageSecs = priceSource === "hermes" ? Math.max(0, Math.floor(Date.now() / 1000) - priceAt) : 0;
-        await quoter.cycle({ market: fresh, symbol: l.symbol, tier: l.tier, feeBps: l.feeBps, graceSecs: Number((await reader.fetchProtocol()).graceSecs), price, priceAgeSecs: ageSecs, equityPrice, multiplier: mult.onChain, pendingDividendMultiplier: state.pendingDividendMultiplier, inActivationWindow: mult.inWindow, vol: vol.blended, nowTs });
+        // Sides a vault quotes here: the treasury keeps the grid but leaves those asks to the vault.
+        const vaultSides = new Set<"call" | "put">();
+        for (const kind of ["covered_call", "cash_secured_put"] as VaultKind[]) {
+          const v = await reader.fetchVault(fresh, kind).catch(() => null);
+          if (v && v.totalShares > 0n && !v.halted) vaultSides.add(kind === "covered_call" ? "call" : "put");
+        }
+        await quoter.cycle({ market: fresh, symbol: l.symbol, tier: l.tier, feeBps: l.feeBps, graceSecs: Number((await reader.fetchProtocol()).graceSecs), price, priceAgeSecs: ageSecs, equityPrice, multiplier: mult.onChain, pendingDividendMultiplier: state.pendingDividendMultiplier, inActivationWindow: mult.inWindow, vol: vol.blended, nowTs }, vaultSides);
         }
       }
       // Part 3: the vaults on this market. Cranks first (settle, roll, claim), then the two-sided quote.

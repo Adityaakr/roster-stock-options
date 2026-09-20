@@ -748,3 +748,30 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .wallet-adapter-modal-middle-button { background: var(--ink); color: var(--paper); border-radius: 8px; font-family: var(--sans); font-weight: 500; font-size: 14px; height: 44px; margin-top: 12px; }
 .wallet-adapter-modal-middle-button:hover { background: var(--ink-2); }
 .wallet-adapter-modal-middle svg, .wallet-adapter-modal-middle path { fill: var(--ink-2); }
+
+/* Vault cards: a header with the roll, a figure strip, then the epoch on the left and the actions on the right. */
+.vcard { overflow: hidden; }
+.vcard-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding: 18px 20px 14px; border-bottom: 1px solid var(--line); }
+.vcard-roll { text-align: right; min-width: 200px; }
+.vcard-figures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+.vcard-figures .fig { padding: 14px 20px; border-right: 1px solid var(--line); min-width: 0; }
+.vcard-figures .fig:last-child { border-right: 0; }
+.vcard-figures .k { font-size: 12px; color: var(--slate); }
+.vcard-figures .v { font-family: var(--display); font-size: 24px; line-height: 1.15; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 4px; }
+.vcard-figures .s { font-size: 12px; color: var(--slate); margin-top: 4px; }
+.vcard-body { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 24px; padding: 18px 20px 20px; }
+.vcard-side { min-width: 0; }
+.vcard-epochs { padding: 16px 20px 20px; border-top: 1px solid var(--line); }
+.vpanel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+.vstats { display: grid; gap: 8px; margin-top: 8px; font-size: 14px; }
+.vstats > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.vstats > div > span { color: var(--slate); white-space: nowrap; }
+.vstats > div > b { font-weight: 400; text-align: right; font-variant-numeric: tabular-nums; min-width: 0; }
+.vscen { margin-top: 12px; display: grid; gap: 4px; }
+.vscen-row { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
+.vtable-wrap { overflow-x: auto; margin-top: 8px; }
+.vtable th, .vtable td { padding: 8px 10px; font-size: 13px; }
+.vtable .nowrap { white-space: nowrap; }
+@media (max-width: 1100px) { .vcard-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); } .vcard-figures .fig:nth-child(2) { border-right: 0; } .vcard-figures .fig:nth-child(-n + 2) { border-bottom: 1px solid var(--line); } }
+@media (max-width: 960px) { .vcard-body { grid-template-columns: minmax(0, 1fr); } .vcard-roll { text-align: left; } }
+@media (max-width: 559px) { .vcard-figures { grid-template-columns: minmax(0, 1fr); } .vcard-figures .fig { border-right: 0; border-bottom: 1px solid var(--line); } .vcard-figures .fig:last-child { border-bottom: 0; } }

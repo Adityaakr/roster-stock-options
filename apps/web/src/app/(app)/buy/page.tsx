@@ -7,7 +7,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { TxStatus } from "@/components/tx-status";
 import { MarketLogo } from "@/components/market-list";
-import { ErrorState, KV, Loading, Tabs } from "@/components/ui";
+import { Badge, ErrorState, KV, Loading, Tabs } from "@/components/ui";
 import { useCluster } from "@/lib/cluster";
 import { usd, usdK, usdSmart, dayLabel } from "@/lib/format";
 import { walkAsks, feeCeil, lots6ForShares } from "@/lib/model";
@@ -112,8 +112,8 @@ function BuyInner() {
     <div>
       <div className="page-head">
         <div>
-          <h1>Protected Buy</h1>
-          <p>Buy the token, or buy it with a floor through a date, in one transaction: a Jupiter swap and a Floor on what the swap delivers. The floor is bought before the tokens land, so nothing is ever uncovered.</p>
+          <div className="flex items-center gap-2"><h1 style={{ margin: 0 }}>Protected Buy</h1>{noRoute ? <Badge tone="amber">coming soon on this cluster</Badge> : null}</div>
+          <p>Buy the token, or buy it with a floor through a date, in one transaction: a Jupiter swap and a Floor on what the swap delivers. The floor is bought before the tokens land, so nothing is ever uncovered.{noRoute ? " A devnet replica has no swap route, so the swap leg runs on the mainnet fork and on mainnet; the floor below is priced live and the ticket shows what the transaction will do." : ""}</p>
         </div>
         <div className="flex items-center gap-3">
           {market ? <MarketLogo m={market} size={36} /> : null}

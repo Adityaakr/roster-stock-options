@@ -19,8 +19,9 @@ const NAV = [
     { href: "/roster", label: "Roster", icon: Icon.Shield, match: (p: string) => p.startsWith("/roster") }
   ] },
   { group: "Desks", items: [
-    { href: "/buy", label: "Protected Buy", icon: Icon.Lock, match: (p: string) => p.startsWith("/buy") },
-    { href: "/pre-ipo", label: "PreStocks", icon: Icon.Building, match: (p: string) => p.startsWith("/pre-ipo") }
+    { href: "/pre-ipo", label: "PreStocks", icon: Icon.Building, match: (p: string) => p.startsWith("/pre-ipo") },
+    // Protected Buy needs a swap route, which a devnet replica does not have: it is live on the fork and on mainnet.
+    { href: "/buy", label: "Protected Buy", icon: Icon.Lock, match: (p: string) => p.startsWith("/buy"), soonOn: ["devnet"] }
   ] }
 ];
 
@@ -60,12 +61,16 @@ function Shell({ children }: { children: ReactNode }) {
           {NAV.map((g) => (
             <div key={g.group} className="contents">
               <div className="group">{g.group}</div>
-              {g.items.map((it) => (
-                <Link key={it.href} href={withMarket(it.href)} aria-current={it.match(pathname) ? "page" : undefined}>
-                  <it.icon />
-                  {it.label}
-                </Link>
-              ))}
+              {g.items.map((it) => {
+                const soon = "soonOn" in it && (it.soonOn as string[]).includes(cluster.cluster);
+                return (
+                  <Link key={it.href} href={withMarket(it.href)} aria-current={it.match(pathname) ? "page" : undefined} className={soon ? "soon" : undefined}>
+                    <it.icon />
+                    {it.label}
+                    {soon ? <span className="soon-tag">soon</span> : null}
+                  </Link>
+                );
+              })}
             </div>
           ))}
         </nav>

@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
   agentRules: false,
   devIndicators: false,
   outputFileTracingRoot: new URL("../../", import.meta.url).pathname,
+  // The registry and mint fixtures are read from disk at request time; a serverless host only ships what is traced.
+  outputFileTracingIncludes: { "/**/*": ["../../fixtures/**/*.json"] },
   // Only the issuers' logo hosts: an open image proxy fetches any URL from the server.
   images: { remotePatterns: [{ protocol: "https", hostname: "xstocks-metadata.backed.fi" }, { protocol: "https", hostname: "www.prestocks.com" }, { protocol: "https", hostname: "prestocks.com" }] },
   // Workspace packages ship TypeScript source; Next compiles them in place.

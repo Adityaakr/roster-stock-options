@@ -79,7 +79,7 @@ export function verdictFor(i: MintInspection): { verdict: Verdict; reason: strin
   if (i.extensions.includes("NonTransferable")) return { verdict: "ineligible", reason: "non-transferable mint" };
   if (i.transferHook?.live) return { verdict: "restricted_wrapper", reason: `live transfer hook ${i.transferHook.program}: escrow transfers need its extra accounts, not yet proven` };
   if (i.defaultAccountState === "frozen") return { verdict: "restricted_wrapper", reason: "new token accounts start frozen: the issuer's allowlist must thaw the escrow vault before it can hold the token" };
-  if (i.transferFee && i.transferFee.bps > 0) return { verdict: "eligible_with_fee", reason: `${i.transferFee.bps} bps transfer fee: Gaps only until fee-inclusive settlement ships` };
+  if (i.transferFee && i.transferFee.bps > 0) return { verdict: "eligible_with_fee", reason: `${i.transferFee.bps} bps transfer fee, priced: a Gap delivers less the fee, a Floor has the holder deliver gross` };
   const notes: string[] = [];
   if (i.permanentDelegate) notes.push("issuer holds a permanent delegate");
   if (i.pausable) notes.push(i.pausable.paused ? "mint is paused now" : "pausable by the issuer");

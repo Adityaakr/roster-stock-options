@@ -17,6 +17,16 @@ import { useRoster } from "@/lib/use-roster";
  */
 interface Prices { mark: Point[]; issuerMark?: Point[] }
 
+function Fig({ k, v, s, tone }: { k: string; v: string; s: string; tone?: "up" | "down" }) {
+  return (
+    <div className="card pfig">
+      <div className="k">{k}</div>
+      <div className={`v mono ${tone ?? ""}`}>{v}</div>
+      <div className="s">{s}</div>
+    </div>
+  );
+}
+
 export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = use(params);
   const cluster = useCluster();
@@ -25,7 +35,10 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
   const [days, setDays] = useState(7);
   const { data } = useRoster(symbol);
   useEffect(() => {
-    fetch("/api/preipo", { cache: "no-store" }).then(async (r) => (await r.json()) as { tokens: PreIpoTokenView[] }).then((j) => setToken(j.tokens.find((t) => t.symbol.toLowerCase() === symbol.toLowerCase()) ?? null)).catch(() => setToken(null));
+    // One failed read of the issuer must not read as "not in the registry": retry a few times before giving up.
+    let tries = 0;
+    const load = () => fetch("/api/preipo", { cache: "no-store" }).then(async (r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return (await r.json()) as { tokens: PreIpoTokenView[] }; }).then((j) => setToken(j.tokens.find((t) => t.symbol.toLowerCase() === symbol.toLowerCase()) ?? null)).catch(() => { if (++tries < 4) setTimeout(load, 2_000); else setToken(null); });
+    load();
   }, [symbol]);
   const marketMint = token?.market?.mint;
   useEffect(() => {
@@ -57,6 +70,12 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
               {token.market ? <Badge tone="green" dot>listed</Badge> : <Badge>not listed here</Badge>}
             </div>
             <p style={{ margin: "4px 0 0" }}>{token.description ?? token.name}</p>
+            <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 10 }}>
+              {token.external ? <a className="chip" href={token.external} target="_blank" rel="noreferrer">Company site ↗</a> : null}
+              <a className="chip" href="https://prestocks.com/products" target="_blank" rel="noreferrer">On PreStocks ↗</a>
+              <a className="chip" href={`https://jup.ag/swap/USDC-${token.mint}`} target="_blank" rel="noreferrer">Buy the token on Jupiter ↗</a>
+              <a className="chip" href={`https://solscan.io/token/${token.mint}`} target="_blank" rel="noreferrer">Mint on Solscan ↗</a>
+            </div>
           </div>
         </div>
         <div className="hstat" style={{ textAlign: "right" }}>
@@ -66,13 +85,14 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
         </div>
       </div>
 
-      <div className="card rfigs" style={{ marginBottom: 16 }}>
-        <div className="rfig"><div className="k">Issuer mark</div><div className="v">{token.markPrice === null ? "n/a" : `$${usd(token.markPrice)}`}</div><div className="s">the gross price per share, per the issuer</div></div>
-        <div className="rfig"><div className="k">Spread to the mark</div><div className={`v ${token.spreadPct === null ? "" : token.spreadPct >= 0 ? "up" : "down"}`}>{token.spreadPct === null ? "n/a" : `${token.spreadPct >= 0 ? "+" : "−"}${Math.abs(token.spreadPct).toFixed(1)}%`}</div><div className="s">{token.spreadPct === null ? "" : token.spreadPct >= 0 ? "a premium for access" : "a discount for the lack of it"}</div></div>
-        <div className="rfig"><div className="k">Implied valuation</div><div className="v">{token.impliedValuation === null ? "n/a" : `$${short(token.impliedValuation)}`}</div><div className="s">{token.markValuation !== null ? `$${short(token.markValuation)} at the mark` : "by the token price"}</div></div>
-        <div className="rfig"><div className="k">Supply</div><div className="v">{token.supply === null ? "n/a" : usdK(token.supply)}</div><div className="s">{token.tokenPrice && token.supply ? `$${short(token.tokenPrice * token.supply)} of float at the token price` : "tokens"}</div></div>
+      <div className="pfigs" style={{ marginBottom: 16 }}>
+        <Fig k="Token price" v={token.tokenPrice === null ? "n/a" : `$${usd(token.tokenPrice)}`} s="where the token trades, per the issuer's API" />
+        <Fig k="Implied valuation" v={token.impliedValuation === null ? "n/a" : `$${short(token.impliedValuation)}`} s="the company, at the token price" />
+        <Fig k={token.spreadPct !== null && token.spreadPct < 0 ? "Discount to the mark" : "Premium to the mark"} v={token.spreadPct === null ? "n/a" : `${token.spreadPct >= 0 ? "+" : "−"}${Math.abs(token.spreadPct).toFixed(1)}%`} s={token.spreadPct === null ? "" : token.spreadPct >= 0 ? "the token costs more than the share it tracks" : "the token costs less than the share it tracks"} tone={token.spreadPct === null ? undefined : token.spreadPct >= 0 ? "up" : "down"} />
+        <Fig k="Mark price" v={token.markPrice === null ? "n/a" : `$${usd(token.markPrice)}`} s="the gross price per share, per the issuer" />
+        <Fig k="Mark valuation" v={token.markValuation === null ? "n/a" : `$${short(token.markValuation)}`} s="the company, at the mark" />
+        <Fig k="Market cap" v={token.tokenPrice && token.supply ? `$${short(token.tokenPrice * token.supply)}` : "n/a"} s={token.supply ? `${usdK(token.supply)} tokens at the token price` : "supply not published"} />
       </div>
-
       <div className="grid-2 split-left" style={{ marginBottom: 16 }}>
         <div className="card">
           <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>

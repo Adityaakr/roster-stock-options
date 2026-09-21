@@ -27,7 +27,22 @@ export interface PreIpoToken {
   external: string | null;
 }
 
+// The last good answer from the issuer, kept so that one slow or refused request never empties the desk.
+let lastGood: { at: number; tokens: PreIpoToken[] } | null = null;
+
 export async function prestocksTokens(): Promise<PreIpoToken[]> {
+  if (lastGood && Date.now() - lastGood.at < 30_000) return lastGood.tokens;
+  try {
+    const tokens = await fetchPrestocks();
+    lastGood = { at: Date.now(), tokens };
+    return tokens;
+  } catch (e) {
+    if (lastGood) return lastGood.tokens;
+    throw e;
+  }
+}
+
+async function fetchPrestocks(): Promise<PreIpoToken[]> {
   const res = await fetch(PRESTOCKS_API, { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`prestocks: HTTP ${res.status}`);
   const j = (await res.json()) as { symbol: string; name: string; description?: string; image?: string; external_url?: string; contract_address: string; markPrice?: number; markValuation?: number; tokenPrice?: number; impliedValuation?: number; supply?: number }[];

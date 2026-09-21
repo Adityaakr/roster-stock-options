@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-17T18:40:08.796Z",
-  "cluster": "http://127.0.0.1:8899",
+  "generatedAt": "2026-09-21T08:14:11.088Z",
+  "cluster": "https://api.mainnet-beta.solana.com",
   "entries": [
     {
       "symbol": "NVDAx",
@@ -17,7 +17,7 @@
         "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "32127749457696",
+        "supply": "32127620856177",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -75,13 +75,13 @@
       "mint": "gEGtLTPNQ7jcg25zTetkbmF7teoDLcrfTnQfmn2ondo",
       "tier": 3,
       "wrapper": "Ondo",
-      "holders": 1791,
+      "holders": 1816,
       "issuerMark": null,
       "inspection": {
         "mint": "gEGtLTPNQ7jcg25zTetkbmF7teoDLcrfTnQfmn2ondo",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "16689553692265",
+        "supply": "16682468371591",
         "extensions": [
           "ScaledUiAmountConfig",
           "MetadataPointer",
@@ -144,7 +144,7 @@
         "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "22963696203633",
+        "supply": "22963681188809",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -202,13 +202,13 @@
       "mint": "KeGv7bsfR4MheC1CkmnAVceoApjrkvBhHYjWb67ondo",
       "tier": 3,
       "wrapper": "Ondo",
-      "holders": 744,
+      "holders": 757,
       "issuerMark": null,
       "inspection": {
         "mint": "KeGv7bsfR4MheC1CkmnAVceoApjrkvBhHYjWb67ondo",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "401539518519",
+        "supply": "403006445728",
         "extensions": [
           "ScaledUiAmountConfig",
           "MetadataPointer",
@@ -231,7 +231,7 @@
         "scaledUiAmount": {
           "multiplier": 1,
           "newMultiplier": 1,
-          "newMultiplierEffectiveTimestamp": 1788344044
+          "newMultiplierEffectiveTimestamp": 1789754055
         },
         "verdict": "eligible",
         "reason": "pausable by the issuer; freeze authority present"
@@ -271,7 +271,7 @@
         "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "9523177666103",
+        "supply": "9523147500409",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -329,13 +329,13 @@
       "mint": "k18WJUULWheRkSpSquYGdNNmtuE2Vbw1hpuUi92ondo",
       "tier": 3,
       "wrapper": "Ondo",
-      "holders": 1743,
+      "holders": 1775,
       "issuerMark": null,
       "inspection": {
         "mint": "k18WJUULWheRkSpSquYGdNNmtuE2Vbw1hpuUi92ondo",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "1504819564385",
+        "supply": "1537905176716",
         "extensions": [
           "ScaledUiAmountConfig",
           "MetadataPointer",
@@ -356,9 +356,9 @@
         },
         "defaultAccountState": "initialized",
         "scaledUiAmount": {
-          "multiplier": 1.0077209101501272,
-          "newMultiplier": 1.0077209101501272,
-          "newMultiplierEffectiveTimestamp": 1788344044
+          "multiplier": 1.0094730727840426,
+          "newMultiplier": 1.0094730727840426,
+          "newMultiplierEffectiveTimestamp": 1789754055
         },
         "verdict": "eligible",
         "reason": "pausable by the issuer; freeze authority present"
@@ -389,7 +389,7 @@
         "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "15376341126200",
+        "supply": "15376325952075",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -447,13 +447,13 @@
       "mint": "123mYEnRLM2LLYsJW3K6oyYh8uP1fngj732iG638ondo",
       "tier": 3,
       "wrapper": "Ondo",
-      "holders": 1872,
+      "holders": 1903,
       "issuerMark": null,
       "inspection": {
         "mint": "123mYEnRLM2LLYsJW3K6oyYh8uP1fngj732iG638ondo",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "367789809287",
+        "supply": "344639924380",
         "extensions": [
           "ScaledUiAmountConfig",
           "MetadataPointer",
@@ -476,7 +476,7 @@
         "scaledUiAmount": {
           "multiplier": 1.003376073740221,
           "newMultiplier": 1.003376073740221,
-          "newMultiplierEffectiveTimestamp": 1788344044
+          "newMultiplierEffectiveTimestamp": 1789754055
         },
         "verdict": "eligible",
         "reason": "pausable by the issuer; freeze authority present"
@@ -516,7 +516,7 @@
         "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "10497090110408",
+        "supply": "10497070825205",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -574,13 +574,13 @@
       "mint": "FRmH6iRkMr33DLG6zVLR7EM4LojBFAuq6NtFzG6ondo",
       "tier": 3,
       "wrapper": "Ondo",
-      "holders": 371,
+      "holders": 378,
       "issuerMark": null,
       "inspection": {
         "mint": "FRmH6iRkMr33DLG6zVLR7EM4LojBFAuq6NtFzG6ondo",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "406802425472",
+        "supply": "406776478482",
         "extensions": [
           "ScaledUiAmountConfig",
           "MetadataPointer",
@@ -603,7 +603,7 @@
         "scaledUiAmount": {
           "multiplier": 1.0057308568927839,
           "newMultiplier": 1.0057308568927839,
-          "newMultiplierEffectiveTimestamp": 1788344044
+          "newMultiplierEffectiveTimestamp": 1789754055
         },
         "verdict": "eligible",
         "reason": "pausable by the issuer; freeze authority present"
@@ -643,7 +643,7 @@
         "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "16040666168163",
+        "supply": "16040639537897",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -701,13 +701,13 @@
       "mint": "bbahNA5vT9WJeYft8tALrH1LXWffjwqVoUbqYa1ondo",
       "tier": 3,
       "wrapper": "Ondo",
-      "holders": 308,
+      "holders": 312,
       "issuerMark": null,
       "inspection": {
         "mint": "bbahNA5vT9WJeYft8tALrH1LXWffjwqVoUbqYa1ondo",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "839918152962",
+        "supply": "836426917130",
         "extensions": [
           "ScaledUiAmountConfig",
           "MetadataPointer",
@@ -730,7 +730,7 @@
         "scaledUiAmount": {
           "multiplier": 1.0024603266374352,
           "newMultiplier": 1.0024603266374352,
-          "newMultiplierEffectiveTimestamp": 1788480244
+          "newMultiplierEffectiveTimestamp": 1789754055
         },
         "verdict": "eligible",
         "reason": "pausable by the issuer; freeze authority present"
@@ -770,7 +770,7 @@
         "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "17229522269538",
+        "supply": "17229514738813",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -828,13 +828,13 @@
       "mint": "14Tqdo8V1FhzKsE3W2pFsZCzYPQxxupXRcqw9jv6ondo",
       "tier": 3,
       "wrapper": "Ondo",
-      "holders": 268,
+      "holders": 279,
       "issuerMark": null,
       "inspection": {
         "mint": "14Tqdo8V1FhzKsE3W2pFsZCzYPQxxupXRcqw9jv6ondo",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "620226190986",
+        "supply": "620748236281",
         "extensions": [
           "ScaledUiAmountConfig",
           "MetadataPointer",
@@ -857,7 +857,7 @@
         "scaledUiAmount": {
           "multiplier": 1,
           "newMultiplier": 1,
-          "newMultiplierEffectiveTimestamp": 1788344044
+          "newMultiplierEffectiveTimestamp": 1789754055
         },
         "verdict": "eligible",
         "reason": "pausable by the issuer; freeze authority present"
@@ -888,7 +888,7 @@
         "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "7237782389743",
+        "supply": "7237764881677",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -910,9 +910,9 @@
         },
         "defaultAccountState": "initialized",
         "scaledUiAmount": {
-          "multiplier": 1.0016490257902244,
-          "newMultiplier": 1.002298265651938,
-          "newMultiplierEffectiveTimestamp": 1781481300
+          "multiplier": 1.002298265651938,
+          "newMultiplier": 1.0028515433272898,
+          "newMultiplierEffectiveTimestamp": 1789777800
         },
         "verdict": "eligible",
         "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
@@ -946,13 +946,13 @@
       "mint": "fDxs5y12E7x7jBwCKBXGqt71uJmCWsAQ3Srkte6ondo",
       "tier": 3,
       "wrapper": "Ondo",
-      "holders": 241,
+      "holders": 246,
       "issuerMark": null,
       "inspection": {
         "mint": "fDxs5y12E7x7jBwCKBXGqt71uJmCWsAQ3Srkte6ondo",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "4005096235595",
+        "supply": "2473728429533",
         "extensions": [
           "ScaledUiAmountConfig",
           "MetadataPointer",
@@ -973,9 +973,9 @@
         },
         "defaultAccountState": "initialized",
         "scaledUiAmount": {
-          "multiplier": 1.0022791066933001,
-          "newMultiplier": 1.0022791066933001,
-          "newMultiplierEffectiveTimestamp": 1788344044
+          "multiplier": 1.0028269183053495,
+          "newMultiplier": 1.0028269183053495,
+          "newMultiplierEffectiveTimestamp": 1789949045
         },
         "verdict": "eligible",
         "reason": "pausable by the issuer; freeze authority present"
@@ -1006,7 +1006,7 @@
         "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "82107815119108",
+        "supply": "82107788831956",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -1064,13 +1064,13 @@
       "mint": "6xHEyem9hmkGtVq6XGCiQUGpPsHBaoYuYdFNZa5ondo",
       "tier": 3,
       "wrapper": "Ondo",
-      "holders": 82,
+      "holders": 89,
       "issuerMark": null,
       "inspection": {
         "mint": "6xHEyem9hmkGtVq6XGCiQUGpPsHBaoYuYdFNZa5ondo",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "16480291854431",
+        "supply": "10479319544295",
         "extensions": [
           "ScaledUiAmountConfig",
           "MetadataPointer",
@@ -1093,7 +1093,7 @@
         "scaledUiAmount": {
           "multiplier": 1,
           "newMultiplier": 1,
-          "newMultiplierEffectiveTimestamp": 1788344044
+          "newMultiplierEffectiveTimestamp": 1789754055
         },
         "verdict": "eligible",
         "reason": "pausable by the issuer; freeze authority present"
@@ -1133,7 +1133,7 @@
         "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "48631617041965",
+        "supply": "48631600455463",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -1191,13 +1191,13 @@
       "mint": "FSz4ouiqXpHuGPcpacZfTzbMjScoj5FfzHkiyu2ondo",
       "tier": 3,
       "wrapper": "Ondo",
-      "holders": 41,
+      "holders": 44,
       "issuerMark": null,
       "inspection": {
         "mint": "FSz4ouiqXpHuGPcpacZfTzbMjScoj5FfzHkiyu2ondo",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "365063130720",
+        "supply": "363676534580",
         "extensions": [
           "ScaledUiAmountConfig",
           "MetadataPointer",
@@ -1260,7 +1260,7 @@
         "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "8436077770896",
+        "supply": "8436056028643",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -1282,9 +1282,9 @@
         },
         "defaultAccountState": "initialized",
         "scaledUiAmount": {
-          "multiplier": 1.0019546533977475,
-          "newMultiplier": 1.0027250296551051,
-          "newMultiplierEffectiveTimestamp": 1782086100
+          "multiplier": 1.0027250296551051,
+          "newMultiplier": 1.0034560758968376,
+          "newMultiplierEffectiveTimestamp": 1789858800
         },
         "verdict": "eligible",
         "reason": "issuer holds a permanent delegate; pausable by the issuer; freeze authority present"
@@ -1318,13 +1318,13 @@
       "mint": "HrYNm6jTQ71LoFphjVKBTdAE4uja7WsmLG8VxB8ondo",
       "tier": 3,
       "wrapper": "Ondo",
-      "holders": 599,
+      "holders": 609,
       "issuerMark": null,
       "inspection": {
         "mint": "HrYNm6jTQ71LoFphjVKBTdAE4uja7WsmLG8VxB8ondo",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "62989457416",
+        "supply": "63014965804",
         "extensions": [
           "ScaledUiAmountConfig",
           "MetadataPointer",
@@ -1345,9 +1345,9 @@
         },
         "defaultAccountState": "initialized",
         "scaledUiAmount": {
-          "multiplier": 1.0033528541550838,
-          "newMultiplier": 1.0033528541550838,
-          "newMultiplierEffectiveTimestamp": 1788344044
+          "multiplier": 1.0040824301802083,
+          "newMultiplier": 1.0040824301802083,
+          "newMultiplierEffectiveTimestamp": 1789949045
         },
         "verdict": "eligible",
         "reason": "pausable by the issuer; freeze authority present"
@@ -1364,26 +1364,26 @@
       "issuerHalted": false
     },
     {
-      "symbol": "OPENAI",
-      "name": "OpenAI PreStocks",
+      "symbol": "ANDURIL",
+      "name": "Anduril PreStocks",
       "underlyingSymbol": null,
       "isin": null,
-      "logo": "https://www.prestocks.com/logos/openai.png",
-      "mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
-      "tier": 2,
+      "logo": "https://www.prestocks.com/logos/anduril.png",
+      "mint": "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB",
+      "tier": 3,
       "wrapper": "PreStocks",
       "holders": null,
       "issuerMark": {
-        "markPrice": 965.6539154828967,
-        "tokenPrice": 1040.5594839659263,
+        "markPrice": 154.88708316,
+        "tokenPrice": 153.46131516886035,
         "holders": null,
         "source": "prestocks.com/api"
       },
       "inspection": {
-        "mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+        "mint": "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "1901938966226",
+        "supply": "11805850562431",
         "extensions": [
           "PermanentDelegate",
           "DefaultAccountState",
@@ -1401,7 +1401,312 @@
         "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
         "transferHook": null,
         "transferFee": {
-          "bps": 50,
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": null,
+      "issuerHalted": false
+    },
+    {
+      "symbol": "ANTHROPIC",
+      "name": "Anthropic PreStocks",
+      "underlyingSymbol": null,
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/anthropic.png",
+      "mint": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
+      "tier": 3,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 1044.2338879,
+        "tokenPrice": 1043.9731174167812,
+        "holders": null,
+        "source": "prestocks.com/api"
+      },
+      "inspection": {
+        "mint": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "7381874366445",
+        "extensions": [
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ConfidentialTransferMint",
+          "Unknown(16)",
+          "TransferHook",
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "mintAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": null,
+      "issuerHalted": false
+    },
+    {
+      "symbol": "FIGUREAI",
+      "name": "Figure AI PreStocks",
+      "underlyingSymbol": null,
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/figureai.png",
+      "mint": "PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd",
+      "tier": 3,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 181.04972088,
+        "tokenPrice": 180.60064530799949,
+        "holders": null,
+        "source": "prestocks.com/api"
+      },
+      "inspection": {
+        "mint": "PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "3012891093355",
+        "extensions": [
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ConfidentialTransferMint",
+          "Unknown(16)",
+          "TransferHook",
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "mintAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": null,
+      "issuerHalted": false
+    },
+    {
+      "symbol": "KALSHI",
+      "name": "Kalshi PreStocks",
+      "underlyingSymbol": null,
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/kalshi.png",
+      "mint": "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua",
+      "tier": 3,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 895.82122575,
+        "tokenPrice": 895.5969911471166,
+        "holders": null,
+        "source": "prestocks.com/api"
+      },
+      "inspection": {
+        "mint": "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "904895600779",
+        "extensions": [
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ConfidentialTransferMint",
+          "Unknown(16)",
+          "TransferHook",
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "mintAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": null,
+      "issuerHalted": false
+    },
+    {
+      "symbol": "NEURALINK",
+      "name": "Neuralink PreStocks",
+      "underlyingSymbol": null,
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/neuralink.png",
+      "mint": "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S",
+      "tier": 3,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 336.75714719,
+        "tokenPrice": 430.76278622553144,
+        "holders": null,
+        "source": "prestocks.com/api"
+      },
+      "inspection": {
+        "mint": "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "2595331259192",
+        "extensions": [
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ConfidentialTransferMint",
+          "Unknown(16)",
+          "TransferHook",
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "mintAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": null,
+      "issuerHalted": false
+    },
+    {
+      "symbol": "OPENAI",
+      "name": "OpenAI PreStocks",
+      "underlyingSymbol": null,
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/openai.png",
+      "mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+      "tier": 2,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 995.0995237040088,
+        "tokenPrice": 1127.315587185589,
+        "holders": null,
+        "source": "prestocks.com/api"
+      },
+      "inspection": {
+        "mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "1901871460228",
+        "extensions": [
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ConfidentialTransferMint",
+          "Unknown(16)",
+          "TransferHook",
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "mintAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
           "maxFee": "18446744073709551615"
         },
         "pausable": {
@@ -1415,7 +1720,7 @@
           "newMultiplierEffectiveTimestamp": 1784305800
         },
         "verdict": "eligible_with_fee",
-        "reason": "50 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+        "reason": "100 bps transfer fee: Gaps only until fee-inclusive settlement ships"
       },
       "feeds": {
         "tokenFeed": null,
@@ -1430,26 +1735,26 @@
       "issuerHalted": false
     },
     {
-      "symbol": "SPACEX",
-      "name": "SpaceX PreStocks",
+      "symbol": "POLYMARKET",
+      "name": "Polymarket PreStocks",
       "underlyingSymbol": null,
       "isin": null,
-      "logo": "https://www.prestocks.com/logos/spacex.png",
-      "mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
-      "tier": 2,
+      "logo": "https://www.prestocks.com/logos/polymarket.png",
+      "mint": "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP",
+      "tier": 3,
       "wrapper": "PreStocks",
       "holders": null,
       "issuerMark": {
-        "markPrice": 155.056092320174,
-        "tokenPrice": 123.7843023639554,
+        "markPrice": 143.8869554,
+        "tokenPrice": 146.96258100175527,
         "holders": null,
         "source": "prestocks.com/api"
       },
       "inspection": {
-        "mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+        "mint": "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "8742515833967",
+        "supply": "4817026827713",
         "extensions": [
           "PermanentDelegate",
           "DefaultAccountState",
@@ -1467,7 +1772,68 @@
         "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
         "transferHook": null,
         "transferFee": {
-          "bps": 50,
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": null,
+      "issuerHalted": false
+    },
+    {
+      "symbol": "SPACEX",
+      "name": "SpaceX PreStocks",
+      "underlyingSymbol": null,
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/spacex.png",
+      "mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+      "tier": 2,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 154.135406671654,
+        "tokenPrice": 118.10681430673336,
+        "holders": null,
+        "source": "prestocks.com/api"
+      },
+      "inspection": {
+        "mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "8742506753069",
+        "extensions": [
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ConfidentialTransferMint",
+          "Unknown(16)",
+          "TransferHook",
+          "ScaledUiAmountConfig",
+          "MetadataPointer",
+          "PausableConfig",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "mintAuthority": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "permanentDelegate": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
           "maxFee": "18446744073709551615"
         },
         "pausable": {
@@ -1481,7 +1847,7 @@
           "newMultiplierEffectiveTimestamp": 1781065800
         },
         "verdict": "eligible_with_fee",
-        "reason": "50 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+        "reason": "100 bps transfer fee: Gaps only until fee-inclusive settlement ships"
       },
       "feeds": {
         "tokenFeed": null,

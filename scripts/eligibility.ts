@@ -3,7 +3,8 @@ import "./env-load";
  * The registry job (Part 2 section 2, M5): for every candidate xStock, the issuer's facts from the xStocks API, the
  * mint read from the chain (the fork carries mainnet state), the Pyth feeds from Hermes' listing, and a verdict.
  * Writes fixtures/registry/registry.json (keeping escrow proofs from earlier runs) and docs/ELIGIBILITY.md.
- * `--all` walks every listed xStock instead of the proposed launch set; `--rpc` overrides the RPC.
+ * `--all` walks every listed xStock instead of the proposed launch set; `--preipo-all` inspects every PreStocks token
+ * (the launch set inspects OPENAI and SPACEX only); `--rpc` overrides the RPC.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { Connection, PublicKey } from "@solana/web3.js";
@@ -51,7 +52,7 @@ async function main() {
   // six of its tokens with `--all`, at Tier 3, each inspected on mainnet like any other mint.
   const preipoTier2 = new Set(["OPENAI", "SPACEX"]);
   for (const t of await prestocksTokens().catch((e) => { console.warn(`prestocks: ${(e as Error).message}`); return []; })) {
-    if (!preipoTier2.has(t.symbol) && !args.has("--all")) continue;
+    if (!preipoTier2.has(t.symbol) && !args.has("--all") && !args.has("--preipo-all")) continue;
     const inspection = await inspectMint(connection, new PublicKey(t.mint));
     const tier: Tier = preipoTier2.has(t.symbol) ? 2 : 3;
     entries.push({ symbol: t.symbol, name: t.name, underlyingSymbol: null, isin: null, logo: t.logo, mint: t.mint, tier, wrapper: t.issuer, holders: t.holders, issuerMark: { markPrice: t.markPrice, tokenPrice: t.tokenPrice, holders: t.holders, source: "prestocks.com/api" }, inspection, feeds: { tokenFeed: null, equityFeed: null }, escrowProof: proofs.get(t.mint) ?? null, issuerHalted: false });

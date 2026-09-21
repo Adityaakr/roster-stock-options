@@ -99,6 +99,78 @@
       "multiplier": 5,
       "feeBps": 50,
       "createdAt": "2026-09-20T09:11:52.640Z"
+    },
+    {
+      "symbol": "ANDURIL",
+      "name": "Anduril PreStocks",
+      "underlyingSymbol": "Anduril PreStocks",
+      "mint": "BT8sPFUF8mHgonDrcUrUBQ6LCT98Af6dnmdgNmPPevSa",
+      "decimals": 9,
+      "wrapper": "PreStocks",
+      "mainnetMint": "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB",
+      "multiplier": 1,
+      "feeBps": 100,
+      "createdAt": "2026-09-21T08:15:12.868Z"
+    },
+    {
+      "symbol": "ANTHROPIC",
+      "name": "Anthropic PreStocks",
+      "underlyingSymbol": "Anthropic PreStocks",
+      "mint": "HKWxivw85yzxz15rcMHGcukfi9gJjiCdx2czvc8XJ46Z",
+      "decimals": 9,
+      "wrapper": "PreStocks",
+      "mainnetMint": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
+      "multiplier": 1,
+      "feeBps": 100,
+      "createdAt": "2026-09-21T08:15:22.494Z"
+    },
+    {
+      "symbol": "FIGUREAI",
+      "name": "Figure AI PreStocks",
+      "underlyingSymbol": "Figure AI PreStocks",
+      "mint": "9XcHdwyQuFnL8y4CJLUs4X22NyR3XHGXKaoR1oPgfiXy",
+      "decimals": 9,
+      "wrapper": "PreStocks",
+      "mainnetMint": "PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd",
+      "multiplier": 1,
+      "feeBps": 100,
+      "createdAt": "2026-09-21T08:15:31.494Z"
+    },
+    {
+      "symbol": "KALSHI",
+      "name": "Kalshi PreStocks",
+      "underlyingSymbol": "Kalshi PreStocks",
+      "mint": "6Jjp1dhEU7fz6cyVuMjCBAMCncWFUbCwgCYJ8AJGcGt7",
+      "decimals": 9,
+      "wrapper": "PreStocks",
+      "mainnetMint": "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua",
+      "multiplier": 1,
+      "feeBps": 100,
+      "createdAt": "2026-09-21T08:15:36.471Z"
+    },
+    {
+      "symbol": "NEURALINK",
+      "name": "Neuralink PreStocks",
+      "underlyingSymbol": "Neuralink PreStocks",
+      "mint": "D1PKSorB8yLndZTJoqUw5JLATpkzkDDmq3sCsckBF2ZP",
+      "decimals": 9,
+      "wrapper": "PreStocks",
+      "mainnetMint": "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S",
+      "multiplier": 1,
+      "feeBps": 100,
+      "createdAt": "2026-09-21T08:15:40.513Z"
+    },
+    {
+      "symbol": "POLYMARKET",
+      "name": "Polymarket PreStocks",
+      "underlyingSymbol": "Polymarket PreStocks",
+      "mint": "BNQ2SCfXzRPXuoA4Kbomn3a8JYzdd8k3VpVF3DrZTyFT",
+      "decimals": 9,
+      "wrapper": "PreStocks",
+      "mainnetMint": "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP",
+      "multiplier": 1,
+      "feeBps": 100,
+      "createdAt": "2026-09-21T08:15:45.119Z"
     }
   ]
 }

@@ -226,7 +226,7 @@ function factSheet(data: RosterData): Record<string, unknown> {
       earn: "Earn is the write side: lock USDC to be paid to buy lower (write a Floor) or lock tokens to be paid to sell higher (write a Gap). Paid risk, never yield; assignment is pro rata of what you sold.",
       vaults: "A Covered Call vault holds tokens and writes Gaps above the mark; a Cash-Secured Put vault holds USDC and writes Floors below it. Depositors receive the premiums the vault collects and carry the assignments: the vault is short volatility with no hedge and will have losing epochs. Its ask rises with utilisation (1 + 3u squared) and it stops at its cap. Epochs are weekly (daily on devnet); deposits enter and withdrawals leave at a roll; every epoch's result is published with its sign.",
       exit: "A holder can exercise, let it expire, or sell back to the vault at its live bid without paying the strike.",
-      prestocks: "PreStocks tokens are pre-IPO exposure; they are priced here off where the token trades, never the issuer's mark. A 50 bps transfer fee is the holder's on both sides and is in the price.",
+      prestocks: "PreStocks tokens are pre-IPO exposure; they are priced here off where the token trades, never the issuer's mark. The mint's transfer fee (100 bps on mainnet today, read from the mint) is the holder's on both sides and is in the price.",
       fees: "Taker fee 10 bps of the premium at purchase; nothing at exercise or settlement."
     },
     session: data.session,

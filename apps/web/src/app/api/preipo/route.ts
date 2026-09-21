@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PREIPO_RIGHTS, prestocksTokens, readRegistry, spreadToMarkPct } from "@roster/registry";
+import { PREIPO_RIGHTS, prestocksTokens, readRegistry, registryPathFor, spreadToMarkPct } from "@roster/registry";
 import { rosterData } from "@/lib/roster-data";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +10,12 @@ export const dynamic = "force-dynamic";
  * market trades a replica of the issuer's mint; the token is listed through it.
  */
 export async function GET() {
-  const [prestocks, roster] = await Promise.all([prestocksTokens().catch(() => []), rosterData()]);
+  const [prestocks, roster] = await Promise.all([prestocksTokens().catch(() => null), rosterData()]);
+  if (!prestocks) return NextResponse.json({ error: "prestocks.com/api did not answer; try again in a moment" }, { status: 502 });
+  // Mint facts (fee, verdict) come from the mainnet inspection: the real mint is the truth. The escrow proof comes
+  // from this cluster's registry, keyed by the mainnet mint a replica stands in for.
   const reg = new Map((readRegistry()?.entries ?? []).map((e) => [e.mint, e]));
+  const here = new Map((readRegistry(registryPathFor(roster.cluster))?.entries ?? []).map((e) => [e.replicaOf ?? e.mint, e]));
   const live = new Map(roster.markets.map((m) => [m.replicaOf ?? m.mint, m]));
   const tokens = prestocks.map((t) => {
     const e = reg.get(t.mint);
@@ -21,7 +25,7 @@ export async function GET() {
       /** Token price against the mark, percent, signed: negative below the mark. */
       spreadPct: spreadToMarkPct(t),
       feeBps: e?.inspection.transferFee?.bps ?? null, decimals: e?.inspection.decimals ?? null, verdict: e?.inspection.verdict ?? "not checked", reason: e?.inspection.reason ?? "not in the registry run",
-      escrowProven: !!e?.escrowProof, tier: e?.tier ?? null,
+      escrowProven: !!(here.get(t.mint)?.escrowProof ?? e?.escrowProof), tier: here.get(t.mint)?.tier ?? e?.tier ?? null,
       market: m ? { symbol: m.symbol, mint: m.mint, liveSeries: m.liveSeries, depthUsdc: m.depthUsdc, bestAsk: m.bestAsk, mark: m.mark, sparkline: m.sparkline, markSparkline: m.markSparkline, markSpreadBps: m.markSpreadBps, vol: m.vol, volSource: m.volSource, feeBps: m.feeBps } : null,
       rights: PREIPO_RIGHTS[t.issuer]
     };

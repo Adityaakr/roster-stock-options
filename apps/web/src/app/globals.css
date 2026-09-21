@@ -996,7 +996,7 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 /* The PreStocks desk: the spread chart, one bar per token either side of the mark. */
 .spread-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
 .spread-rows { padding: 6px 0; }
-.spread-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) 110px 170px; gap: 14px; align-items: center; width: 100%; padding: 7px 20px; text-align: left; font-size: 13px; }
+.spread-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) 110px 200px; white-space: nowrap; gap: 14px; align-items: center; width: 100%; padding: 7px 20px; text-align: left; font-size: 13px; }
 .spread-row:hover { background: var(--surface); }
 .spread-row b { font-weight: 500; }
 .spread-track { position: relative; height: 14px; display: block; }
@@ -1081,3 +1081,12 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .sidebar nav a.soon { color: var(--slate); }
 .sidebar nav a .soon-tag { margin-left: auto; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 6px; border: 1px solid var(--line-strong); border-radius: 9999px; color: var(--slate); }
 .sidebar nav a[aria-current="page"] .soon-tag { border-color: rgba(252, 252, 252, 0.4); color: var(--paper); }
+
+/* A PreStocks token's figures: six tiles, the way the issuer lays them out, in the site's own type. */
+.pfigs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pfig { padding: 16px 18px; display: grid; gap: 4px; }
+.pfig .k { font-size: 12px; color: var(--slate); letter-spacing: 0.02em; text-transform: uppercase; }
+.pfig .v { font-family: var(--display); font-weight: 500; font-size: 26px; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.pfig .s { font-size: 12px; color: var(--slate); }
+@media (max-width: 1100px) { .pfigs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 559px) { .pfigs { grid-template-columns: minmax(0, 1fr); } }

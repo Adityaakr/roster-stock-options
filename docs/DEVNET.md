@@ -12,7 +12,7 @@ handle, not the issuer's branding:
 | Replica | Reproduces |
 | --- | --- |
 | NVDAx, TSLAx, SPYx, AAPLx, MSFTx, GOOGLx | Token-2022, 8 decimals, ScaledUiAmountConfig at the issuer's live multiplier, PausableConfig, DefaultAccountState, PermanentDelegate, a transfer-hook slot with an all-zero program id |
-| OPENAI, SPACEX | Token-2022, 9 decimals, the PreStocks extension set: TransferFeeConfig at 50 bps with no cap, ScaledUiAmountConfig at the multiplier read from the real mint on mainnet (1.486 and 5), PausableConfig, DefaultAccountState, PermanentDelegate, the hook slot with no program. The confidential transfer extensions are not replicated; the program never makes one |
+| OPENAI, SPACEX, ANDURIL, ANTHROPIC, FIGUREAI, KALSHI, NEURALINK, POLYMARKET | Token-2022, 9 decimals, the PreStocks extension set: TransferFeeConfig at the fee read from the real mint at creation (50 bps when OPENAI and SPACEX were made on 2026-09-20, 100 bps for the six made on 2026-09-21 after the issuer raised it; the program reads the live fee at exercise on any cluster), ScaledUiAmountConfig at the multiplier read from the real mint on mainnet (OPENAI 1.486, SPACEX 5, the rest 1), PausableConfig, DefaultAccountState, PermanentDelegate, the hook slot with no program. The confidential transfer extensions are not replicated; the program never makes one |
 | Quote mint | Plain SPL Token, 6 decimals, as USDC is |
 
 Every escrow, exercise, settle and close path is therefore the same code on devnet as on mainnet, and the wrapper
@@ -69,7 +69,7 @@ The app reads the services; `NEXT_PUBLIC_CLUSTER=devnet` puts the label in the h
 | | |
 | --- | --- |
 | Program | `FJUdsdmxAp3zAwZBg3ai34xzeCBDobnH1XDarvVa7uFV`, deployed and upgradeable by the deployer key |
-| Markets | NVDAx, TSLAx, SPYx, AAPLx, MSFTx, GOOGLx, OPENAI and SPACEX, each created on chain with its grid and each escrow-proven (deposit into the vault and back, signatures in the registry). A tKalshi replica from an earlier build is unlisted (`scripts/devnet-unlist.ts`); its accounts remain on chain because a market cannot be closed |
+| Markets | NVDAx, TSLAx, SPYx, AAPLx, MSFTx, GOOGLx and all eight PreStocks tokens, each created on chain with its grid and each escrow-proven (deposit into the vault and back, signatures in the registry). A tKalshi replica from an earlier build is unlisted (`scripts/devnet-unlist.ts`); its accounts remain on chain because a market cannot be closed |
 | Marks | the Tokens API snapshot of the mainnet counterpart; for OPENAI and SPACEX the PreStocks token price with the issuer's mark recorded beside it; 24 hour change and holder counts come from the Tokens API call |
 | Maker | the treasury quotes every Tier 1 and Tier 2 grid term it has capital for, and its asks are resident on chain |
 | Faucet | `/api/faucet`, devnet only: 25 of every token, 25,000 quote tokens and 0.01 SOL, in batched transactions, once per wallet per ten minutes |

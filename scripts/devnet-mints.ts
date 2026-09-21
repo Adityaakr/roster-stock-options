@@ -25,7 +25,7 @@ import {
 import { createInitializeInstruction, pack, type TokenMetadata } from "@solana/spl-token-metadata";
 import { sendRawAndConfirm } from "../packages/sdk/src";
 import { loadOrCreateKey, onChainMultiplier, xstockMultiplier } from "./fork-lib";
-import { prestocksTokens } from "../packages/registry/src";
+import { inspectMint, prestocksTokens } from "../packages/registry/src";
 
 const RPC = process.env.DEVNET_RPC_URL ?? "https://api.devnet.solana.com";
 const QUOTE_DECIMALS = 6;
@@ -47,7 +47,6 @@ const XSTOCKS = [
  * (OPENAI 1.486, SPACEX 5 on 2026-09-20): a replica at 1 would put every strike off by that factor.
  */
 const PRESTOCKS_DEFAULT = ["OPENAI", "SPACEX"];
-const PRESTOCKS_FEE_BPS = 50;
 const MAINNET_RPC = process.env.MAINNET_RPC_URL ?? process.env.FORK_DATASOURCE_URL ?? "https://api.mainnet-beta.solana.com";
 
 export interface DevnetMint {
@@ -181,12 +180,14 @@ async function main(): Promise<void> {
   const mainnet = new Connection(MAINNET_RPC, "confirmed");
   for (const t of (await prestocksTokens()).filter((t) => !wanted || wanted.has(t.symbol))) {
     if (file.mints.some((m) => m.symbol === t.symbol) && (await alive(file.mints.find((m) => m.symbol === t.symbol)!.mint))) continue;
+    // The fee and the multiplier are read from the real mint at creation, never assumed: the issuer changes both.
     const multiplier = await onChainMultiplier(mainnet, new PublicKey(t.mint));
-    const mint = await createPreStocksReplica(conn, payer, { symbol: t.symbol, name: t.name, mainnetMint: t.mint, feeBps: PRESTOCKS_FEE_BPS }, multiplier);
+    const feeBps = (await inspectMint(mainnet, new PublicKey(t.mint))).transferFee?.bps ?? 0;
+    const mint = await createPreStocksReplica(conn, payer, { symbol: t.symbol, name: t.name, mainnetMint: t.mint, feeBps }, multiplier);
     file.mints = file.mints.filter((m) => m.symbol !== t.symbol);
-    file.mints.push({ symbol: t.symbol, name: t.name, underlyingSymbol: t.name, mint: mint.toBase58(), decimals: 9, wrapper: "PreStocks", mainnetMint: t.mint, multiplier, feeBps: PRESTOCKS_FEE_BPS, createdAt: new Date().toISOString() });
+    file.mints.push({ symbol: t.symbol, name: t.name, underlyingSymbol: t.name, mint: mint.toBase58(), decimals: 9, wrapper: "PreStocks", mainnetMint: t.mint, multiplier, feeBps, createdAt: new Date().toISOString() });
     write(file);
-    console.log(`[devnet] ${t.symbol} ${mint.toBase58()} replica of ${t.mint} multiplier ${multiplier} fee ${PRESTOCKS_FEE_BPS} bps`);
+    console.log(`[devnet] ${t.symbol} ${mint.toBase58()} replica of ${t.mint} multiplier ${multiplier} fee ${feeBps} bps`);
   }
 
   console.log(`[devnet] ${file.mints.length} replicas and the quote mint in ${OUT}`);

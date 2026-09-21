@@ -22,7 +22,8 @@ export default function PreIpoPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   useEffect(() => {
-    const load = () => fetch("/api/preipo", { cache: "no-store" }).then(async (r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return (await r.json()) as { tokens: PreIpoTokenView[]; generatedAt: string | null }; }).then(setData).catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+    let tries = 0;
+    const load = () => fetch("/api/preipo", { cache: "no-store" }).then(async (r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return (await r.json()) as { tokens: PreIpoTokenView[]; generatedAt: string | null }; }).then((j) => { setData(j); setError(null); }).catch((e: unknown) => { if (++tries < 4) setTimeout(load, 2_000); else setError(e instanceof Error ? e.message : String(e)); });
     load();
     const h = setInterval(load, 60_000);
     return () => clearInterval(h);
@@ -51,7 +52,7 @@ export default function PreIpoPage() {
         <div className="flex items-center gap-4 flex-wrap">
           <div className="hstat"><span>Tokens</span><b className="mono"><CountUp value={String(tokens.length)} /></b></div>
           <div className="hstat"><span>Listed here</span><b className="mono"><CountUp value={String(listed.length)} /></b></div>
-          <div className="hstat"><span>Token float</span><b className="mono">${short(float)}</b></div>
+          <div className="hstat"><span>Market cap, all eight</span><b className="mono">${short(float)}</b></div>
           <div className="hstat"><span>Above the mark</span><b className="mono">{above} <span className="muted" style={{ fontWeight: 400, fontSize: 13 }}>· below {below}</span></b></div>
         </div>
       </div>
@@ -83,7 +84,7 @@ export default function PreIpoPage() {
               <div className="fp-rows">
                 <div><span>Issuer mark</span><b className="mono fp-tp">{t.markPrice === null ? <span className="muted">n/a</span> : <>${usd(t.markPrice)}<small className={t.spreadPct === null ? "muted" : t.spreadPct >= 0 ? "up" : "down"}>{spreadLabel(t.spreadPct)}</small></>}</b></div>
                 <div><span>Valuation</span><b className="mono fp-tp">{t.impliedValuation === null ? <span className="muted">n/a</span> : <>${short(t.impliedValuation)}<small className="muted">{t.markValuation !== null ? `mark $${short(t.markValuation)}` : "implied by the token"}</small></>}</b></div>
-                <div><span>Supply</span><b className="mono">{t.supply === null ? <span className="muted">n/a</span> : usdK(t.supply)}</b></div>
+                <div><span>Market cap</span><b className="mono fp-tp">{t.tokenPrice && t.supply ? <>${short(t.tokenPrice * t.supply)}<small className="muted">{usdK(t.supply)} tokens</small></> : <span className="muted">n/a</span>}</b></div>
                 <div><span>Fee</span><b className="mono">{t.feeBps === null ? <span className="muted">not read</span> : t.feeBps === 0 ? "none" : `${(t.feeBps / 100).toFixed(2)}%`}</b></div>
                 <div><span>Escrow</span><b><Badge tone={t.verdict === "eligible" || t.verdict === "eligible_with_fee" ? "green" : t.verdict === "not checked" ? undefined : "amber"}>{t.escrowProven ? "proven" : t.verdict.replaceAll("_", " ")}</Badge></b></div>
               </div>

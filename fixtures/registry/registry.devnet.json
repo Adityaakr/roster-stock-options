@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-20T09:12:14.029Z",
+  "generatedAt": "2026-09-21T08:18:26.118Z",
   "cluster": "devnet",
   "entries": [
     {
@@ -13,8 +13,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 220.33126767301667,
-        "tokenPrice": 220.33126767301667,
+        "markPrice": 223.40035338109985,
+        "tokenPrice": 223.40035338109985,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -22,7 +22,7 @@
         "mint": "BCCWyBT1LosEwSTyA2A2Y45hQjKpUfZ9KweQc7zchYTJ",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "279500000000",
+        "supply": "502000000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -74,8 +74,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 362.5843642707332,
-        "tokenPrice": 362.5843642707332,
+        "markPrice": 367.2939268243316,
+        "tokenPrice": 367.2939268243316,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -83,7 +83,7 @@
         "mint": "BYeUxBFrYd8xdu1dfGvivTE44xK37hdEc5TcNynTepzs",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "269500000000",
+        "supply": "492000000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -135,8 +135,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 760.8409701529698,
-        "tokenPrice": 760.8409701529698,
+        "markPrice": 775.3843025952984,
+        "tokenPrice": 775.3843025952984,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -144,7 +144,7 @@
         "mint": "54GjftynRBLkECdHTasuo2odVtdKg3nxfzLy77NvWp23",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "269500000000",
+        "supply": "492000000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -196,8 +196,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 333.37933665712114,
-        "tokenPrice": 333.37933665712114,
+        "markPrice": 334.66110931385253,
+        "tokenPrice": 334.66110931385253,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -205,7 +205,7 @@
         "mint": "6kpZMLRutk5QKtVYgR59QbF8ZnJVEywsWybN9MMwmUTk",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "269500000000",
+        "supply": "492000000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -257,8 +257,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 494.2122531905036,
-        "tokenPrice": 494.2122531905036,
+        "markPrice": 495.1471403517273,
+        "tokenPrice": 495.1471403517273,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -266,7 +266,7 @@
         "mint": "3Se8c2eVxn2nFQ51AJvS6rif8Za6xV2x61qumfaaU2T6",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "269500000000",
+        "supply": "492000000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -318,8 +318,8 @@
       "wrapper": "xStock",
       "holders": null,
       "issuerMark": {
-        "markPrice": 351.03219489808816,
-        "tokenPrice": 351.03219489808816,
+        "markPrice": 351.7257647060473,
+        "tokenPrice": 351.7257647060473,
         "holders": null,
         "source": "tokens.xyz mainnet snapshot"
       },
@@ -327,7 +327,7 @@
         "mint": "GKPuySPFdNrqmH7rQTdaAnhqKrngBRNuHzeoDEUh99r",
         "tokenProgram": "token-2022",
         "decimals": 8,
-        "supply": "269500000000",
+        "supply": "492000000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -379,8 +379,8 @@
       "wrapper": "PreStocks",
       "holders": null,
       "issuerMark": {
-        "markPrice": 993.6310611615487,
-        "tokenPrice": 1149.1881526314073,
+        "markPrice": 995.0859731490019,
+        "tokenPrice": 1120.0738169378567,
         "holders": null,
         "source": "prestocks.com/api (mainnet token price)"
       },
@@ -388,7 +388,7 @@
         "mint": "DK5xMekNLfy2YiBkyxMceCEyx7zRrQHQbws9xa44WWMY",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "0",
+        "supply": "2335000000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -418,7 +418,7 @@
           "newMultiplierEffectiveTimestamp": 0
         },
         "verdict": "eligible_with_fee",
-        "reason": "50 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+        "reason": "50 bps transfer fee, priced: a Gap delivers less the fee, a Floor has the holder deliver gross"
       },
       "feeds": {
         "tokenFeed": null,
@@ -444,8 +444,8 @@
       "wrapper": "PreStocks",
       "holders": null,
       "issuerMark": {
-        "markPrice": 153.79436720097956,
-        "tokenPrice": 118.45658757513115,
+        "markPrice": 154.01196091166204,
+        "tokenPrice": 118.10681430673336,
         "holders": null,
         "source": "prestocks.com/api (mainnet token price)"
       },
@@ -453,7 +453,7 @@
         "mint": "4FiFp6BA1ZDH35WarP6qQMW1vx2XP6BTLsXuz18wGmxx",
         "tokenProgram": "token-2022",
         "decimals": 9,
-        "supply": "0",
+        "supply": "2335000000000",
         "extensions": [
           "MetadataPointer",
           "PermanentDelegate",
@@ -483,7 +483,7 @@
           "newMultiplierEffectiveTimestamp": 0
         },
         "verdict": "eligible_with_fee",
-        "reason": "50 bps transfer fee: Gaps only until fee-inclusive settlement ships"
+        "reason": "50 bps transfer fee, priced: a Gap delivers less the fee, a Floor has the holder deliver gross"
       },
       "feeds": {
         "tokenFeed": null,
@@ -497,6 +497,396 @@
       },
       "issuerHalted": false,
       "replicaOf": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh"
+    },
+    {
+      "symbol": "ANDURIL",
+      "name": "Anduril PreStocks",
+      "underlyingSymbol": "Anduril PreStocks",
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/anduril.png",
+      "mint": "BT8sPFUF8mHgonDrcUrUBQ6LCT98Af6dnmdgNmPPevSa",
+      "tier": 2,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 154.88134925,
+        "tokenPrice": 155.47716164758856,
+        "holders": null,
+        "source": "prestocks.com/api (mainnet token price)"
+      },
+      "inspection": {
+        "mint": "BT8sPFUF8mHgonDrcUrUBQ6LCT98Af6dnmdgNmPPevSa",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "0",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee, priced: a Gap delivers less the fee, a Floor has the holder deliver gross"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "7scvdaQ7ZzvciX3yYZRebWgKQNtXLuqSpKwhS4Mv2sHj",
+        "quote": "3q8HxSTitJAuiyrcs7Jn9ztAfr1du9292T8zBdnxXARZca71xdmvDq2Xz2u1Q3nTT7nR2ifGQpqtZuYXUhAEZd11",
+        "withdraw": "3w2wKRfeK9zHPCUt22XxsuZYZ6nn8Qtsg2XTCLv6QyUUQBEGT6AQepecKf5wHzHwHqNFWB5zjCZFjRwLmTnmpwpS",
+        "provenAt": "2026-09-21T08:18:56.031Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB"
+    },
+    {
+      "symbol": "ANTHROPIC",
+      "name": "Anthropic PreStocks",
+      "underlyingSymbol": "Anthropic PreStocks",
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/anthropic.png",
+      "mint": "HKWxivw85yzxz15rcMHGcukfi9gJjiCdx2czvc8XJ46Z",
+      "tier": 2,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 1044.27374692,
+        "tokenPrice": 1039.2336801210313,
+        "holders": null,
+        "source": "prestocks.com/api (mainnet token price)"
+      },
+      "inspection": {
+        "mint": "HKWxivw85yzxz15rcMHGcukfi9gJjiCdx2czvc8XJ46Z",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "0",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee, priced: a Gap delivers less the fee, a Floor has the holder deliver gross"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "CSfjeyYyMCJ7oGLkySHnRt3QdTDGdLcZ7yLiZ7mJ66n9",
+        "quote": "sqMqxw1CxYWqJ3QtKVWqDjY286R6D7nEcsKVYeVZYL7TDvjfSY3QpwBpk8ydikZJiDVawFHUnR95S35DTF67SzR",
+        "withdraw": "5t6gA2yF24uZDTwj6335HMMueMs958mjXcMiLQWku8WzDYvj5oZpvSgRtMtjAufC24mMwro4wiwnTb58uXe3fDJ",
+        "provenAt": "2026-09-21T08:19:13.006Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw"
+    },
+    {
+      "symbol": "FIGUREAI",
+      "name": "Figure AI PreStocks",
+      "underlyingSymbol": "Figure AI PreStocks",
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/figureai.png",
+      "mint": "9XcHdwyQuFnL8y4CJLUs4X22NyR3XHGXKaoR1oPgfiXy",
+      "tier": 2,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 181.05040868,
+        "tokenPrice": 177.018487731233,
+        "holders": null,
+        "source": "prestocks.com/api (mainnet token price)"
+      },
+      "inspection": {
+        "mint": "9XcHdwyQuFnL8y4CJLUs4X22NyR3XHGXKaoR1oPgfiXy",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "0",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee, priced: a Gap delivers less the fee, a Floor has the holder deliver gross"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "9qUcNquwVkAuDMcz3QHaXqJQfjzqDr2t7acvnAeGg8Y8",
+        "quote": "2va5zRwbiSPhJCin3VkMtMb8nDUXgTGipaXCwiDwSeQkG8T5zpgUUqwAahVmct52ENfRCBVL9XvaUN8R92VTkDKd",
+        "withdraw": "65UWkZBmdviEg2iaQZqKgpWnm5VUzPjch1NB5nkqeVvJvr1VerNnzKGonGHFE9GqxzDsQMQJdocbsT4sUXjyPEXu",
+        "provenAt": "2026-09-21T08:19:30.364Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd"
+    },
+    {
+      "symbol": "KALSHI",
+      "name": "Kalshi PreStocks",
+      "underlyingSymbol": "Kalshi PreStocks",
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/kalshi.png",
+      "mint": "6Jjp1dhEU7fz6cyVuMjCBAMCncWFUbCwgCYJ8AJGcGt7",
+      "tier": 2,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 895.8180575,
+        "tokenPrice": 897.1848296359882,
+        "holders": null,
+        "source": "prestocks.com/api (mainnet token price)"
+      },
+      "inspection": {
+        "mint": "6Jjp1dhEU7fz6cyVuMjCBAMCncWFUbCwgCYJ8AJGcGt7",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "0",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee, priced: a Gap delivers less the fee, a Floor has the holder deliver gross"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "5DxxRErzxpnvnPXZTaqhmRvKR9Rc4y8piANNxggeunQT",
+        "quote": "3GL2pX2Szqt5zNqUdzw5yyxFJFAiiLxu4Juhyc5GWxR6jpioQvitKap6cm6Yy9zpqUSDT29cbRNAYhbQhRttmTVR",
+        "withdraw": "5fGpPpnQS7F7CYDB2VbU3R3RRcq3g5FeBkqnRsyzQNjssE2ryZ6pwFM3nWm6o8WQAcJbgBN6VUC4prumFe8awSVB",
+        "provenAt": "2026-09-21T08:19:47.778Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua"
+    },
+    {
+      "symbol": "NEURALINK",
+      "name": "Neuralink PreStocks",
+      "underlyingSymbol": "Neuralink PreStocks",
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/neuralink.png",
+      "mint": "D1PKSorB8yLndZTJoqUw5JLATpkzkDDmq3sCsckBF2ZP",
+      "tier": 2,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 336.75332591,
+        "tokenPrice": 434.5040027527919,
+        "holders": null,
+        "source": "prestocks.com/api (mainnet token price)"
+      },
+      "inspection": {
+        "mint": "D1PKSorB8yLndZTJoqUw5JLATpkzkDDmq3sCsckBF2ZP",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "0",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee, priced: a Gap delivers less the fee, a Floor has the holder deliver gross"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "J6CTNdkdy1Fbv8avKmWzD8YW3oYsaEsZWXAjk9EdF4qo",
+        "quote": "253hvvUsmnx1UwPsfrpYYso6X8NcKSWLQthR2D9Gu9wGfd9ZNdRijP7LJ4Ui82sxAscsp2fmoLE5pw7wLGzdAWeA",
+        "withdraw": "5xWbMp6brg6kDc8xXdQqFy1dBC8aKnboeAKFSyh2WV2UWAgRBg9i91zoejnrrBfML6DHfD8LZDth4afqXuA1xhvi",
+        "provenAt": "2026-09-21T08:20:04.712Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S"
+    },
+    {
+      "symbol": "POLYMARKET",
+      "name": "Polymarket PreStocks",
+      "underlyingSymbol": "Polymarket PreStocks",
+      "isin": null,
+      "logo": "https://www.prestocks.com/logos/polymarket.png",
+      "mint": "BNQ2SCfXzRPXuoA4Kbomn3a8JYzdd8k3VpVF3DrZTyFT",
+      "tier": 2,
+      "wrapper": "PreStocks",
+      "holders": null,
+      "issuerMark": {
+        "markPrice": 143.88815244,
+        "tokenPrice": 144.8006192136208,
+        "holders": null,
+        "source": "prestocks.com/api (mainnet token price)"
+      },
+      "inspection": {
+        "mint": "BNQ2SCfXzRPXuoA4Kbomn3a8JYzdd8k3VpVF3DrZTyFT",
+        "tokenProgram": "token-2022",
+        "decimals": 9,
+        "supply": "0",
+        "extensions": [
+          "MetadataPointer",
+          "PermanentDelegate",
+          "DefaultAccountState",
+          "TransferFeeConfig",
+          "ScaledUiAmountConfig",
+          "PausableConfig",
+          "TransferHook",
+          "TokenMetadata"
+        ],
+        "freezeAuthority": null,
+        "mintAuthority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "permanentDelegate": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD",
+        "transferHook": null,
+        "transferFee": {
+          "bps": 100,
+          "maxFee": "18446744073709551615"
+        },
+        "pausable": {
+          "paused": false,
+          "authority": "AuLvFjWWU2EVcoRC9oCVDZL3H2wkqVLdVsyKMhDF7EqD"
+        },
+        "defaultAccountState": "initialized",
+        "scaledUiAmount": {
+          "multiplier": 1,
+          "newMultiplier": 1,
+          "newMultiplierEffectiveTimestamp": 0
+        },
+        "verdict": "eligible_with_fee",
+        "reason": "100 bps transfer fee, priced: a Gap delivers less the fee, a Floor has the holder deliver gross"
+      },
+      "feeds": {
+        "tokenFeed": null,
+        "equityFeed": null
+      },
+      "escrowProof": {
+        "series": "GsvetqLZuGw6Sm1Rh8ExLAQmmxPvGzj9BwMiWB5wbNBD",
+        "quote": "2Ep7NsQrzE3MAi3K4i3hkpLPibcuLYfNoBJbdMU2GnHNgsngGf58gXodZgQxoRNkqjPcisBTWVGqHvWDoDRRWFqj",
+        "withdraw": "5vAJFePms5WsXhxZ2GruBJZv6mFWC4MhtYrragGJnj7nFFtTaKNdPSgvpPy3Tjub6DyPP9jRKp1bCT2qejY5Ung9",
+        "provenAt": "2026-09-21T08:20:21.634Z"
+      },
+      "issuerHalted": false,
+      "replicaOf": "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP"
     }
   ]
 }

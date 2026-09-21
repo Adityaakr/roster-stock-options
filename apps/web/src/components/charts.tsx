@@ -50,7 +50,8 @@ export function LineChart({ series, height = 260, format = (v: number) => v.toFi
   const sy = (y: number) => pad.t + (1 - (y - y0) / (y1 - y0)) * (H - pad.t - pad.b);
   const ticksY = [0, 0.25, 0.5, 0.75, 1].map((f) => y0 + f * (y1 - y0));
   const tf = timeFormat ?? ((t: number) => new Date(t * 1000).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }));
-  const ticksX = [0, 0.5, 1].map((f) => x0 + f * (x1 - x0));
+  // Three time ticks across the span, one when the span is too short for them to read apart.
+  const ticksX = x1 - x0 < 3_600 ? [x0 + (x1 - x0) / 2] : [0, 0.5, 1].map((f) => x0 + f * (x1 - x0));
   const hoverT = hover === null ? null : x0 + hover * (x1 - x0);
   const nearest = (s: Series) => {
     if (hoverT === null || !s.points.length) return null;

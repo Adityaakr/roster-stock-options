@@ -4,7 +4,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 /*
  * The PreStocks journey on devnet, in a browser with no terminal: take test funds, open OPENAI on the desk, buy a
  * Floor (the funded exit), exercise it delivering the mint's fee on top, and see the receipt. Every figure the page
- * shows for a transfer-fee mint is asserted in words: the exercise line says "plus the mint's 0.50% fee".
+ * shows for a transfer-fee mint is asserted in words: the exercise line says "plus the mint's fee" with its rate.
  *
  * Runs only when the services report a devnet cluster with an OPENAI market.
  */
@@ -33,10 +33,10 @@ test("devnet: buy a Floor on OPENAI from the PreStocks desk, exercise it with th
   await page.goto("/pre-ipo");
   await expect(page.getByRole("heading", { level: 1, name: "PreStocks" })).toBeVisible();
   await expect(page.getByTestId("preipo-row")).toHaveCount(8, { timeout: 60_000 });
-  await expect(page.getByTestId("preipo-row").filter({ hasText: "listed" }).filter({ hasNotText: "not listed" })).toHaveCount(2);
+  await expect(page.getByTestId("preipo-row").filter({ hasText: "listed" }).filter({ hasNotText: "not listed" })).toHaveCount(8);
   const openai = page.getByTestId("preipo-row").filter({ hasText: "OPENAI" }).first();
   await expect(openai).toContainText("live series");
-  await expect(openai).toContainText("0.50%");
+  await expect(openai).toContainText(/1\.00%|0\.50%/);
 
   // Funds from the faucet, through the wallet menu.
   await page.getByRole("button", { name: /connect wallet/i }).first().click();
@@ -68,7 +68,7 @@ test("devnet: buy a Floor on OPENAI from the PreStocks desk, exercise it with th
   await page.getByRole("link", { name: "Positions" }).first().click();
   await expect(page.getByTestId("position").first()).toBeVisible({ timeout: 60_000 });
   const floor = page.getByTestId("position").filter({ hasText: "Floor at" }).filter({ hasText: "OPENAI" }).first();
-  await expect(floor).toContainText("plus the mint's 0.50% fee");
+  await expect(floor).toContainText(/plus the mint's (0\.50|1\.00)% fee/);
   await floor.getByTestId("exercise").click();
   await floor.getByTestId("exercise-size").fill("0.5");
   await floor.getByTestId("exercise-confirm").click();

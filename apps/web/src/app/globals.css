@@ -1110,3 +1110,5 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .wadd-item em { font-style: normal; font-size: 13px; color: var(--ink); padding-top: 8px; border-top: 1px solid var(--line); }
 .wadd-item i { font-style: normal; font-size: 12px; color: var(--slate); }
 @media (max-width: 1100px) { .wadd-grid { grid-template-columns: minmax(0, 1fr); } .wadd-item { border-right: 0; border-bottom: 1px solid var(--line); } .wadd-item:last-child { border-bottom: 0; } }
+/* The quote follows the reader down the Act page. */
+@media (min-width: 1024px) { .act-quote { position: sticky; top: 76px; } }

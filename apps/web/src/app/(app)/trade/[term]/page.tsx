@@ -11,7 +11,7 @@ import { TxStatus } from "@/components/tx-status";
 import { Address, Badge, ErrorState, KV, Loading } from "@/components/ui";
 import { useCluster, explorerUrl } from "@/lib/cluster";
 import { usd, usdK, usdSmart, dayLabel, countdown } from "@/lib/format";
-import { breakEven, costOf, DEFAULT_SIZE, maxLoss, moveNeeded, parseTermId, productName } from "@/lib/model";
+import { breakEven, buyerPnl, costOf, DEFAULT_SIZE, maxLoss, moveNeeded, parseTermId, productName } from "@/lib/model";
 import { useTransaction } from "@/lib/tx";
 import { useRoster } from "@/lib/use-roster";
 
@@ -79,6 +79,7 @@ function ActInner({ id }: { id: string }) {
       </div>
 
       <div className="grid-2 split-left">
+        <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
         <div className="card">
           <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
             <div>
@@ -100,7 +101,37 @@ function ActInner({ id }: { id: string }) {
           </div>
         </div>
 
-        <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
+        <div className="card">
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
+            <div className="h6">Five prices at expiry</div>
+            <div className="small muted" style={{ marginTop: 2 }}>Your result on {size} {u.symbol} at each, net of the premium and fee, and what it means in words.</div>
+          </div>
+          <table className="table">
+            <thead><tr><th>{u.symbol} at expiry</th><th className="num">Your result</th><th className="hide-sm">Which means</th></tr></thead>
+            <tbody>
+              {[-0.2, -0.1, 0, 0.1, 0.2].map((d) => {
+                const px = u.mark * (1 + d);
+                const v = ask === null ? null : buyerPnl(t.side, t.strike, ask, size, px) - (c.fee ?? 0);
+                const itm = t.side === "call" ? px > t.strike : px < t.strike;
+                return (
+                  <tr key={d}>
+                    <td className="nowrap"><span className="mono">${usd(px)}</span> <span className="small muted">({d === 0 ? "mark" : `${d > 0 ? "+" : "−"}${Math.abs(d * 100).toFixed(0)}%`})</span></td>
+                    <td className={`num mono ${v === null ? "muted" : v < 0 ? "down" : v > 0 ? "up" : ""}`}>{v === null ? "n/a" : v === 0 ? "0" : `${v < 0 ? "−" : "+"}$${usdSmart(Math.abs(v))}`}</td>
+                    <td className="small muted hide-sm">{itm ? (t.side === "call" ? `buy ${size} ${u.symbol} at $${usdK(t.strike)}, worth $${usdK(px)}` : `sell ${size} ${u.symbol} at $${usdK(t.strike)} while it trades at $${usdK(px)}`) : "expires unused; the premium is the whole loss"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="card pad">
+          <div className="h6">What happens next</div>
+          <p className="body-sm" style={{ margin: "6px 0 0" }}>The position token lands in your wallet and appears under Positions with its mark, its countdown and exactly what exercising requires: {t.side === "call" ? `pay $${usdSmart(t.strike * size)} USDC, receive ${size} ${u.symbol}` : `deliver ${size} ${u.symbol}, receive $${usdSmart(t.strike * size)} USDC`}. A fill can be partial when the quoted size is not all there any more; you pay only for what filled.</p>
+        </div>
+        </div>
+
+        <div className="act-quote" style={{ display: "grid", gap: 16, alignContent: "start" }}>
           <div className="card pad">
             <div className="h6">The quote</div>
             <label className="lbl" style={{ marginTop: 12 }}>Size in {u.symbol}</label>
@@ -141,10 +172,6 @@ function ActInner({ id }: { id: string }) {
             <TxStatus state={tx.state} onRetry={() => { tx.reset(); reload(true); }} doneHref="/positions" doneLabel="See it under Positions" />
             <p className="note" style={{ marginTop: 12 }}>Contracts can expire worthless. Maximum loss is the premium plus fees. {t.side === "call" ? "Exercising requires paying the strike in USDC." : "Exercising requires delivering the tokens."} One transaction; the wallet signs, the app submits.</p>
             {market && market.feeBps > 0 ? <div className="msg" role="status" style={{ marginTop: 10 }} data-testid="fee-note">This mint charges a {(market.feeBps / 100).toFixed(2)}% transfer fee, and it is the holder&apos;s on both sides. {t.side === "call" ? <>On exercise you pay the full strike and receive {size} {u.symbol} less that fee, about {(size * (1 - market.feeBps / 10_000)).toFixed(4)} {u.symbol}.</> : <>On exercise you deliver {size} {u.symbol} plus the fee on top, about {(size / (1 - market.feeBps / 10_000)).toFixed(4)} {u.symbol}, so exactly {size} arrives for the writers, and you receive the full strike.</>} The premium already prices it in.</div> : null}
-          </div>
-          <div className="card pad">
-            <div className="h6">What happens next</div>
-            <p className="body-sm" style={{ margin: "6px 0 0" }}>The position token lands in your wallet and appears under Positions with its mark, its countdown and exactly what exercising requires: {t.side === "call" ? `pay $${usdSmart(t.strike * size)} USDC, receive ${size} ${u.symbol}` : `deliver ${size} ${u.symbol}, receive $${usdSmart(t.strike * size)} USDC`}. A fill can be partial when the quoted size is not all there any more; you pay only for what filled.</p>
           </div>
         </div>
       </div>

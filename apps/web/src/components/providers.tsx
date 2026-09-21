@@ -84,7 +84,10 @@ export function Providers({ children }: { children: ReactNode }) {
           landingHeader: "Roster Finance",
           loginMessage: "Sign in with email or connect a Solana wallet"
         },
-        embeddedWallets: { solana: { createOnLogin: "users-without-wallets" }, ethereum: { createOnLogin: "off" } },
+        // The app's own ticket is the confirmation: the exchange, the max loss and the fee are on screen before the
+        // click, so Privy's second "confirm transaction" sheet is off for the embedded wallet. External wallets keep
+        // their own prompts; those are the wallet's, not Privy's.
+        embeddedWallets: { showWalletUIs: false, solana: { createOnLogin: "users-without-wallets" }, ethereum: { createOnLogin: "off" } },
         externalWallets: { solana: { connectors: toSolanaWalletConnectors() } },
         solana: {
           rpcs: {

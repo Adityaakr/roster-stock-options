@@ -15,7 +15,7 @@ import { useRoster } from "@/lib/use-roster";
 /*
  * Roster (CLAUDE.md 5, Part 2 section 6, addendum G): the proof of executable protection. The protocol's figures
  * in one strip, every market with its depth drawn and its best ask on each side, then the chosen market as one
- * panel: its terms with quotes at three sizes and the escrow behind each, its underwriters with what they have
+ * panel: its terms with quotes at three sizes and the escrow behind each, its makers with what they have
  * locked, every exercise with its signature, and the vaults' epochs with their sign. A venue that publishes
  * whether its promises are funded is a venue that expects to be checked.
  */
@@ -123,7 +123,7 @@ function RosterInner() {
           <div className="flex items-center gap-3">
             {market ? <MarketLogo m={market} size={40} /> : null}
             <div>
-              <div className="flex items-center gap-2 flex-wrap"><h2 className="h5" style={{ margin: 0 }}>{sym}</h2><Badge tone={liveWriters ? "green" : "amber"} dot>{liveWriters} underwriter{liveWriters === 1 ? "" : "s"} live</Badge>{market ? <Badge tone={market.tier === 1 ? "green" : market.tier === 2 ? "blue" : undefined}>{TIER_LABEL[market.tier]}</Badge> : null}</div>
+              <div className="flex items-center gap-2 flex-wrap"><h2 className="h5" style={{ margin: 0 }}>{sym}</h2><Badge tone={liveWriters ? "green" : "amber"} dot>{liveWriters} maker{liveWriters === 1 ? "" : "s"} live</Badge>{market ? <Badge tone={market.tier === 1 ? "green" : market.tier === 2 ? "blue" : undefined}>{TIER_LABEL[market.tier]}</Badge> : null}</div>
               <div className="small muted">{market?.name} · mark <span className="mono ink">${usd(market?.mark ?? 0)}</span></div>
             </div>
           </div>
@@ -135,7 +135,7 @@ function RosterInner() {
           </div>
         </div>
         <div className="rtabs" role="tablist">
-          {([["terms", `Terms · ${data.terms.length}`], ["writers", `Underwriters · ${data.underwriters.length}`], ["history", `Exercises · ${data.exercises.length}`], ["vaults", vaultsReady ? `Vaults · ${marketVaults.length}` : "Vaults"]] as [Tab, string][]).map(([id, label]) => (
+          {([["terms", `Terms · ${data.terms.length}`], ["writers", `Makers · ${data.underwriters.length}`], ["history", `Exercises · ${data.exercises.length}`], ["vaults", vaultsReady ? `Vaults · ${marketVaults.length}` : "Vaults"]] as [Tab, string][]).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? "on" : ""} onClick={() => setTab(id)}>{label}</button>
           ))}
         </div>
@@ -148,7 +148,7 @@ function RosterInner() {
               <div className="bar thin" style={{ maxWidth: "none", marginTop: 6 }} role="img" aria-label={`Capacity used: ${Math.floor(oi)} of ${Math.floor(oi + capacity)}`}><span style={{ width: `${(oi / Math.max(1, oi + capacity)) * 100}%` }} /></div>
               <div className="small muted" style={{ marginTop: 6 }}>USDC reserved backs Floors; {sym} reserved backs Gaps. Every figure is the writer&apos;s own deposit in the series vault.</div>
             </div>
-            {data.underwriters.length === 0 ? <p className="muted" style={{ padding: "16px 20px" }}>No underwriter has quoted this market yet.</p> : (
+            {data.underwriters.length === 0 ? <p className="muted" style={{ padding: "16px 20px" }}>No maker has quoted this market yet.</p> : (
               <div className="rwriters">
                 {data.underwriters.map((u) => {
                   // A vault writes through the same instruction as anyone; here it is named for what it is.

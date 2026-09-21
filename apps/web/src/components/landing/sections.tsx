@@ -79,7 +79,8 @@ export function Hero({ data }: { data: RosterData }) {
 
 /* 2. Brand strip: what the venue is built on and priced with. */
 export function BrandStrip() {
-  const names: [string, string][] = [["Pyth", SOURCES.pythHermes], ["xStocks", SOURCES.xstocksMultipliers], ["Solana", "https://solana.com"], ["Jupiter", "https://jup.ag"], ["PreStocks", SOURCES.prestocksApi], ["Surfpool", SOURCES.surfpool], ["tokens.xyz", SOURCES.tokensApi]];
+  // Each mark is the site's own icon, fetched once into public/brands; nothing here is drawn by us.
+  const names: [string, string, string][] = [["Pyth", SOURCES.pythHermes, "pyth.network"], ["xStocks", SOURCES.xstocksMultipliers, "xstocks.fi"], ["Solana", "https://solana.com", "solana.com"], ["Jupiter", "https://jup.ag", "jup.ag"], ["PreStocks", SOURCES.prestocksApi, "prestocks.com"], ["Surfpool", SOURCES.surfpool, "surfpool.run"], ["tokens.xyz", SOURCES.tokensApi, "tokens.xyz"]];
   return (
     <Sec id="brands" className="brands" ticks={false}>
       <div style={{ padding: "66px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 40, overflow: "hidden", position: "relative" }}>
@@ -87,8 +88,12 @@ export function BrandStrip() {
         <div className="brandbg" aria-hidden />
         <div className="brandwrap">
           <Ticker velocity={50} hoverModifier={40} gap={48}>
-            {names.map(([n, href]) => (
-              <a key={n} href={href} target="_blank" rel="noreferrer" className="brand">{n}</a>
+            {names.map(([n, href, icon]) => (
+              <a key={n} href={href} target="_blank" rel="noreferrer" className="brand">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/brands/${icon}.png`} alt="" width={22} height={22} className="brand-mark" />
+                {n}
+              </a>
             ))}
           </Ticker>
         </div>
@@ -220,7 +225,7 @@ export function Tiers({ data }: { data: RosterData }) {
   const items: { tier: Tier; title: string; who: string; what: string }[] = [
     { tier: 1, title: "Tier 1", who: "The launch set", what: "The treasury quotes every expiry, both sides, at three sizes." },
     { tier: 2, title: "Tier 2", who: "Quoted at the front", what: "The treasury quotes the nearest expiry and pre-creates the next as it approaches." },
-    { tier: 3, title: "Tier 3", who: "Listed, open to underwriters", what: "Tradable the moment someone quotes it; the treasury holds no capital there." }
+    { tier: 3, title: "Tier 3", who: "Listed, open to makers", what: "Tradable the moment someone quotes it; the treasury holds no capital there." }
   ];
   return (
     <Sec id="tiers" className="integration" ticks={false}>
@@ -364,7 +369,7 @@ export function FirstPrint() {
 /* 8. What this is not. */
 const QA: [string, string][] = [
   ["This is an options protocol.", "Mechanically these are fully collateralized American options, and the docs say so. What we sell is one benefit: leverage or an exit with a known worst case, priced and funded before you click. No chain of strikes, no greeks, one underlying."],
-  ["Options venues on Solana die of fragmentation.", "They listed dozens of assets across dozens of strikes and expiries and split every maker across hundreds of thin books. We list every eligible market and concentrate capital on a launch set, publish the depth of each name, and cap live series per market so the book cannot sprawl. Several underwriters compete for the same term."],
+  ["Options venues on Solana die of fragmentation.", "They listed dozens of assets across dozens of strikes and expiries and split every maker across hundreds of thin books. We list every eligible market and concentrate capital on a launch set, publish the depth of each name, and cap live series per market so the book cannot sprawl. Several makers compete for the same term."],
   ["Why not a perp?", "A perp is the right tool for funding-rate exposure. It is the wrong tool for a position you want to leave on over a weekend on an asset whose market is closed. We point at perps for the first case."],
   ["Why not a limit order?", "A limit order controls the price of a fill but can sit unfilled through the exact hours you needed it. A funded exit is a counterparty who has already locked the cash."],
   ["Nothing will fill.", "The sell side is seeded by the treasury's own capital and a maker bot from day one, and the roster page shows exactly what is fillable at what size. The treasury is a market maker, not a yield product: it can lose money in a week where the market gaps through its strikes, and its results are published, losing weeks included."]
@@ -402,45 +407,6 @@ export function WhatThisIsNot() {
   );
 }
 
-/* 9. Risk and honesty: two ruled columns, built from the reference's diptych. */
-export function Risk({ data }: { data: RosterData }) {
-  const live: [string, string, boolean][] = [
-    ["Fully collateralized, American exercise, physical settlement", "always", true],
-    [`Gap and Floor across ${data.markets.length} listed market${data.markets.length === 1 ? "" : "s"}`, data.programDeployed ? "live" : "not yet", data.programDeployed],
-    ["Commit: the write side, disclosed as paid risk", data.programDeployed ? "live" : "not yet", data.programDeployed],
-    ["Protected Buy: a swap and a floor in one transaction", data.programDeployed ? "live" : "not yet", data.programDeployed],
-    ["First Print: Gaps and Floors on PreStocks tokens", data.programDeployed ? "live" : "not yet", data.programDeployed]
-  ];
-  const not = [
-    "Chain halts, token freezes, pauses or transfer restrictions on the underlying mint",
-    "Dividend reinvestment during a call accrues to the escrowed tokens and is captured by the buyer at exercise",
-    "xStocks are tracker certificates with no voting rights",
-    "PreStocks tokens confer no ownership, voting, dividend or information rights; after an IPO they must be converted within the issuer's window or expire worthless",
-    "Non-US wrappers, fully collateralized; counsel before expanding"
-  ];
-  return (
-    <Sec id="risk" className="connect">
-      <div style={{ padding: "80px 30px", display: "flex", flexDirection: "column", gap: 50 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <ScrollColorText as="h2" text="Risk and honesty." className="h-section" style={{ maxWidth: 700 }} />
-          <Reveal y={18} delay={0.1}><p className="body" style={{ margin: 0, maxWidth: 700 }}>Contracts can expire worthless. Maximum loss is the premium plus fees. Exercising a call requires paying the strike. What a contract does not protect against is listed next to what it does.</p></Reveal>
-        </div>
-        <Reveal y={40}>
-          <div className="diptych">
-            <div>
-              <div className="head">WHAT IS LIVE</div>
-              {live.map(([t, when, ok]) => <p key={t} className="flex items-baseline justify-between gap-3"><span>{t}</span><span className={`badge ${ok ? "green" : ""}`} style={{ flex: "none" }}><i />{when}</span></p>)}
-            </div>
-            <div>
-              <div className="head">WHAT A CONTRACT DOES NOT PROTECT AGAINST</div>
-              {not.map((t) => <p key={t}>{t}</p>)}
-            </div>
-          </div>
-        </Reveal>
-      </div>
-    </Sec>
-  );
-}
 
 /* 10. CTA */
 export function Cta() {

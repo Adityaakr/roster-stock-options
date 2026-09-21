@@ -30,7 +30,8 @@ export default function MarketsPage() {
         <Stat k="Executable depth" v={`$${usd0(depth)}`} s="USDC fillable across every live term" />
         <Stat k="Live series" v={String(data.markets.reduce((a, m) => a + m.liveSeries, 0))} s="capped per market" />
       </div>
-      {data.blocked && data.cluster !== "fixture" ? <div className="card pad msg" role="status" style={{ padding: "12px 16px", marginBottom: 16, color: "var(--amber)" }}>The quoter is blocked on {data.blocked}; asks shown are the ones resident on-chain. Operators: docs/OPERATOR.md.</div> : null}
+      {data.blocked === "services" ? <div className="card pad msg" role="status" style={{ padding: "12px 16px", marginBottom: 16 }}>{data.source}</div> : null}
+      {data.blocked && data.blocked !== "services" ? <div className="card pad msg" role="status" style={{ padding: "12px 16px", marginBottom: 16, color: "var(--amber)" }}>The quoter is blocked on {data.blocked}; asks shown are the ones resident on-chain.</div> : null}
       <MarketList markets={data.markets} maxHeight={680} />
     </div>
   );

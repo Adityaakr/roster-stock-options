@@ -181,7 +181,7 @@ function UnderwriteInner() {
         </div>
         <div className="card mlist" style={{ marginTop: 12 }}>
           <table className="table mtable ulist">
-            <thead><tr><th>Term</th><th>Expiry</th><th className="num">Premium per share</th><th className="num">On collateral</th><th className="num hide-sm">Bought</th><th className="num hide-sm">Fillable</th><th className="num hide-sm">Underwriters</th></tr></thead>
+            <thead><tr><th>Term</th><th>Expiry</th><th className="num">Premium per share</th><th className="num">On collateral</th><th className="num hide-sm">Bought</th><th className="num hide-sm">Fillable</th><th className="num hide-sm">Makers</th></tr></thead>
             <tbody>
               {listed.length === 0 ? <tr><td colSpan={7} className="muted" style={{ padding: 20 }}>Nothing quoted here right now.</td></tr> : null}
               {(showAll ? listed : listed.slice(0, 12)).map((i) => (
@@ -231,7 +231,7 @@ function UnderwriteInner() {
                 </button>
               ))}
             </div>
-            <div className="small muted" style={{ marginTop: 8 }}>Expires {dayLabel(t.expiryTs)}, in {countdown(t.expiryTs, data.nowTs)} · {t.writers.filter((w) => w.live).length} underwriter{t.writers.filter((w) => w.live).length === 1 ? "" : "s"} live</div>
+            <div className="small muted" style={{ marginTop: 8 }}>Expires {dayLabel(t.expiryTs)}, in {countdown(t.expiryTs, data.nowTs)} · {t.writers.filter((w) => w.live).length} maker{t.writers.filter((w) => w.live).length === 1 ? "" : "s"} live</div>
 
             <label className="lbl" style={{ marginTop: 16 }}>Size</label>
             <div className="pb-amount">
@@ -286,7 +286,7 @@ function UnderwriteInner() {
 
         {mine ? <div style={{ padding: "0 20px 20px" }}><MySlot t={t} sym={sym} multiplier={u.multiplier} mine={mine} myAsks={myAsks} free={free} expired={expired} nowTs={data.nowTs} busy={busy} onAction={run} /></div> : (
           <ol className="ask-how wafter">
-            <li><span><b>Your ask goes live on the roster</b> next to every other underwriter on the term; buyers match the cheapest asks first, so a fill can be partial.</span></li>
+            <li><span><b>Your ask goes live on the roster</b> next to every other maker on the term; buyers match the cheapest asks first, so a fill can be partial.</span></li>
             <li><span><b>Premium accrues to your slot</b> with each fill and is yours to claim any time; the unsold part can be withdrawn any time.</span></li>
             <li><span><b>At expiry</b> what was not assigned is released and what was is settled at the strike, in one transaction anyone can send.</span></li>
           </ol>

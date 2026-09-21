@@ -263,7 +263,7 @@ Nothing on any screen is a placeholder. A figure the sources cannot provide is a
 
 ## 8. Try it in two minutes
 
-1. Open the app and connect a wallet, or use the built-in burner if you have no extension.
+1. Open the app and connect a wallet.
 2. Click your address, then **Get test funds**: `25` of every token, `25,000` USDC and SOL to sign with.
 3. **Ask** → type "protect my 20 NVDAx through earnings" → **Review and buy** → sign. That is a fully paid contract in your wallet.
 4. **Positions** → **Sell** at the vault's bid, or **Exercise**. Sign.

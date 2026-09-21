@@ -38,14 +38,14 @@ export function RosterProof({ data }: { data: RosterData }) {
               <div><span className="k">Executable depth</span><span className="v">${usd0(depth)}</span><span className="s">{data.markets.length} listed market{data.markets.length === 1 ? "" : "s"}</span></div>
               <div><span className="k">USDC reserved on {sym}</span><span className="v">${usd0(usdcReserved)}</span><span className="s">backing Floors</span></div>
               <div><span className="k">{sym} reserved</span><span className="v">{Math.floor(tokReserved).toLocaleString("en-US")}</span><span className="s">backing Gaps</span></div>
-              <div><span className="k">Underwriters live</span><span className="v">{live.length}</span><span className="s">{live.length ? "quoting now" : "none yet on this cluster"}</span></div>
+              <div><span className="k">Makers live</span><span className="v">{live.length}</span><span className="s">{live.length ? "quoting now" : "none yet on this cluster"}</span></div>
             </div>
             <div className="pf-grid">
               <div className="pf-col">
                 <div className="pf-title">Quotes at size</div>
                 <div className="pf-sub">{call ? `Gap $${usd0(call.strike)} through ${dayLabel(call.expiryTs)}` : "no live term"}</div>
                 <table className="pf-table">
-                  <thead><tr><th>Size</th><th className="num">Per share</th><th className="num">Cost</th><th className="num">Underwriters</th></tr></thead>
+                  <thead><tr><th>Size</th><th className="num">Per share</th><th className="num">Cost</th><th className="num">Makers</th></tr></thead>
                   <tbody>
                       {(call?.ladder ?? []).map((r) => (
                         <tr key={r.size}>
@@ -60,11 +60,11 @@ export function RosterProof({ data }: { data: RosterData }) {
               </div>
               <div className="pf-col">
                 <div className="pf-title">Reserved capital</div>
-                <div className="pf-sub">in program-owned vaults, per underwriter</div>
+                <div className="pf-sub">in program-owned vaults, per maker</div>
                 <table className="pf-table">
-                  <thead><tr><th>Underwriter</th><th className="num">USDC</th><th className="num">{sym}</th><th className="num">Account</th></tr></thead>
+                  <thead><tr><th>Maker</th><th className="num">USDC</th><th className="num">{sym}</th><th className="num">Account</th></tr></thead>
                   <tbody>
-                      {live.length === 0 ? <tr><td colSpan={4} className="muted">No underwriter has quoted yet.</td></tr> : live.map((u) => (
+                      {live.length === 0 ? <tr><td colSpan={4} className="muted">No maker has quoted yet.</td></tr> : live.map((u) => (
                         <tr key={u.name}>
                           <td>{u.name}</td>
                           <td className="num mono">${usd0(u.usdcReserved)}</td>

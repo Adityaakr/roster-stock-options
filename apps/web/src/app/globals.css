@@ -386,7 +386,8 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 
 /* Brand strip */
 .brandwrap { width: 100%; max-width: 1157px; position: relative; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
-.brand { font-family: var(--display); font-weight: 500; font-size: 18px; color: var(--ink-2); letter-spacing: -0.02em; flex: none; }
+.brand { font-family: var(--display); font-weight: 500; font-size: 18px; color: var(--ink-2); letter-spacing: -0.02em; flex: none; display: inline-flex; align-items: center; gap: 10px; }
+.brand-mark { width: 22px; height: 22px; border-radius: 6px; object-fit: cover; flex: none; }
 .brandbg { position: absolute; left: 0; right: 0; top: 50%; height: 44%; background: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 48px); opacity: 0.5; pointer-events: none; }
 
 /* Workflow cards and images */

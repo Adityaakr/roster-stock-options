@@ -14,7 +14,7 @@ import { useRoster } from "@/lib/use-roster";
 
 /*
  * One market, complete (Part 2 section 6, Discover): the mark and its history, the term grid, depth per expiry, the
- * roster behind it (underwriters and quotes at size), the wrapper&apos;s rights profile read from the mint, and the
+ * roster behind it (makers and quotes at size), the wrapper&apos;s rights profile read from the mint, and the
  * exercise history. Everything on this page is read from the services; nothing is invented.
  */
 interface Prices { mark: Point[]; token: Point[]; equity: Point[]; basis: { bps: number; at: number }[] }
@@ -67,7 +67,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
               {m.paused ? <Badge tone="amber" dot>paused</Badge> : null}
               <Badge tone={data.session === "regular" ? "green" : "amber"} dot>{SESSION_LABEL[data.session]}</Badge>
             </div>
-            <p className="body-sm" style={{ margin: "4px 0 0" }}>{m.name} · {m.liveSeries > m.maxLiveSeries ? `${m.liveSeries} series live` : `${m.liveSeries} of ${m.maxLiveSeries} series live`} · {live.length} underwriter{live.length === 1 ? "" : "s"} quoting</p>
+            <p className="body-sm" style={{ margin: "4px 0 0" }}>{m.name} · {m.liveSeries > m.maxLiveSeries ? `${m.liveSeries} series live` : `${m.liveSeries} of ${m.maxLiveSeries} series live`} · {live.length} maker{live.length === 1 ? "" : "s"} quoting</p>
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -138,9 +138,9 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
         <div className="card pad">
           <div className="h6">The roster behind {m.symbol}</div>
           <div className="small" style={{ margin: "2px 0 14px" }}>Who is quoting and what they have locked in the series vaults.</div>
-          {data.underwriters.length === 0 ? <div className="small muted">No underwriter has quoted this market yet.</div> : (
+          {data.underwriters.length === 0 ? <div className="small muted">No maker has quoted this market yet.</div> : (
             <table className="table">
-              <thead><tr><th>Underwriter</th><th className="num">USDC</th><th className="num">{m.symbol}</th><th className="num">Account</th></tr></thead>
+              <thead><tr><th>Maker</th><th className="num">USDC</th><th className="num">{m.symbol}</th><th className="num">Account</th></tr></thead>
               <tbody>
                 {data.underwriters.map((w) => (
                   <tr key={w.name}>
@@ -172,7 +172,7 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
                     <td><Badge>{w.issuer === "xStock" ? "xStocks" : w.issuer}</Badge></td>
                     <td className="num">{w.market?.mark != null ? `$${usd(w.market.mark)}` : <span className="muted">–</span>}</td>
                     <td className="num">{w.market?.bestAsk != null ? `$${usd(w.market.bestAsk)}` : <span className="muted">–</span>}</td>
-                    <td className="num">{w.market ? (w.market.depthUsdc > 0 ? `$${usd0(w.market.depthUsdc)}` : <span className="muted" title="Tier 3: no treasury capital; any underwriter may quote">none yet</span>) : <span className="muted">–</span>}</td>
+                    <td className="num">{w.market ? (w.market.depthUsdc > 0 ? `$${usd0(w.market.depthUsdc)}` : <span className="muted" title="Tier 3: no treasury capital; any maker may quote">none yet</span>) : <span className="muted">–</span>}</td>
                     <td className="num">{w.holders === null ? <span className="muted">–</span> : w.holders.toLocaleString("en-US")}</td>
                     <td className="small">{w.tokenFeed ? <span className="mono">{w.tokenFeed}</span> : <span className="muted">none on Pyth</span>}</td>
                     <td><Badge tone={w.status === "listed" ? "green" : w.status === "restricted" || w.status === "ineligible" ? "amber" : undefined} dot={w.status === "listed"}>{w.status === "listed" ? `listed · ${TIER_LABEL[(w.market!.tier as 1 | 2 | 3)]}` : w.status}</Badge>{w.reason && w.status !== "listed" ? <div className="small muted" style={{ maxWidth: 260 }}>{w.reason}</div> : null}</td>

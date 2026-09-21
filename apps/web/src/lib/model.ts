@@ -225,7 +225,7 @@ export const TIER_LABEL: Record<Tier, string> = { 1: "Tier 1", 2: "Tier 2", 3: "
 export const TIER_RULE: Record<Tier, string> = {
   1: "Treasury quotes every term, both sides, at three sizes. The launch set.",
   2: "Treasury quotes the nearest expiry only. Promoted to Tier 1 after four weeks of fills.",
-  3: "Listed and tradable; quotes come from external underwriters only. Promoted after 30 days of depth."
+  3: "Listed and tradable; quotes come from external makers only. Promoted after 30 days of depth."
 };
 
 /** The product name the button carries; the instrument name belongs in the docs. */
@@ -330,7 +330,7 @@ export function exerciseWords(side: Side, strike: number, shares: number, symbol
     : `deliver ${(shares / keep).toFixed(4)} ${symbol} (${shares} plus the mint's ${pct}% fee), receive $${cash} USDC`;
 }
 
-/** The underwriter's side: what is locked and what is collected. */
+/** The maker's side: what is locked and what is collected. */
 export function commitMath(side: Side, strike: number, ask: number, shares: number) {
   const locked = side === "call" ? shares : strike * shares;
   const premium = ask * shares;

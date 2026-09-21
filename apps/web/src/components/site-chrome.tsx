@@ -49,11 +49,6 @@ export function SiteFooter({ network, source }: { network?: string; source?: str
             <ul><li><a className="navlink" href="https://docs.xstocks.fi/developers/multipliers" target="_blank" rel="noreferrer">xStocks multipliers</a></li><li><a className="navlink" href="https://docs.pyth.network/price-feeds/market-hours" target="_blank" rel="noreferrer">Pyth market hours</a></li><li><a className="navlink" href="https://prestocks.com/faq" target="_blank" rel="noreferrer">PreStocks terms</a></li></ul>
           </div>
         </div>
-        <div className="divider" style={{ margin: "40px 0 20px" }} />
-        <div className="flex flex-wrap justify-between gap-3">
-          <span>Built for the Solana Stocklana hackathon, September 2026.</span>
-          <span>Fully collateralized, American exercise, physical settlement. Non-US wrappers.</span>
-        </div>
       </div>
     </footer>
   );

@@ -194,7 +194,7 @@ function BuyInner() {
             <div className="small muted" style={{ marginTop: 4 }}>The value of ${usdSmart(usdcIn)} of {u.symbol} across a band of prices, with and without the ${f ? usdK(f.strike) : "–"} floor{estimated ? ", shares estimated at the mark" : ""}.</div>
           </div>
           <div style={{ padding: "16px 20px" }}>
-            <svg viewBox={`0 0 ${W} ${H}`} className="pb-sketch" role="img" aria-label="Value at expiry with and without the floor">
+            {u.mark <= 0 ? <div className="small muted">Waiting for a mark.</div> : <svg viewBox={`0 0 ${W} ${H}`} className="pb-sketch" role="img" aria-label="Value at expiry with and without the floor">
               {f && f.strike > band[0]! ? <rect x={X(band[0]!)} y={PAD} width={X(f.strike) - X(band[0]!)} height={H - 2 * PAD} fill="var(--surface)" /> : null}
               <line x1={PAD} x2={W - PAD} y1={Y(usdcIn)} y2={Y(usdcIn)} stroke="var(--line)" />
               <text x={W - PAD} y={Y(usdcIn) - 4} textAnchor="end" className="pb-lbl">what you spend</text>
@@ -204,7 +204,7 @@ function BuyInner() {
               <path d={path(false)} fill="none" stroke="var(--slate)" strokeWidth="1.5" />
               {f ? <motion.path key={`${f.id}-${usdcIn}`} d={path(true)} fill="none" stroke="var(--ink)" strokeWidth="2" initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, ease: [0.2, 0, 0, 1] }} /> : null}
               {f && protectedAt !== null ? <text x={X(band[0]!) + 4} y={Y(valueAt(band[0]!, true)) + 13} className="pb-lbl ink">floor pays ${usdK(protectedAt)}, whatever happens below</text> : null}
-            </svg>
+            </svg>}
             <div className="flex items-center justify-between small muted mono" style={{ marginTop: 4 }}><span>${usdK(band[0]!)} <span className="sans">(−25%)</span></span><span>{u.symbol} at expiry</span><span><span className="sans">(+25%)</span> ${usdK(band[band.length - 1]!)}</span></div>
             <div className="flex items-center gap-4 small" style={{ marginTop: 10 }}><span className="flex items-center gap-2"><i className="pb-key" style={{ background: "var(--ink)" }} />With the floor</span><span className="flex items-center gap-2"><i className="pb-key" style={{ background: "var(--slate)" }} />Without</span><span className="flex items-center gap-2"><i className="pb-key" style={{ background: "var(--surface)", height: 10, border: "1px solid var(--line)" }} />Below the floor</span></div>
           </div>

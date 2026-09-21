@@ -84,7 +84,7 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
                 <tr key={t.id} className="row-link" data-testid="term-row" onClick={() => router.push(`/trade/${t.id}`)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/trade/${t.id}`); }}>
                   <td>
                     <div style={{ fontWeight: 500, whiteSpace: "nowrap" }}>${usd(t.strike)} <span className="muted">per share</span></div>
-                    <div className="small mono" style={{ whiteSpace: "nowrap" }}>{t.side === "call" ? "right to buy" : "right to sell"} through {dayLabel(t.expiryTs)}{q.underwriters > 1 ? ` · ${q.underwriters} underwriters` : ""}</div>
+                    <div className="small mono" style={{ whiteSpace: "nowrap" }}>{t.side === "call" ? "right to buy" : "right to sell"} through {dayLabel(t.expiryTs)}{q.underwriters > 1 ? ` · ${q.underwriters} makers` : ""}</div>
                   </td>
                   <td className="num">${usd(q.ask)}</td>
                   <td className="num">${usdSmart(q.ask * size)}</td>

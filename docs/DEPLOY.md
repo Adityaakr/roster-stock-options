@@ -30,7 +30,8 @@ Deploy `Dockerfile.services`, or run `pnpm tsx packages/services/src/main.ts` un
 | --- | --- |
 | `SERVICES_URL` | the services' public URL. The app calls it from the server only |
 | `RPC_URL` | the same RPC as the services. Used to build and relay transactions, and by `/api/rpc` |
-| `NEXT_PUBLIC_CLUSTER` | `devnet` or `mainnet`. On devnet it also offers the burner wallet and the faucet |
+| `NEXT_PUBLIC_CLUSTER` | `devnet` or `mainnet`. On devnet it also offers the faucet |
+| `NEXT_PUBLIC_BURNER_WALLET` | leave unset. `1` adds a throwaway burner wallet for the browser journeys on a test cluster |
 | `NEXT_PUBLIC_RPC_URL` | **leave empty.** Set it only for a public endpoint with no key in it; empty means the browser reads through `/api/rpc` and the provider key stays on the server |
 | `DEPLOYER_SECRET_KEY` | devnet only, for the faucet's mint authority. Never set it on a mainnet deployment |
 | `DEVNET_MINTS_JSON` | devnet only, the contents of `fixtures/devnet-mints.json`, if the deployment does not ship the file |

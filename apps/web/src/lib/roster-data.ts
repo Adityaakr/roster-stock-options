@@ -1,5 +1,5 @@
 import "server-only";
-import { DEFAULT_SIZE, lots6ForShares, nextFridays, sharesOf, sessionAt, termId, walkAsks, type ExerciseEvent, type Market, type Position, type Receipt, type RosterData, type Session, type Side, type Term, type Tier, type Underlying, type Underwriter } from "./model";
+import { DEFAULT_SIZE, lots6ForShares, sharesOf, sessionAt, termId, walkAsks, type ExerciseEvent, type Market, type Position, type Receipt, type RosterData, type Session, type Term, type Tier, type Underlying, type Underwriter } from "./model";
 import { services, servicesReachable, type ServicesMarket, type ServicesRoster, type ServicesSeries } from "./services";
 import { freshSeries } from "./tx-server";
 import { readRegistry } from "@roster/registry";
@@ -17,14 +17,13 @@ for (const e of REG) if (e.underlyingSymbol) WRAPPERS.set(e.underlyingSymbol, (W
 
 /*
  * The data the app renders, assembled server-side from the services process (indexer, oracle, quoter). When the
- * services do not answer the app is on the `fixture` cluster: every figure is a test fixture and the UI says so in
- * the cluster badge and under every instrument. Expiries and the session always come from the real clock.
+ * services do not answer the app shows its empty states with one reconnecting line; nothing is invented.
+ * Expiries and the session always come from the real clock.
  */
 
 const LADDER_SIZES = [10, 50, 200];
 
 
-const FIXTURE_MARK = 182.3;
 
 /* ---------- live: services -> model ---------- */
 
@@ -203,106 +202,40 @@ async function fromServices(r: ServicesRoster, selected: string | undefined, fre
   };
 }
 
-/* ---------- fixture ---------- */
+/* ---------- offline ---------- */
 
-/** Premium per share by side, strike and expiry rank (0 = nearest Friday). Chosen so the worked examples in CLAUDE.md 6 hold. */
-const PREMIUM: Record<Side, Record<number, [number, number]>> = {
-  call: { 180: [5.4, 8.1], 185: [2.9, 5.6], 190: [1.45, 3.7] },
-  put: { 180: [3.0, 5.3], 175: [1.35, 3.2], 170: [0.6, 1.85] }
-};
+/*
+ * What the app shows while the services process cannot be reached: nothing invented. No market, no term, no position,
+ * no reserve. The cluster is the one the build was made for, the program on it is the one deployed, and every screen
+ * renders its empty state with one line saying the figures are reconnecting. The old test fixtures that stood in
+ * here put a fictional market on the screen, which is worse than an empty one.
+ */
+const LABEL: Record<RosterData["cluster"], string> = { fixture: "Offline", fork: "Mainnet fork", devnet: "Devnet", mainnet: "Mainnet" };
+export const RECONNECTING = "Market data is reconnecting. Figures refresh automatically.";
 
-function fixtureTerms(expiries: number[]): Term[] {
-  const out: Term[] = [];
-  expiries.forEach((exp, rank) => {
-    for (const side of ["call", "put"] as const) {
-      for (const [k, prem] of Object.entries(PREMIUM[side])) {
-        const strike = Number(k);
-        const ask = prem[rank === 0 ? 0 : 1];
-        const step = Math.max(0.05, Math.round(ask * 0.04 * 100) / 100);
-        out.push({
-          id: termId("NVDAx", side, strike, exp),
-          market: "NVDAx",
-          series: null,
-          positionMint: null,
-          side,
-          strike,
-          expiryTs: exp,
-          ask,
-          ladder: [
-            { size: 10, ask, underwriters: 1 },
-            { size: 50, ask: Math.round((ask + step) * 100) / 100, underwriters: 2 },
-            { size: 200, ask: Math.round((ask + step * 3) * 100) / 100, underwriters: 3 }
-          ],
-          capacity: side === "call" ? 260 : 320,
-          openInterest: rank === 0 ? (strike === 180 ? 140 : 40) : 20,
-          strikePerLot: String(strike * 1e6),
-          bestAskPerLot: String(Math.round(ask * 1e6)),
-          asks: [{ askPerLot: String(Math.round(ask * 1e6)), remainingLots6: String((side === "call" ? 260 : 320) * 1e6), writerSlot: 0, seq: "0" }],
-          escrow: null,
-          writers: [],
-          slots: [],
-          halted: false
-        });
-      }
-    }
-  });
-  return out;
-}
-
-const UNDERWRITERS: Underwriter[] = [
-  { name: "Roster treasury", kind: "treasury", account: null, usdcReserved: 118_800, underlyingReserved: 420, live: true },
-  { name: "Maker bot", kind: "maker", account: null, usdcReserved: 54_000, underlyingReserved: 180, live: true },
-  { name: "External underwriter", kind: "external", account: null, usdcReserved: 0, underlyingReserved: 0, live: false }
-];
-
-function fixturePositions(expiries: number[]): Position[] {
-  const near = expiries[0] ?? 0;
-  const far = expiries[1] ?? near;
-  return [
-    { id: "pos-1", termId: termId("NVDAx", "call", 180, near), market: "NVDAx", series: null, side: "call", strike: 180, expiryTs: near, shares: 10, premiumPaid: 54, exercised: 0, signature: null, autoExercise: false, expired: false },
-    { id: "pos-2", termId: termId("NVDAx", "put", 180, far), market: "NVDAx", series: null, side: "put", strike: 180, expiryTs: far, shares: 20, premiumPaid: 106, exercised: 0, signature: null, autoExercise: true, expired: false }
-  ];
-}
-
-function fixtureExercises(now: number, expiries: number[]): ExerciseEvent[] {
-  const near = expiries[0] ?? now;
-  return [
-    { ts: now - 2 * 86_400, termId: termId("NVDAx", "call", 180, near), shares: 5, kind: "exercise", ok: true, signature: null, note: "paid 900.00 USDC, received 5 NVDAx" },
-    { ts: now - 86_400, termId: termId("NVDAx", "put", 175, near), shares: 10, kind: "auto_exercise", ok: false, signature: null, note: "declined: out of the money by more than the keeper fee" }
-  ];
-}
-
-function fixture(): RosterData {
+function offline(): RosterData {
   const now = Math.floor(Date.now() / 1000);
-  const expiries = nextFridays(now, 2);
-  const session = sessionAt(now);
-  const equityOpen = session === "regular";
-  const terms = fixtureTerms(expiries);
-  const market: Market = {
-    symbol: "NVDAx", name: "Nvidia xStock", mint: null, address: null, decimals: 8, tier: 1, listed: true, paused: false, wrapperTier: "xStock",
-    feeBps: 0, hasTransferFee: false, hasPermanentDelegate: true, pausable: true, mark: FIXTURE_MARK, priceSource: "fixture", replicaOf: null, equityMark: equityOpen ? 182.08 : null,
-    basisBps: equityOpen ? 12 : null, multiplier: 1, pendingActivationTs: null, inActivationWindow: false, vol: 0.35, volSource: "fixture", expiries,
-    liveSeries: terms.length, maxLiveSeries: 12, minLots6: "10000", depthUsdc: terms.reduce((a, t) => a + t.capacity * t.strike, 0), bestAsk: 0.6, logo: null, underlyingSymbol: "NVDA", wrappersOfUnderlying: 1, sparkline: [], changePct: null, issuerMarkPrice: null, markSpreadBps: null, markSparkline: [], trade: null
-  };
+  const built = (process.env.NEXT_PUBLIC_CLUSTER as RosterData["cluster"] | undefined) ?? "fixture";
+  const cluster: RosterData["cluster"] = built in LABEL ? built : "fixture";
   return {
-    cluster: "fixture",
-    clusterLabel: "Fixture",
-    programDeployed: false,
+    cluster,
+    clusterLabel: LABEL[cluster],
+    programDeployed: cluster !== "fixture",
     blocked: "services",
     autoExerciseLive: false,
     nowTs: now,
-    session,
-    markets: [market],
-    underlying: underlyingOf(market),
-    expiries,
-    terms,
+    session: sessionAt(now),
+    markets: [],
+    underlying: { symbol: "", name: "", mint: null, mark: 0, equityMark: null, basisBps: null, multiplier: 1, pendingActivationTs: null, wrapperTier: "" },
+    expiries: [],
+    terms: [],
     ideas: [],
-    underwriters: UNDERWRITERS,
-    positions: fixturePositions(expiries),
-    exercises: fixtureExercises(now, expiries),
+    underwriters: [],
+    positions: [],
+    exercises: [],
     feeBps: 10,
     keeperFeeUsd: 2,
-    source: "Fixture cluster: the services process is not reachable. Premiums, marks, reserves and positions are test fixtures; expiries and the session badge follow the clock. Mint, feed ids and escrow accounts are never invented."
+    source: RECONNECTING
   };
 }
 
@@ -313,15 +246,15 @@ export async function rosterData(selected?: string, fresh = false): Promise<Rost
     try {
       return await fromServices(await services.roster(), selected, fresh);
     } catch (e) {
-      console.warn(`[web] services roster failed, on the fixture cluster: ${(e as Error).message}`);
+      console.warn(`[web] services roster failed; showing the reconnecting state: ${(e as Error).message}`);
     }
   }
-  return fixture();
+  return offline();
 }
 
 /** A wallet's positions across every market, with premium paid and exercised counts from its own events. */
 export async function walletPositions(wallet: string): Promise<{ positions: Position[]; history: Receipt[]; source: string }> {
-  if (!(await servicesReachable())) return { positions: [], history: [], source: "fixture" };
+  if (!(await servicesReachable())) return { positions: [], history: [], source: RECONNECTING };
   const [r, p] = await Promise.all([services.roster(), services.positions(wallet)]);
   const markets = new Map(r.markets.map((m) => [m.market, m]));
   const bought = new Map<string, { premium: number; signature: string | null }>();

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/site-chrome";
 import { SmoothScroll } from "@/components/smooth-scroll";
-import { BrandStrip, Counters, Cta, FirstPrint, Hero, Products, Risk, SaidOutLoud, Tiers, WhatThisIsNot, Workflow } from "@/components/landing/sections";
+import { BrandStrip, Counters, Cta, FirstPrint, Hero, Products, SaidOutLoud, Tiers, WhatThisIsNot, Workflow } from "@/components/landing/sections";
 import { Examples } from "@/components/landing/examples";
 import { Difference } from "@/components/landing/difference";
 import { Weekend } from "@/components/landing/weekend";
@@ -43,7 +43,6 @@ export default async function Landing() {
       <WhatThisIsNot />
       <FirstPrint />
       <SaidOutLoud />
-      <Risk data={d} />
       <Cta />
       <SiteFooter source={d.programDeployed ? undefined : "program not deployed, figures are fixtures"} />
     </div>

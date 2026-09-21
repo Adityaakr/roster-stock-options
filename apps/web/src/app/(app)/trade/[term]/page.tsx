@@ -111,11 +111,28 @@ function ActInner({ id }: { id: string }) {
                 { k: `Premium for ${size}`, v: <span className="mono">{c.fillable ? `$${usdSmart(c.premium)}` : "n/a"}</span> },
                 { k: `Fee, ${data.feeBps} bps`, v: <span className="mono">{c.fillable ? `$${usd(c.fee)}` : "n/a"}</span> },
                 { k: "Total", v: <span className="mono ink" style={{ fontWeight: 500 }} data-testid="total">{c.fillable ? `$${usdSmart(c.total)}` : "n/a"}</span> },
+                { k: "Cost as a share of the mark", v: <span className="mono">{ask === null || u.mark <= 0 ? "n/a" : `${((ask / u.mark) * 100).toFixed(2)}%`}</span> },
                 { k: "Split across", v: c.fillable ? `${c.writers} underwriter${c.writers > 1 ? "s" : ""}` : `${Math.floor(t.capacity)} ${u.symbol} available` },
+                { k: "Fillable on this term", v: <span className="mono">{Math.floor(t.capacity)} {u.symbol}</span> },
                 { k: "Referrer", v: "none" }
               ]} />
             </div>
-            <p className="note" style={{ marginTop: 8 }}>No referrer on this buy: the integrator share of the fee stays with the protocol.</p>
+            <div className="divider" style={{ margin: "16px 0" }} />
+            <div className="small">The contract</div>
+            <div style={{ marginTop: 8 }}>
+              <KV items={[
+                { k: "Strike", v: <span className="mono">${usd(t.strike)}</span> },
+                { k: "Mark now", v: <span className="mono">${usd(u.mark)}</span> },
+                { k: "Break-even", v: <span className="mono">{be === null ? "n/a" : `$${usd(be)}`}</span> },
+                { k: "Move needed", v: <span className={`mono ${mv !== null && mv <= 0 ? "up" : ""}`}>{mv === null ? "n/a" : `${mv >= 0 ? "+" : "−"}${Math.abs(mv).toFixed(1)}%`}</span> },
+                { k: "Expires", v: <span className="mono">{dayLabel(t.expiryTs)} · in {countdown(t.expiryTs, data.nowTs)}</span> },
+                { k: "Exercise", v: "any time until expiry, no oracle" },
+                { k: "Exercising means", v: <span className="mono">{t.side === "call" ? `pay $${usdSmart(t.strike * size)}, receive ${market && market.feeBps > 0 ? (size * (1 - market.feeBps / 10_000)).toFixed(4) : size} ${u.symbol}` : `deliver ${market && market.feeBps > 0 ? (size / (1 - market.feeBps / 10_000)).toFixed(4) : size} ${u.symbol}, receive $${usdSmart(t.strike * size)}`}</span> },
+                ...(market && market.feeBps > 0 ? [{ k: "Mint transfer fee", v: <span className="mono">{(market.feeBps / 100).toFixed(2)}%, the holder&apos;s, priced in</span> }] : []),
+                { k: "Max loss", v: <span className="mono down">{ask === null ? "n/a" : `−$${usdSmart(maxLoss(ask, size, data.feeBps))}`}</span> },
+                { k: "Settles in", v: t.side === "call" ? `${u.symbol}, delivered to your wallet` : "USDC, from the locked collateral" }
+              ]} />
+            </div>
             <div className="divider" style={{ margin: "16px 0" }} />
             <div className="small">Escrow backing this fill</div>
             <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
@@ -141,8 +158,6 @@ function ActInner({ id }: { id: string }) {
             ) : null}
             {publicKey && cluster.programDeployed && !c.fillable ? <div className="msg" style={{ marginTop: 10 }} role="status">Not fillable at {size}. {Math.floor(t.capacity)} {u.symbol} is quoted on this term right now; lower the size or wait for the roster to refresh.</div> : null}
             <TxStatus state={tx.state} onRetry={() => { tx.reset(); reload(true); }} doneHref="/positions" doneLabel="See it under Positions" />
-            <p className="note" style={{ marginTop: 12 }}>Contracts can expire worthless. Maximum loss is the premium plus fees. {t.side === "call" ? "Exercising requires paying the strike in USDC." : "Exercising requires delivering the tokens."} One transaction; the wallet signs, the app submits.</p>
-            {market && market.feeBps > 0 ? <div className="msg" role="status" style={{ marginTop: 10 }} data-testid="fee-note">This mint charges a {(market.feeBps / 100).toFixed(2)}% transfer fee, and it is the holder&apos;s on both sides. {t.side === "call" ? <>On exercise you pay the full strike and receive {size} {u.symbol} less that fee, about {(size * (1 - market.feeBps / 10_000)).toFixed(4)} {u.symbol}.</> : <>On exercise you deliver {size} {u.symbol} plus the fee on top, about {(size / (1 - market.feeBps / 10_000)).toFixed(4)} {u.symbol}, so exactly {size} arrives for the writers, and you receive the full strike.</>} The premium already prices it in.</div> : null}
           </div>
         </div></div>
       </div>

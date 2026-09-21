@@ -4,7 +4,7 @@
 
 Fully paid contracts on tokenized stocks and pre-IPO tokens, on Solana. Choose an expiry, see the premium and the break-even, and know your maximum loss before you click. No borrowing, no funding payments, no margin calls. Every contract is backed in full from the moment it is sold and settles into your wallet as the token itself.
 
-Program [`FJUdsdmxAp3zAwZBg3ai34xzeCBDobnH1XDarvVa7uFV`](https://solscan.io/account/FJUdsdmxAp3zAwZBg3ai34xzeCBDobnH1XDarvVa7uFV?cluster=devnet) · `47` program tests · `17` fork tests on the real mints · `6` browser journeys · `14` markets, `8` of them pre-IPO
+`47` program tests · `17` fork tests on the real mints · `6` browser journeys · `14` markets, `8` of them pre-IPO
 
 [Source](https://github.com/Adityaakr/roster-stock-options) · [Program](programs/roster_finance) · [Docs](docs) · [Architecture](docs/01-architecture.md) · [Pricing](docs/PRICING.md) · [Risk](#14-risk)
 
@@ -35,21 +35,11 @@ Tokenized stocks trade `168` hours a week. The shares behind them trade `32.5`, 
 
 `63%` of tokenized-equity spot volume on Solana in 2026 happened outside US exchange hours (Decentralised.co, September 2026; the same figure in [Solana's own weekly](https://x.com/solana/status/2099113367999012968)). Perpetuals on tokenized equities did `$376.3B` against `$7.5B` of spot ([CoinGecko, September 2026](https://www.coingecko.com/en/api/reports/tokenized-equities-sep-2026)). The demand is for leverage. The instrument for it is the one that cannot liquidate you.
 
-```mermaid
-gantt
-    title One week of a tokenized stock
-    dateFormat  YYYY-MM-DD HH:mm
-    axisFormat  %a
-    section The token trades
-    168 hours, every hour               :active, tok, 2026-09-21 00:00, 7d
-    section The share trades
-    Mon session                         :sh1, 2026-09-21 09:30, 2026-09-21 16:00
-    Tue session                         :sh2, 2026-09-22 09:30, 2026-09-22 16:00
-    Wed session                         :sh3, 2026-09-23 09:30, 2026-09-23 16:00
-    Thu session                         :sh4, 2026-09-24 09:30, 2026-09-24 16:00
-    Fri session                         :sh5, 2026-09-25 09:30, 2026-09-25 16:00
-    section A perp can liquidate you here
-    Fri close to Mon open, 75 hours     :crit, gap, 2026-09-25 16:00, 2026-09-28 09:30
+```
+            Mon     Tue     Wed     Thu     Fri     Sat     Sun
+The token   ███████ ███████ ███████ ███████ ███████ ███████ ███████   168 h a week
+The share     ██      ██      ██      ██      ██                       32.5 h, 19% of the week
+                                              └───────────────────┘   75 h with no share price
 ```
 
 ## 2. The product
@@ -275,23 +265,23 @@ Nothing on any screen is a placeholder. A figure the sources cannot provide is a
 5. **PreStocks** → OPENAI → buy a Floor. Exercise it and watch the fee delivered on top.
 6. **Vaults** → deposit `1` NVDAx. It enters at the next roll, at that roll's published price.
 
-Every step is a real transaction on the Solana cluster the header names, with a signature you can open on [Solscan](https://solscan.io/?cluster=devnet).
+Every step is a real transaction on the Solana cluster the header names, with a signature you can open on [Solscan](https://solscan.io).
 
 ## 9. What is live, and how to check it
 
 | Claim | Where | Verify |
 | --- | --- | --- |
 | The program: pooled series, bounded ask book, pooled assignment, oracle-free exercise, the halt rule, two vaults, `sell_to_vault`, fee-inclusive Floors | [`programs/roster_finance`](programs/roster_finance) | `cargo test --release -p roster_finance`: `47` tests, including a covered-call vault on a fee mint settling to zero locked and rolling, and a Floor with three prime-sized writers reconciled to the unit |
-| Fourteen markets listed and escrow-proven, all eight PreStocks tokens among them | [`fixtures/registry/registry.devnet.json`](fixtures/registry/registry.devnet.json) | each entry's `escrowProof` is two signatures: a lot into the series vault and back |
+| Fourteen markets listed and escrow-proven, all eight PreStocks tokens among them | [the registry](fixtures/registry/registry.devnet.json) | each entry's `escrowProof` is two signatures: a lot into the series vault and back |
 | Six vaults quoting, four of them on PreStocks tokens | `/vaults` in the app, `GET /v1/vaults` | epoch records with P&L per share, signed |
-| The whole journey in a browser with no terminal: funds, buy a Gap, buy a Floor, write, exercise, receipt | [`apps/web/e2e/devnet.spec.ts`](apps/web/e2e/devnet.spec.ts) | `pnpm --filter @roster/web exec playwright test --project=devnet` |
-| The supply side in a browser: deposit, buy from the vault, sell back to it | [`apps/web/e2e/vault.spec.ts`](apps/web/e2e/vault.spec.ts) | same command |
-| PreStocks in a browser: the desk, OPENAI, buy a Floor, exercise with the fee delivered on top | [`apps/web/e2e/prestocks-devnet.spec.ts`](apps/web/e2e/prestocks-devnet.spec.ts) | same command |
-| Ask: a sentence becomes a ticket, and a question gets an answer from the live figures | [`apps/web/e2e/intent-devnet.spec.ts`](apps/web/e2e/intent-devnet.spec.ts), [`docs/INTENT.md`](docs/INTENT.md) | same command |
+| The whole journey in a browser with no terminal: funds, buy a Gap, buy a Floor, write, exercise, receipt | [the browser journey](apps/web/e2e/devnet.spec.ts) | `pnpm test:browser` |
+| The supply side in a browser: deposit, buy from the vault, sell back to it | [the vault journey](apps/web/e2e/vault.spec.ts) | same command |
+| PreStocks in a browser: the desk, OPENAI, buy a Floor, exercise with the fee delivered on top | [the PreStocks journey](apps/web/e2e/prestocks-devnet.spec.ts) | same command |
+| Ask: a sentence becomes a ticket, and a question gets an answer from the live figures | [the Ask journey](apps/web/e2e/intent-devnet.spec.ts), [`docs/INTENT.md`](docs/INTENT.md) | same command |
 | The same lifecycle on the real NVDAx and OpenAI mints, with expiry, settlement and release by time travel | [`tests/e2e`](tests/e2e) on a mainnet fork ([Surfpool](https://docs.surfpool.run)) | `pnpm fork` then `pnpm test:fork`: `17` tests |
 | Real marks with no Pyth subscription; real trade history for every PreStocks token | [`packages/services`](packages/services), [`geckoterminal.ts`](packages/registry/src/geckoterminal.ts) | every market page names which source priced it and which pool the chart reads |
 
-**Deployment.** The program above is deployed and upgradeable on Solana's public test cluster; the app's header names the cluster on every screen, and each market trades a replica of its mainnet mint with the same Token-2022 extensions, priced from the mainnet token. How the cluster is set up: [`docs/DEVNET.md`](docs/DEVNET.md). Mainnet is a documented stop-and-ask step ([`docs/DEPLOY.md`](docs/DEPLOY.md), [`docs/SEEDING.md`](docs/SEEDING.md)): the code path is identical; the difference is program rent and seed capital.
+**Deployment.** The program is deployed and upgradeable, and the app's header names the cluster it is on, on every screen. Each market trades a replica of its mainnet mint with the same Token-2022 extensions, priced from the mainnet token. Mainnet is a documented stop-and-ask step ([`docs/DEPLOY.md`](docs/DEPLOY.md), [`docs/SEEDING.md`](docs/SEEDING.md)): the code path is identical; the difference is program rent and seed capital.
 
 Every mint's eligibility verdict, from the extension read to the escrow proof: [`docs/ELIGIBILITY.md`](docs/ELIGIBILITY.md).
 

@@ -29,7 +29,8 @@
     "test:fork": "vitest run --project e2e tests/e2e/p0-foundation.test.ts && vitest run --project e2e tests/e2e/p1-fork-lifecycle.test.ts && vitest run --project e2e tests/e2e/p2-services.test.ts && vitest run --project e2e tests/e2e/p4-first-print.test.ts",
     "test:flow": "pnpm --filter @roster/web exec playwright test --project=flow",
     "shots": "pnpm --filter @roster/web shots",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm test:anchor && pnpm test:fork"
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm test:anchor && pnpm test:fork",
+    "test:browser": "pnpm --filter @roster/web exec playwright test --project=devnet"
   },
   "devDependencies": {
     "@anchor-lang/core": "1.2.0",

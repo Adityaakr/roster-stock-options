@@ -1,12 +1,19 @@
-# Roster Finance
+<h1 align="center">Roster Finance</h1>
 
-**Stock leverage without margin liquidation.**
+<p align="center"><strong>Stock leverage without margin liquidation.</strong></p>
+
+<p align="center">
+  <a href="https://github.com/Adityaakr/roster-stock-options">Source</a> ·
+  <a href="programs/roster_finance">Program</a> ·
+  <a href="docs">Docs</a> ·
+  <a href="docs/01-architecture.md">Architecture</a> ·
+  <a href="docs/PRICING.md">Pricing</a> ·
+  <a href="#14-risk">Risk</a>
+</p>
+
+<p align="center"><code>47</code> program tests · <code>17</code> fork tests on the real mints · <code>6</code> browser journeys · <code>14</code> markets, <code>8</code> of them pre-IPO</p>
 
 Fully paid contracts on tokenized stocks and pre-IPO tokens, on Solana. Choose an expiry, see the premium and the break-even, and know your maximum loss before you click. No borrowing, no funding payments, no margin calls. Every contract is backed in full from the moment it is sold and settles into your wallet as the token itself.
-
-`47` program tests · `17` fork tests on the real mints · `6` browser journeys · `14` markets, `8` of them pre-IPO
-
-[Source](https://github.com/Adityaakr/roster-stock-options) · [Program](programs/roster_finance) · [Docs](docs) · [Architecture](docs/01-architecture.md) · [Pricing](docs/PRICING.md) · [Risk](#14-risk)
 
 ---
 

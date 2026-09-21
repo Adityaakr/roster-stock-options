@@ -85,14 +85,69 @@ const TOOL = {
 async function chat(body: Record<string, unknown>, timeoutMs = 15_000): Promise<Record<string, unknown>> {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) throw new Error("OPENROUTER_API_KEY is not set");
-  const res = await fetch(OPENROUTER, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${key}`, "HTTP-Referer": "https://roster.finance", "X-Title": "Roster Finance" },
-    body: JSON.stringify({ model: MODEL, temperature: 0, ...body }),
-    signal: AbortSignal.timeout(timeoutMs)
-  });
-  if (!res.ok) throw new Error(`openrouter: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
-  return (await res.json()) as Record<string, unknown>;
+  // One slow or refused answer is retried once with more patience; a second failure is reported as it is.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(OPENROUTER, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${key}`, "HTTP-Referer": "https://roster.finance", "X-Title": "Roster Finance" },
+        body: JSON.stringify({ model: MODEL, temperature: 0, ...body }),
+        signal: AbortSignal.timeout(attempt === 0 ? timeoutMs : timeoutMs * 2)
+      });
+      if (res.status >= 500 || res.status === 429) throw new Error(`openrouter: HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`openrouter: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
+      return (await res.json()) as Record<string, unknown>;
+    } catch (e) {
+      const msg = (e as Error).message ?? "";
+      const transient = /timeout|aborted|HTTP 5\d\d|HTTP 429|fetch failed/i.test(msg);
+      if (attempt === 0 && transient) continue;
+      throw e;
+    }
+  }
+}
+
+/** Common names for listed underlyings the model or a person may use, beside the symbol and the market's own name. */
+const ALIASES: Record<string, string[]> = {
+  NVDAx: ["nvidia", "nvda"], TSLAx: ["tesla", "tsla"], SPYx: ["spy", "sp500", "s&p", "s&p 500", "s and p", "the index"], AAPLx: ["apple", "aapl"],
+  MSFTx: ["microsoft", "msft"], GOOGLx: ["google", "alphabet", "googl", "goog"], AMZNx: ["amazon", "amzn"], METAx: ["meta", "facebook"],
+  OPENAI: ["openai", "open ai", "chatgpt"], SPACEX: ["spacex", "space x"], ANTHROPIC: ["anthropic", "claude"], ANDURIL: ["anduril"],
+  NEURALINK: ["neuralink"], KALSHI: ["kalshi"], POLYMARKET: ["polymarket"], FIGUREAI: ["figure ai", "figure", "figureai"]
+};
+
+/**
+ * A listed market from a name: the symbol, the underlying's ticker, the market's name or a common alias, in that
+ * order; case does not matter and a trailing "x" or "xstock" is tolerated. With `scan`, the whole sentence is
+ * searched for any of those, longest alias first, so "Nvidia" inside "$200 of Nvidia upside" still resolves.
+ */
+export function matchMarket(name: string, markets: { symbol: string; name: string; underlyingSymbol: string | null }[], scan = false): string | null {
+  const norm = (v: string) => v.toLowerCase().replace(/[^a-z0-9&$ ]+/g, " ").replace(/\s+/g, " ").trim();
+  const q = norm(name);
+  if (!q) return null;
+  const bare = q.replace(/\s*x(stock)?$/, "");
+  for (const m of markets) {
+    const sym = m.symbol.toLowerCase();
+    const under = (m.underlyingSymbol ?? "").toLowerCase();
+    const mname = norm(m.name);
+    const first = mname.replace(/\s+(xstock|prestocks)$/, "");
+    if (q === sym || bare === sym.replace(/x$/, "") || (under && (q === under || bare === under)) || q === mname || q === first) return m.symbol;
+  }
+  const aliasesOf = (m: { symbol: string }) => ALIASES[m.symbol] ?? [];
+  if (!scan) {
+    for (const m of markets) if (aliasesOf(m).some((a) => a === q || a === bare)) return m.symbol;
+    return null;
+  }
+  // Scan: every candidate string that names a market, longest first so "figure ai" beats "figure" and "space x" beats "spy".
+  const candidates: { key: string; symbol: string }[] = [];
+  for (const m of markets) {
+    candidates.push({ key: m.symbol.toLowerCase(), symbol: m.symbol });
+    if (m.underlyingSymbol) candidates.push({ key: m.underlyingSymbol.toLowerCase(), symbol: m.symbol });
+    candidates.push({ key: norm(m.name).replace(/\s+(xstock|prestocks)$/, ""), symbol: m.symbol });
+    for (const a of aliasesOf(m)) candidates.push({ key: a, symbol: m.symbol });
+  }
+  candidates.sort((a, b) => b.key.length - a.key.length);
+  const padded = ` ${q} `;
+  for (const c of candidates) if (c.key.length >= 3 && padded.includes(` ${c.key} `)) return c.symbol;
+  return null;
 }
 
 /** Step 1: the sentence to a structured intent. */
@@ -107,7 +162,9 @@ export async function parseIntent(text: string, markets: { symbol: string; name:
   try { parsed = JSON.parse(args); } catch { throw new Error(`the model returned malformed arguments: ${args.slice(0, 240)}`); }
   const j = parsed as { action: IntentAction; market: string | null; size_shares: number | null; budget_usdc: number | null; notional_usdc: number | null; horizon: string; horizon_days: number | null; horizon_date: string | null; strike: Intent["strike"]; strike_pct_from_mark: number | null; note: string };
   const horizon: Intent["horizon"] = j.horizon === "days" && j.horizon_days ? { kind: "days", days: Math.max(0, j.horizon_days) } : j.horizon === "date" && j.horizon_date && /^\d{4}-\d{2}-\d{2}$/.test(j.horizon_date) ? { kind: "date", iso: j.horizon_date } : j.horizon === "furthest" ? { kind: "furthest" } : { kind: "nearest" };
-  const symbol = j.market ? markets.find((m) => m.symbol.toLowerCase() === String(j.market).toLowerCase())?.symbol ?? null : null;
+  // The model is told to answer with a symbol, but "Nvidia", "NVDA", "nvidia xstock" and "Space X" all arrive in
+  // practice; and when it gives nothing, the sentence itself is scanned for a listed name before giving up.
+  const symbol = (j.market ? matchMarket(String(j.market), markets) : null) ?? matchMarket(text, markets, true);
   return { action: j.action, market: symbol, sizeShares: j.size_shares && j.size_shares > 0 ? j.size_shares : null, budgetUsdc: j.budget_usdc && j.budget_usdc > 0 ? j.budget_usdc : null, notionalUsdc: j.notional_usdc && j.notional_usdc > 0 ? j.notional_usdc : null, horizon, strike: j.strike ?? null, strikePct: typeof j.strike_pct_from_mark === "number" && Number.isFinite(j.strike_pct_from_mark) ? j.strike_pct_from_mark : null, note: String(j.note ?? "") };
 }
 

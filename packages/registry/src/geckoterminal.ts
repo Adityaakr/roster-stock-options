@@ -1,6 +1,6 @@
 /*
  * Real trade history for a token that has no Pyth feed: GeckoTerminal's public API (no key, about 30 calls a minute)
- * serves OHLCV per pool. For a PreStocks token the deepest USDC pool is the reference: its closes give the chart,
+ * serves OHLCV per pool. For a PreStocks token the most-traded USDC pool is the reference: its closes give the chart,
  * the day and week changes, the sparkline and, in the services, the realised volatility the quoter prices from.
  * Verified 2026-09-21 on `PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S` (NEURALINK / USDC, 51 daily candles).
  * Everything here is cached in memory so the desk never spends the rate limit twice on the same answer.
@@ -22,7 +22,11 @@ async function get<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** The deepest pool quoted in USDC (or USDT, or SOL as a last resort) for a mint on Solana; null when none is listed. */
+/**
+ * The reference pool for a mint on Solana: quoted in USDC (or USDT, or SOL as a last resort), the one with the most
+ * volume in the last day. Volume, not liquidity: a deep pool nobody trades in carries a stale price, and the point
+ * of the history is where the price is actually discovered.
+ */
 export async function referencePool(mint: string): Promise<Pool | null> {
   const hit = poolCache.get(mint);
   if (hit && Date.now() - hit.at < POOL_TTL) return hit.pool;
@@ -34,7 +38,10 @@ export async function referencePool(mint: string): Promise<Pool | null> {
     return { address: a.address ?? p.id.replace(/^solana_/, ""), name: a.name ?? "", quote, baseIsMint, liquidityUsd: num(a.reserve_in_usd), volume24hUsd: num(a.volume_usd?.h24), priceUsd: num(a.base_token_price_usd) };
   }).filter((r) => r.baseIsMint);
   const rank = (q: string) => (q === "USDC" ? 0 : q === "USDT" ? 1 : q === "SOL" ? 2 : 9);
-  rows.sort((a, b) => rank(a.quote) - rank(b.quote) || (b.liquidityUsd ?? 0) - (a.liquidityUsd ?? 0));
+  // Volume first, with a tenth of the liquidity added so a deep AMM pool that trades outranks a book venue that
+  // reports no reserve, and a deep pool nobody trades in never wins (NEURALINK, 2026-09-21: seven USDC pools).
+  const score = (r: { volume24hUsd: number | null; liquidityUsd: number | null }) => (r.volume24hUsd ?? 0) + (r.liquidityUsd ?? 0) / 10;
+  rows.sort((a, b) => rank(a.quote) - rank(b.quote) || score(b) - score(a));
   const best = rows[0];
   const pool: Pool | null = best && rank(best.quote) < 9 ? { address: best.address, name: best.name, liquidityUsd: best.liquidityUsd, volume24hUsd: best.volume24hUsd, priceUsd: best.priceUsd } : null;
   poolCache.set(mint, { at: Date.now(), pool });

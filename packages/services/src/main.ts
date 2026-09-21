@@ -136,8 +136,9 @@ async function main() {
       const h = await tokenHistory(next.mint);
       if (h && h.pool) {
         history.set(next.mint, { pool: h.pool, daily: h.daily, hourly: h.hourly, at: Date.now() });
-        for (const c of h.daily) store.recordPrice({ feed_id: `gt_day:${next.mint}`, price: c[4], conf: 0, publish_time: c[0] });
-        for (const c of h.hourly) store.recordPrice({ feed_id: `gt_hour:${next.mint}`, price: c[4], conf: 0, publish_time: c[0] });
+        // Keyed by pool, so a change of reference pool never mixes two series under one mint.
+        for (const c of h.daily) store.recordPrice({ feed_id: `gt_day:${h.pool.address}`, price: c[4], conf: 0, publish_time: c[0] });
+        for (const c of h.hourly) store.recordPrice({ feed_id: `gt_hour:${h.pool.address}`, price: c[4], conf: 0, publish_time: c[0] });
         volCache.delete(next.symbol);
         console.log(`[history] ${next.symbol} ${h.pool.name}: ${h.daily.length} days, ${h.hourly.length} hours, liquidity $${Math.round(h.pool.liquidityUsd ?? 0)}`);
       } else {
@@ -152,9 +153,10 @@ async function main() {
       history.set(next.mint, h ? { ...h, at: Date.now() - 8 * 60_000 } : { pool: { address: "", name: "", liquidityUsd: null, volume24hUsd: null, priceUsd: null }, daily: [], hourly: [], at: Date.now() - 8 * 60_000 });
     }
   }
-  /** Daily closes for a PreStocks token, from the store (survives restarts) with the live refresh on top. */
+  /** Daily closes for a PreStocks token from its current reference pool; empty until the pool has been read this run. */
   function dailyCloses(mainnetMint: string): { publish_time: number; price: number }[] {
-    return store.priceHistory(`gt_day:${mainnetMint}`, Math.floor(Date.now() / 1000) - 400 * 86_400);
+    const pool = history.get(mainnetMint)?.pool.address;
+    return pool ? store.priceHistory(`gt_day:${pool}`, Math.floor(Date.now() / 1000) - 400 * 86_400) : [];
   }
 
   // A pre-IPO token has no Benchmarks symbol: its vol is measured from the real daily closes of its reference pool
@@ -391,8 +393,8 @@ async function main() {
         return json(200, {
           mint: mainnetMint,
           pool: h?.pool.address ? { name: h.pool.name, address: h.pool.address, liquidityUsd: h.pool.liquidityUsd, volume24hUsd: h.pool.volume24hUsd } : null,
-          daily: store.priceHistory(`gt_day:${mainnetMint}`, since).map((p) => [p.publish_time, p.price]),
-          hourly: store.priceHistory(`gt_hour:${mainnetMint}`, since).map((p) => [p.publish_time, p.price]),
+          daily: h?.pool.address ? store.priceHistory(`gt_day:${h.pool.address}`, since).map((p) => [p.publish_time, p.price]) : [],
+          hourly: h?.pool.address ? store.priceHistory(`gt_hour:${h.pool.address}`, since).map((p) => [p.publish_time, p.price]) : [],
           change24hPct: h ? changePct(h.hourly, 86_400) : null, change7dPct: h ? changePct(h.daily, 7 * 86_400) : null, change30dPct: h ? changePct(h.daily, 30 * 86_400) : null,
           refreshedAt: h ? Math.floor(h.at / 1000) : null
         });
@@ -411,8 +413,8 @@ async function main() {
           equity: /^0+$/.test(equity) ? [] : store.priceHistory(equity, since).map((p) => [p.publish_time, p.price]),
           issuerMark: store.priceHistory(`issuer_mark:${mintKey}`, since).map((p) => [p.publish_time, p.price]),
           // Real trade history of the mainnet token behind this market, when it has a reference pool.
-          tradeDaily: m?.replicaOf || m ? store.priceHistory(`gt_day:${m?.replicaOf ?? mintKey}`, since).map((p) => [p.publish_time, p.price]) : [],
-          tradeHourly: m?.replicaOf || m ? store.priceHistory(`gt_hour:${m?.replicaOf ?? mintKey}`, since).map((p) => [p.publish_time, p.price]) : [],
+          tradeDaily: (() => { const pool = m ? history.get(m.replicaOf ?? mintKey)?.pool.address : undefined; return pool ? store.priceHistory(`gt_day:${pool}`, since).map((p) => [p.publish_time, p.price]) : []; })(),
+          tradeHourly: (() => { const pool = m ? history.get(m.replicaOf ?? mintKey)?.pool.address : undefined; return pool ? store.priceHistory(`gt_hour:${pool}`, since).map((p) => [p.publish_time, p.price]) : []; })(),
           basis: store.basisHistory(mintKey, since)
         });
       }

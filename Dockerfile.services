@@ -11,6 +11,6 @@ COPY tsconfig.base.json tsconfig.json ./
 RUN pnpm install --frozen-lockfile --ignore-scripts
 # The indexer's store is a file; a host that restarts with an empty disk rebuilds it from the chain's own events.
 ENV INDEXER_DB=/data/indexer.sqlite
-VOLUME /data
+# The store lives on a volume the host mounts at /data (Railway: Volumes, mount path /data).
 EXPOSE 8787
 CMD ["pnpm", "tsx", "packages/services/src/main.ts"]

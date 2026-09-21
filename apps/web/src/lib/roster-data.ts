@@ -93,7 +93,13 @@ function liveMarket(m: ServicesMarket, nowTs: number, terms: Term[]): Market {
     inActivationWindow: m.inActivationWindow,
     vol: m.vol,
     volSource: m.volSource,
-    expiries: m.allowedExpiries.map(Number).filter((e) => e > nowTs).sort((a, b) => a - b),
+    // The expiries with something on them: a resident ask or open contracts. The grid the market allows can run ahead
+    // of what is quoted after a roll, and a first screen that opens on an allowed expiry with nothing at it, while the
+    // quoted one sits behind a tab, reads as an empty venue. The allowed grid is shown only when nothing is quoted yet.
+    expiries: (() => {
+      const quoted = [...new Set(live.filter((t) => t.ask > 0 || t.openInterest > 0).map((t) => t.expiryTs))].filter((e) => e > nowTs).sort((a, b) => a - b);
+      return quoted.length ? quoted : m.allowedExpiries.map(Number).filter((e) => e > nowTs).sort((a, b) => a - b);
+    })(),
     liveSeries: m.liveSeries,
     maxLiveSeries: m.maxLiveSeries,
     minLots6: m.minLots6,

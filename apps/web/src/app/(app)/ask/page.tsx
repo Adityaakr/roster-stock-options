@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@/components/icons";
+
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
@@ -90,7 +92,7 @@ export default function AskPage() {
       <form className={`ask-composer ${busy ? "busy" : ""}`} onSubmit={(e) => { e.preventDefault(); void ask(text); }} data-testid="intent">
         {busy && !reduce ? <motion.i className="mark" aria-hidden animate={{ scale: [1, 0.82, 1], rotate: [0, 90, 90, 180, 180] }} transition={{ duration: 1.6, repeat: Infinity, ease: [0.2, 0, 0, 1], times: [0, 0.5, 0.55, 1, 1] }} /> : <i className="mark" aria-hidden />}
         <input ref={inputRef} className="ask-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="protect my 20 NVDAx through earnings" aria-label="What do you want to do" maxLength={300} autoFocus data-testid="intent-text" />
-        <button className="ask-go" type="submit" disabled={busy || !text.trim() || enabled === null} aria-label="Show me the ticket" data-testid="intent-go"><span aria-hidden>↵</span><span className="lbl">{busy ? "Working" : "Show the ticket"}</span></button>
+        <button className="ask-go" type="submit" disabled={busy || !text.trim() || enabled === null} aria-label="Show me the ticket" data-testid="intent-go"><Icon.Enter aria-hidden /><span className="ask-go-lbl">{busy ? "Working" : "Show the ticket"}</span></button>
       </form>
       <Thinking stage={stage} phrased={phrased} />
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Suspense, type ReactNode } from "react";
+import { Suspense, useSyncExternalStore, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Icon } from "@/components/icons";
 import { WalletMenu } from "@/components/wallet-menu";
@@ -48,6 +48,20 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
+const SIDEBAR_KEY = "roster.sidebar";
+const sidebarListeners = new Set<() => void>();
+function readSidebar(): boolean {
+  try { return localStorage.getItem(SIDEBAR_KEY) === "folded"; } catch { return false; }
+}
+function writeSidebar(folded: boolean): void {
+  try { localStorage.setItem(SIDEBAR_KEY, folded ? "folded" : "open"); } catch { /* storage may be unavailable */ }
+  for (const l of sidebarListeners) l();
+}
+function subscribeSidebar(l: () => void): () => void {
+  sidebarListeners.add(l);
+  return () => { sidebarListeners.delete(l); };
+}
+
 function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const cluster = useCluster();
@@ -55,10 +69,14 @@ function Shell({ children }: { children: ReactNode }) {
   const withMarket = (href: string) => (market && ["/underwrite", "/roster", "/buy"].includes(href) ? `${href}?m=${encodeURIComponent(market)}` : href);
   const first = pathname.split("/")[1] ?? "";
   const reduce = useReducedMotion();
+  // A folded sidebar shows the marks only; the choice is kept per browser. Read through an external store so the
+  // server renders it open and the client takes the saved state without a state change inside an effect.
+  const collapsed = useSyncExternalStore(subscribeSidebar, readSidebar, () => false);
+  const toggle = () => writeSidebar(!collapsed);
   return (
-    <div className="shell">
+    <div className={`shell ${collapsed ? "collapsed" : ""}`}>
       <aside className="sidebar">
-        <Link href="/" className="wordmark"><i />Roster Finance</Link>
+        <Link href="/" className="wordmark" title="Roster Finance"><i /><span>Roster Finance</span></Link>
         <nav aria-label="App">
           {NAV.map((g) => (
             <div key={g.group} className="contents">
@@ -66,10 +84,10 @@ function Shell({ children }: { children: ReactNode }) {
               {g.items.map((it) => {
                 const soon = "soonOn" in it && (it.soonOn as string[]).includes(cluster.cluster);
                 return (
-                  <Link key={it.href} href={withMarket(it.href)} aria-current={it.match(pathname) ? "page" : undefined} className={soon ? "soon" : undefined}>
+                  <Link key={it.href} href={withMarket(it.href)} aria-current={it.match(pathname) ? "page" : undefined} className={soon ? "soon" : undefined} title={collapsed ? it.label : undefined}>
                     {it.match(pathname) ? <motion.i className="pill" layoutId="nav-pill" aria-hidden transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 38, mass: 0.6 }} /> : null}
                     <it.icon />
-                    {it.label}
+                    <span className="nav-lbl">{it.label}</span>
                     {soon ? <span className="soon-tag">soon</span> : null}
                   </Link>
                 );
@@ -77,11 +95,10 @@ function Shell({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
-        {!cluster.programDeployed ? (
-          <div className="foot mt-auto small" style={{ padding: "0 10px" }}>
-            <p style={{ margin: 0 }}>Program not deployed on this cluster. Premiums, reserves and positions are fixtures; expiries follow the clock.</p>
-          </div>
-        ) : null}
+        <button type="button" className="sb-toggle" onClick={toggle} aria-label={collapsed ? "Expand the sidebar" : "Collapse the sidebar"} aria-expanded={!collapsed} title={collapsed ? "Expand" : "Collapse"}>
+          <Icon.Sidebar />
+          <span>Collapse</span>
+        </button>
       </aside>
       <div className="min-w-0">
         <header className="topbar">

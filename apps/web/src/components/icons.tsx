@@ -23,5 +23,7 @@ export const Icon = {
   Arrow: (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
   External: (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" /></svg>,
   Lock: (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>,
+  Enter: (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><path d="M20 5v6a3 3 0 0 1-3 3H5" /><path d="m9 10-4 4 4 4" /></svg>,
+  Sidebar: (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg>,
   Building: (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><path d="M3 21h18M5 21V5l7-2 7 2v16" /><path d="M9 9h2M13 9h2M9 13h2M13 13h2M9 17h2M13 17h2" /></svg>
 };

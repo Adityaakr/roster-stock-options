@@ -74,7 +74,7 @@ function ActInner({ id }: { id: string }) {
             <Badge dot tone={t.halted ? "amber" : c.fillable ? "green" : "amber"}>{t.halted ? "halted" : c.fillable ? "executable" : "not fillable at this size"}</Badge>
             <Badge>{u.wrapperTier}</Badge>
           </div>
-          <p className="body-sm">{t.side === "call" ? `The right to buy ${u.symbol} at $${usdK(t.strike)} per share, any time until expiry.` : `The right to sell ${u.symbol} at $${usdK(t.strike)} per share, any time until expiry.`} Expires in {countdown(t.expiryTs, data.nowTs)}. {Math.floor(t.capacity)} {u.symbol} fillable now across {live.length} underwriter{live.length === 1 ? "" : "s"}.</p>
+          <p className="body-sm">{t.side === "call" ? `The right to buy ${u.symbol} at $${usdK(t.strike)} per share, any time until expiry.` : `The right to sell ${u.symbol} at $${usdK(t.strike)} per share, any time until expiry.`} Expires in {countdown(t.expiryTs, data.nowTs)}. {Math.floor(t.capacity)} {u.symbol} fillable now from {live.length} maker{live.length === 1 ? "" : "s"}.</p>
         </div>
       </div>
 
@@ -112,7 +112,7 @@ function ActInner({ id }: { id: string }) {
                 { k: `Fee, ${data.feeBps} bps`, v: <span className="mono">{c.fillable ? `$${usd(c.fee)}` : "n/a"}</span> },
                 { k: "Total", v: <span className="mono ink" style={{ fontWeight: 500 }} data-testid="total">{c.fillable ? `$${usdSmart(c.total)}` : "n/a"}</span> },
                 { k: "Cost as a share of the mark", v: <span className="mono">{ask === null || u.mark <= 0 ? "n/a" : `${((ask / u.mark) * 100).toFixed(2)}%`}</span> },
-                { k: "Split across", v: c.fillable ? `${c.writers} underwriter${c.writers > 1 ? "s" : ""}` : `${Math.floor(t.capacity)} ${u.symbol} available` },
+                { k: "Backed by", v: c.fillable ? `${c.writers} maker${c.writers > 1 ? "s" : ""}, collateral locked` : `${Math.floor(t.capacity)} ${u.symbol} available` },
                 { k: "Fillable on this term", v: <span className="mono">{Math.floor(t.capacity)} {u.symbol}</span> },
                 { k: "Referrer", v: "none" }
               ]} />
@@ -141,7 +141,7 @@ function ActInner({ id }: { id: string }) {
                   <div className="flex items-center justify-between gap-3 small"><span>Collateral vault</span><Address value={t.escrow.collateralVault} href={explorerUrl(cluster, "address", t.escrow.collateralVault)} /></div>
                   <div className="flex items-center justify-between gap-3 small"><span>Settlement vault</span><Address value={t.escrow.settlementVault} href={explorerUrl(cluster, "address", t.escrow.settlementVault)} /></div>
                   <div className="flex items-center justify-between gap-3 small"><span>Series</span><Address value={t.series ?? ""} href={t.series ? explorerUrl(cluster, "address", t.series) : null} /></div>
-                  {live.map((w) => <div key={w.account} className="flex items-center justify-between gap-3 small"><span>Underwriter · {w.askLots} lots quoted</span><Address value={w.account} href={explorerUrl(cluster, "address", w.account)} /></div>)}
+                  {live.map((w) => <div key={w.account} className="flex items-center justify-between gap-3 small"><span>Maker · {w.askLots} lots quoted</span><Address value={w.account} href={explorerUrl(cluster, "address", w.account)} /></div>)}
                 </>
               ) : <div className="small muted">Accounts appear once the program is deployed; none are invented.</div>}
             </div>

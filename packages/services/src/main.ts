@@ -103,6 +103,22 @@ async function main() {
   for (const client of [reader, quoterClient, keeperClient]) {
     client.seriesIndex = (market) => store.knownSeries(market.toBase58()).map((a) => new PublicKey(a));
   }
+  // A fresh store knows no series until the events backfill reaches each SeriesCreated, which behind a rate-limited
+  // RPC can take an hour. The public cluster RPC still serves a filtered scan, so a store that has not finished its
+  // backfill seeds each market's index from one scan there, and the app has quotes from the first tick. SCAN_RPC_URL
+  // overrides it; on a fork it is the fork itself.
+  const scanRpc = process.env.SCAN_RPC_URL ?? (isFork ? RPC : cluster === "devnet" ? "https://api.devnet.solana.com" : null);
+  async function seedSeriesIndex(market: PublicKey): Promise<void> {
+    if (!scanRpc || store.getKv("backfill_done") || store.knownSeries(market.toBase58()).length > 0) return;
+    try {
+      const disc = reader.program.coder.accounts.memcmp("series") as { offset: number; bytes: string };
+      const found = await new Connection(scanRpc, "confirmed").getProgramAccounts(ROSTER_PROGRAM_ID, { dataSlice: { offset: 0, length: 0 }, filters: [{ memcmp: disc }, { memcmp: { offset: 8, bytes: market.toBase58() } }] });
+      for (const a of found) store.rememberSeries(a.pubkey.toBase58(), market.toBase58());
+      if (found.length) console.log(`[indexer] seeded ${found.length} series for ${market.toBase58().slice(0, 8)} from a scan; events backfill continues`);
+    } catch (e) {
+      console.warn(`[indexer] series scan: ${(e as Error).message}`);
+    }
+  }
   // QUOTER_LOTS_PER_SERIES caps the treasury's ask per series (docs/SEEDING.md sets it for the first mainnet week).
   const quoter = new Quoter(quoterClient, { ...DEFAULT_QUOTER, lotsPerSeries: BigInt(Math.round(Number(process.env.QUOTER_LOTS_PER_SERIES ?? 50) * 1e6)) });
   // The expiry calendar. Mainnet expires on Fridays at 16:00 New York. Devnet runs a compressed calendar, an expiry
@@ -229,6 +245,7 @@ async function main() {
     await mapLimit(launch, MARKET_CONCURRENCY, async (l) => {
       const market = await reader.fetchMarket(l.mint);
       if (!market) return;
+      await seedSeriesIndex(market.address);
       const feedId = Buffer.from(market.tokenFeedId).toString("hex");
       const equityFeed = Buffer.from(market.equityFeedId).toString("hex");
       // The multiplier is read first: a routed price is per token, and the display strike divides by it.
@@ -466,9 +483,12 @@ async function main() {
   server.listen(PORT, BIND, () => console.log(`[services] http://${BIND}:${PORT}`));
 
   // Events first: the series index is built from them, and a tick that runs before the first pull would see a market
-  // with no series and try to create the ones that already exist.
-  await pullEvents();
-  await tick();
+  // with no series and try to create the ones that already exist. A store still filling its history does not wait:
+  // its first tick seeds the index from a scan, and the pull keeps going behind it.
+  if (store.getKv("backfill_done")) await pullEvents(); else void pullEvents();
+  // A rate-limited RPC can refuse a read in the first pass; the next tick retries, and a crash here would only restart
+  // the process into the same first pass.
+  await tick().catch((e) => console.error(`[services] first tick failed: ${(e as Error).message}`));
   if (flag("--once")) {
     server.close();
     return;

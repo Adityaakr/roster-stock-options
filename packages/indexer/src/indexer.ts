@@ -74,9 +74,19 @@ function plain(v: unknown): unknown {
 
 /** Transaction reads in flight during one pull: enough to keep up with a crank fleet, few enough to leave the RPC alone. */
 const TX_FETCH_CONCURRENCY = 8;
+/** Pages listed from the head per pull, and pages of older history read per pull while a fresh store catches up. */
+const HEAD_PAGES_PER_PULL = 3;
+const BACKFILL_PAGES_PER_PULL = 2;
+const BACKFILL_PAGE = 200;
+const BACKFILL_FETCH_CONCURRENCY = 2;
+const BACKFILL_BACKOFF_MS = 20_000;
+const BACKFILL_BEFORE = "backfill_before";
+const BACKFILL_DONE = "backfill_done";
 
 export class Indexer {
   private parser: InstanceType<typeof anchor.EventParser>;
+  /** After a page the RPC refused part of, the backfill waits this long before asking again, so it never starves the tick. */
+  private backfillNotBefore = 0;
   constructor(private readonly connection: Connection, private readonly client: RosterClient, private readonly store: Store, private readonly meta: Map<string, MarketMeta>) {
     this.parser = new anchor.EventParser(client.programId, client.program.coder);
   }
@@ -125,15 +135,23 @@ export class Indexer {
     return info ? Number(info.data.readBigInt64LE(32)) : Math.floor(Date.now() / 1000);
   }
 
-  /** Pull the program signatures not yet read and store their events. Returns how many events were new. */
+  /**
+   * Pull the program signatures not yet read and store their events. Returns how many events were new.
+   *
+   * Two passes. The head pass lists newest first and stops at the first page with nothing new, which in steady state
+   * is one page and no transaction fetches. The backfill pass continues from a cursor kept in the store, so a fresh
+   * host with ten thousand signatures behind it catches up a page per pull and keeps what each page taught it: every
+   * page is written before the next is listed, and a transaction the RPC refuses is left unread for the next pull
+   * instead of failing the whole pull. No `until` cursor: surfpool answers it with an internal error, and after a
+   * time travel the fork can list a newer transaction under a lower slot than an older one; dedupe by signature.
+   */
   async pullEvents(limit = 1000): Promise<number> {
-    // Newest first, paging back until a whole page is already known. No `until` cursor: surfpool answers it with an
-    // internal error, and after a time travel the fork can list a newer transaction under a lower slot than an
-    // older one, so "everything above the last signature" would skip it. Dedupe by signature instead; in steady
-    // state this is one page and no transaction fetches.
-    const sigs: ConfirmedSignatureInfo[] = [];
+    // While history is still being filled, small pages: each one is written before the next is listed, so a
+    // rate-limited RPC still shows progress every few seconds instead of one huge page that never completes.
+    if (!this.store.getKv(BACKFILL_DONE)) limit = Math.min(limit, BACKFILL_PAGE);
+    let added = 0;
     let before: string | undefined;
-    for (let pages = 0; pages < 10; pages++) {
+    for (let pages = 0; pages < HEAD_PAGES_PER_PULL; pages++) {
       let page: ConfirmedSignatureInfo[];
       try {
         page = await this.connection.getSignaturesForAddress(this.client.programId, before ? { limit, before } : { limit }, "confirmed");
@@ -143,22 +161,59 @@ export class Indexer {
         throw e;
       }
       const fresh = page.filter((s) => !this.store.hasSignature(s.signature));
-      sigs.push(...fresh);
-      if (fresh.length === 0 || page.length < limit) break;
+      added += await this.ingest(fresh);
+      if (page.length < limit) {
+        // The whole history fits above here: nothing older exists to backfill.
+        this.store.setKv(BACKFILL_DONE, "1");
+        break;
+      }
+      // The first full page seen on an empty store is where the backfill starts from.
+      if (!this.store.getKv(BACKFILL_DONE) && !this.store.getKv(BACKFILL_BEFORE)) this.store.setKv(BACKFILL_BEFORE, page[page.length - 1]!.signature);
+      if (fresh.length === 0) break;
       before = page[page.length - 1]!.signature;
     }
+    if (this.store.getKv(BACKFILL_DONE)) return added;
+    const cursor = this.store.getKv(BACKFILL_BEFORE);
+    if (!cursor || Date.now() < this.backfillNotBefore) return added;
+    for (let pages = 0; pages < BACKFILL_PAGES_PER_PULL; pages++) {
+      const from = this.store.getKv(BACKFILL_BEFORE)!;
+      let page: ConfirmedSignatureInfo[];
+      try {
+        page = await this.connection.getSignaturesForAddress(this.client.programId, { limit, before: from }, "confirmed");
+      } catch {
+        // A fork cannot page past what it holds; treat it as the end of history.
+        this.store.setKv(BACKFILL_DONE, "1");
+        break;
+      }
+      const fresh = page.filter((s) => !this.store.hasSignature(s.signature));
+      added += await this.ingest(fresh, BACKFILL_FETCH_CONCURRENCY);
+      // Move the cursor only when the page was read in full; a page with unread transactions is listed again, later.
+      if (fresh.some((s) => !this.store.hasSignature(s.signature))) { this.backfillNotBefore = Date.now() + BACKFILL_BACKOFF_MS; break; }
+      if (page.length < limit) { this.store.setKv(BACKFILL_DONE, "1"); break; }
+      this.store.setKv(BACKFILL_BEFORE, page[page.length - 1]!.signature);
+    }
+    return added;
+  }
+
+  /** Fetch and store the events of these signatures, oldest first. A transaction the RPC does not serve stays unread. */
+  private async ingest(sigs: ConfirmedSignatureInfo[], concurrency = TX_FETCH_CONCURRENCY): Promise<number> {
+    if (!sigs.length) return 0;
     let added = 0;
     // Oldest first so events land in the order they happened. The transactions are fetched a few at a time and then
     // read in order: a keeper pass settling a whole Friday's expiries can put hundreds of signatures in one pull, and
     // one round trip after another is what makes a person's own receipt arrive minutes after their transaction did.
-    const ordered = sigs.reverse();
+    const ordered = [...sigs].reverse();
     const fetched = new Array<VersionedTransactionResponse | null>(ordered.length);
-    await mapLimit(ordered.map((_, i) => i), TX_FETCH_CONCURRENCY, async (i) => {
-      fetched[i] = await this.connection.getTransaction(ordered[i]!.signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+    await mapLimit(ordered.map((_, i) => i), concurrency, async (i) => {
+      try {
+        fetched[i] = await this.connection.getTransaction(ordered[i]!.signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+      } catch {
+        fetched[i] = null;
+      }
     });
     for (const [at, s] of ordered.entries()) {
       const tx = fetched[at];
-      // Not served yet (RPC lag): leave it unread so the next pull tries again.
+      // Not served yet (RPC lag or a refused read): leave it unread so the next pull tries again.
       if (!tx) continue;
       const logs = tx.meta?.logMessages ?? [];
       // surfpool reports block times that are not unix seconds; fall back to the transaction's, then to now.

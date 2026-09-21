@@ -6,7 +6,8 @@ import { Sparkline } from "@/components/charts";
 import { CountUp, Stagger } from "@/components/motion";
 import { Badge, ErrorState, Loading } from "@/components/ui";
 import { floatUsd, short, spreadLabel, TokenMark, type PreIpoTokenView } from "@/components/preipo";
-import { usd, usd0, usdK } from "@/lib/format";
+import Link from "next/link";
+import { usd, usd0, usdK, dayLabel } from "@/lib/format";
 
 /*
  * The PreStocks desk (CLAUDE.md 5 First Print, docs/03-prestocks-decision.md): every token the issuer lists, live from
@@ -57,6 +58,8 @@ export default function PreIpoPage() {
         </div>
       </div>
 
+      <WhatRosterAdds tokens={tokens} />
+
       <SpreadChart tokens={tokens} onPick={open} />
 
       <div className="uexplore" style={{ marginTop: 18 }}>
@@ -77,19 +80,20 @@ export default function PreIpoPage() {
               <div className="fp-mark">
                 <span>
                   <span className="mono">{t.tokenPrice === null ? "n/a" : `$${usd(t.tokenPrice)}`}</span>
-                  <span className="small muted" style={{ display: "block" }}>token price</span>
+                  <span className="small muted" style={{ display: "block" }}>token price{t.market?.trade?.change24hPct !== null && t.market?.trade?.change24hPct !== undefined ? <> · <span className={t.market.trade.change24hPct >= 0 ? "up" : "down"}>{t.market.trade.change24hPct >= 0 ? "+" : "−"}{Math.abs(t.market.trade.change24hPct).toFixed(1)}% 24h</span></> : null}</span>
                 </span>
-                {t.market?.sparkline?.length ? <Sparkline points={t.market.sparkline} width={84} height={26} /> : null}
+                {t.market?.trade?.daily?.length ? <span title={`${t.market.trade.days} days of trades in ${t.market.trade.pool}`}><Sparkline points={t.market.trade.daily.slice(-30)} width={84} height={26} /></span> : t.market?.sparkline?.length ? <Sparkline points={t.market.sparkline} width={84} height={26} /> : null}
               </div>
               <div className="fp-rows">
                 <div><span>Issuer mark</span><b className="mono fp-tp">{t.markPrice === null ? <span className="muted">n/a</span> : <>${usd(t.markPrice)}<small className={t.spreadPct === null ? "muted" : t.spreadPct >= 0 ? "up" : "down"}>{spreadLabel(t.spreadPct)}</small></>}</b></div>
                 <div><span>Valuation</span><b className="mono fp-tp">{t.impliedValuation === null ? <span className="muted">n/a</span> : <>${short(t.impliedValuation)}<small className="muted">{t.markValuation !== null ? `mark $${short(t.markValuation)}` : "implied by the token"}</small></>}</b></div>
                 <div><span>Market cap</span><b className="mono fp-tp">{t.tokenPrice && t.supply ? <>${short(t.tokenPrice * t.supply)}<small className="muted">{usdK(t.supply)} tokens</small></> : <span className="muted">n/a</span>}</b></div>
+                <div><span>Liquidity</span><b className="mono fp-tp">{t.market?.trade?.liquidityUsd ? <>${short(t.market.trade.liquidityUsd)}<small className="muted">${short(t.market.trade.volume24hUsd ?? 0)} traded 24h</small></> : <span className="muted">reading</span>}</b></div>
                 <div><span>Fee</span><b className="mono">{t.feeBps === null ? <span className="muted">not read</span> : t.feeBps === 0 ? "none" : `${(t.feeBps / 100).toFixed(2)}%`}</b></div>
                 <div><span>Escrow</span><b><Badge tone={t.verdict === "eligible" || t.verdict === "eligible_with_fee" ? "green" : t.verdict === "not checked" ? undefined : "amber"}>{t.escrowProven ? "proven" : t.verdict.replaceAll("_", " ")}</Badge></b></div>
               </div>
               <div className="fp-foot">
-                {t.market ? <span className="ink">{t.market.liveSeries} live series · <span className="mono">${usd0(t.market.depthUsdc)}</span> depth</span> : <span className="muted">{t.tier === 3 ? "Tier 3: quote it yourself" : "No market here yet"}</span>}
+                {t.market?.bestFloor ? <span className="ink">Floor at <span className="mono">${usdK(t.market.bestFloor.strike)}</span> · <span className="mono">${usd(t.market.bestFloor.ask)}</span> per token</span> : t.market ? <span className="ink">{t.market.liveSeries} live series · <span className="mono">${usd0(t.market.depthUsdc)}</span> depth</span> : <span className="muted">{t.tier === 3 ? "Tier 3: quote it yourself" : "No market here yet"}</span>}
                 <span className="arrow" aria-hidden>→</span>
               </div>
             </button>
@@ -116,6 +120,48 @@ export default function PreIpoPage() {
       </div>
       <p className="small" style={{ marginTop: 14 }}>Figures read now from prestocks.com/api and refreshed every minute; logos are the issuer&apos;s. Mint facts and verdicts from the registry run{data.generatedAt ? ` of ${new Date(data.generatedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}` : ""}. PreStocks tokens have no Pyth feed: the token price prices these terms, recent volatility is measured from the prices the services record, and auto-exercise is off on them.</p>
     </div>
+  );
+}
+
+/**
+ * What Roster adds to a PreStocks token, in three lines with live numbers: an exit at a known price, upside with the
+ * loss capped, and being paid to take the other side. Every figure is a resident ask on chain right now.
+ */
+function WhatRosterAdds({ tokens }: { tokens: PreIpoTokenView[] }) {
+  const withFloor = tokens.filter((t) => t.market?.bestFloor).sort((a, b) => (b.tokenPrice ?? 0) * (b.supply ?? 0) - (a.tokenPrice ?? 0) * (a.supply ?? 0));
+  const withGap = tokens.filter((t) => t.market?.bestGap).sort((a, b) => (b.tokenPrice ?? 0) * (b.supply ?? 0) - (a.tokenPrice ?? 0) * (a.supply ?? 0));
+  const f = withFloor[0]; const g = withGap[0];
+  const floors = tokens.filter((t) => t.market?.bestFloor).length;
+  return (
+    <section className="card wadd" style={{ marginTop: 22 }}>
+      <div className="wadd-head">
+        <div className="h6">What Roster adds to a PreStocks token</div>
+        <div className="small muted">A PreStocks token can be bought and sold on Jupiter. It cannot, anywhere else, be sold at a price fixed in advance, held with the loss capped, or lent out for a premium. Fully collateralized, settled in the token, no oracle at exercise.</div>
+      </div>
+      <div className="wadd-grid">
+        <Link href={f?.market?.bestFloor ? `/trade/${f.market.bestFloor.id}` : "/markets"} className="wadd-item">
+          <Badge tone="blue">Floor</Badge>
+          <b>An exit at a known price on a known date</b>
+          <span>Sell at the strike any time through the date. The USDC is locked before you buy; a thin pool cannot stop it.</span>
+          <em className="mono">{f?.market?.bestFloor ? `${f.symbol}: sell at $${usdK(f.market.bestFloor.strike)} through ${dayLabel(f.market.bestFloor.expiryTs)} for $${usd(f.market.bestFloor.ask)} a token` : "quoting"}</em>
+          <i>{floors} of {tokens.length} tokens have a floor quoted now</i>
+        </Link>
+        <Link href={g?.market?.bestGap ? `/trade/${g.market.bestGap.id}` : "/markets"} className="wadd-item">
+          <Badge tone="green">Gap</Badge>
+          <b>The upside with the loss capped</b>
+          <span>The right to buy at the strike through the date. No borrowing, no funding, no liquidation; the premium is the whole loss.</span>
+          <em className="mono">{g?.market?.bestGap ? `${g.symbol}: buy at $${usdK(g.market.bestGap.strike)} through ${dayLabel(g.market.bestGap.expiryTs)} for $${usd(g.market.bestGap.ask)} a token` : "quoting"}</em>
+          <i>priced off where the token trades, never the mark</i>
+        </Link>
+        <Link href="/vaults" className="wadd-item">
+          <Badge>Earn</Badge>
+          <b>Get paid to take the other side</b>
+          <span>Hold the token and be paid to sell it higher; lock USDC and be paid to buy it lower. Directly, or through a vault that publishes every epoch with its sign.</span>
+          <em className="mono">{f?.market?.bestFloor ? `${f.symbol}: writing the $${usdK(f.market.bestFloor.strike)} floor pays $${usd(f.market.bestFloor.ask)} a token` : "quoting"}</em>
+          <i>paid risk, disclosed as such, never yield</i>
+        </Link>
+      </div>
+    </section>
   );
 }
 

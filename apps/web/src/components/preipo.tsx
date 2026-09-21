@@ -7,7 +7,7 @@ import { usd0 } from "@/lib/format";
 export interface PreIpoTokenView {
   symbol: string; name: string; issuer: "PreStocks"; mint: string; markPrice: number | null; tokenPrice: number | null; markValuation: number | null; impliedValuation: number | null; supply: number | null; holders: number | null; sector: string | null; description: string | null; logo: string | null; external: string | null;
   spreadPct: number | null; feeBps: number | null; decimals: number | null; verdict: string; reason: string; escrowProven: boolean; tier: number | null;
-  market: { symbol: string; mint: string; liveSeries: number; depthUsdc: number; bestAsk: number | null; mark: number; sparkline: [number, number][]; markSparkline: [number, number][]; markSpreadBps: number | null; vol: number; volSource: string; feeBps: number } | null;
+  market: { symbol: string; mint: string; liveSeries: number; depthUsdc: number; bestAsk: number | null; mark: number; sparkline: [number, number][]; markSparkline: [number, number][]; markSpreadBps: number | null; vol: number; volSource: string; feeBps: number; trade: { pool: string; poolAddress: string; liquidityUsd: number | null; volume24hUsd: number | null; change24hPct: number | null; change7dPct: number | null; change30dPct: number | null; daily: [number, number][]; days: number } | null; bestFloor: { id: string; strike: number; expiryTs: number; ask: number; capacity: number } | null; bestGap: { id: string; strike: number; expiryTs: number; ask: number; capacity: number } | null } | null;
   rights: { what: string; rights: string; exit: string; ipo: string; mna: string };
 }
 export function spreadLabel(pct: number | null): string {

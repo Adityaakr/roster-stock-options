@@ -58,6 +58,8 @@ export interface Market {
   issuerMarkPrice: number | null;
   markSpreadBps: number | null;
   markSparkline: [number, number][];
+  /** Pre-IPO only: the mainnet token's real trade history from its reference pool (GeckoTerminal), null when none. */
+  trade: { pool: string; poolAddress: string; liquidityUsd: number | null; volume24hUsd: number | null; change24hPct: number | null; change7dPct: number | null; change30dPct: number | null; daily: [number, number][]; days: number } | null;
   /** Change over the sparkline's window, percent; null until two points exist. */
   changePct: number | null;
 }

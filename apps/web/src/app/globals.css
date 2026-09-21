@@ -1090,3 +1090,23 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .pfig .s { font-size: 12px; color: var(--slate); }
 @media (max-width: 1100px) { .pfigs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 559px) { .pfigs { grid-template-columns: minmax(0, 1fr); } }
+.pdo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pdo-card { display: grid; gap: 8px; align-content: start; padding: 18px; transition: border-color 150ms var(--ease), transform 150ms var(--ease); }
+.pdo-card:hover { border-color: var(--ink); transform: translateY(-1px); }
+.pdo-card .badge { justify-self: start; }
+.pdo-card b { font-weight: 500; font-size: 16px; }
+.pdo-card span { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+.pdo-card em { font-style: normal; font-size: 13px; padding-top: 8px; border-top: 1px solid var(--line); }
+@media (max-width: 1100px) { .pdo { grid-template-columns: minmax(0, 1fr); } }
+.wadd-head { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.wadd-head .small { margin-top: 2px; max-width: 860px; }
+.wadd-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.wadd-item { display: grid; gap: 8px; align-content: start; padding: 18px 20px; border-right: 1px solid var(--line); transition: background 150ms var(--ease); }
+.wadd-item:last-child { border-right: 0; }
+.wadd-item:hover { background: var(--surface); }
+.wadd-item .badge { justify-self: start; }
+.wadd-item b { font-weight: 500; font-size: 16px; }
+.wadd-item span { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+.wadd-item em { font-style: normal; font-size: 13px; color: var(--ink); padding-top: 8px; border-top: 1px solid var(--line); }
+.wadd-item i { font-style: normal; font-size: 12px; color: var(--slate); }
+@media (max-width: 1100px) { .wadd-grid { grid-template-columns: minmax(0, 1fr); } .wadd-item { border-right: 0; border-bottom: 1px solid var(--line); } .wadd-item:last-child { border-bottom: 0; } }

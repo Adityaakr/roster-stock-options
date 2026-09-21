@@ -16,9 +16,10 @@ the strike per lot, time to expiry in years, and a realised volatility blended o
 configured floor (35% annualised). Realised volatility comes from Pyth Benchmarks when the key allows; a floor-bound
 volatility is reported as `floor` and the app says so.
 
-**Pre-IPO tokens** have no Benchmarks symbol. Their volatility is measured from the token prices the services record
-themselves (the last recorded price of each UTC day, the same 7/30/90 blend) once seven days exist, and is a stated
-floor of 90% annualised until then (`PREIPO_VOL_FLOOR`; the recorded SPACEX ticks ranged 8% in six hours on
+**Pre-IPO tokens** have no Benchmarks symbol. Their volatility is measured from the real daily closes of the token's
+deepest USDC pool on mainnet (GeckoTerminal's public OHLCV, kept in the indexer under `gt_day:<mint>`), the same
+7/30/90 blend, once seven days exist; before that from the token prices the services record themselves, and is a stated
+floor of 90% annualised until either exists (`PREIPO_VOL_FLOOR`; the recorded SPACEX ticks ranged 8% in six hours on
 2026-09-20, which a 35% floor would have sold for a third of fair value). The source is reported as `recorded` or
 `preipo_floor` and the token page prints which.
 

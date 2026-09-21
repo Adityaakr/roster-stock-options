@@ -70,7 +70,7 @@ The app reads the services; `NEXT_PUBLIC_CLUSTER=devnet` puts the label in the h
 | --- | --- |
 | Program | `FJUdsdmxAp3zAwZBg3ai34xzeCBDobnH1XDarvVa7uFV`, deployed and upgradeable by the deployer key |
 | Markets | NVDAx, TSLAx, SPYx, AAPLx, MSFTx, GOOGLx and all eight PreStocks tokens, each created on chain with its grid and each escrow-proven (deposit into the vault and back, signatures in the registry). A tKalshi replica from an earlier build is unlisted (`scripts/devnet-unlist.ts`); its accounts remain on chain because a market cannot be closed |
-| Marks | the Tokens API snapshot of the mainnet counterpart; for OPENAI and SPACEX the PreStocks token price with the issuer's mark recorded beside it; 24 hour change and holder counts come from the Tokens API call |
+| Marks | the Tokens API snapshot of the mainnet counterpart; for the PreStocks tokens the issuer's token price with its mark recorded beside it, and the real trade history of the mainnet token from its deepest USDC pool (GeckoTerminal, public) for the charts, the day and week changes, liquidity, volume and the quoter's volatility |
 | Maker | the treasury quotes every Tier 1 and Tier 2 grid term it has capital for, and its asks are resident on chain |
 | Faucet | `/api/faucet`, devnet only: 25 of every token, 25,000 quote tokens and 0.01 SOL, in batched transactions, once per wallet per ten minutes |
 | Wallets | any Wallet Standard wallet on devnet, plus a throwaway burner for people with no extension |

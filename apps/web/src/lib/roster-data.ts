@@ -107,6 +107,7 @@ function liveMarket(m: ServicesMarket, nowTs: number, terms: Term[]): Market {
     issuerMarkPrice: m.issuerMarkPrice ?? null,
     markSpreadBps: m.markSpreadBps ?? null,
     markSparkline: m.markSparkline ?? [],
+    trade: m.trade ?? null,
     changePct: m.sparkline && m.sparkline.length >= 2 && m.sparkline[0]![1] > 0 ? ((m.sparkline[m.sparkline.length - 1]![1] - m.sparkline[0]![1]) / m.sparkline[0]![1]) * 100 : null
   };
 }
@@ -281,7 +282,7 @@ function fixture(): RosterData {
     symbol: "NVDAx", name: "Nvidia xStock", mint: null, address: null, decimals: 8, tier: 1, listed: true, paused: false, wrapperTier: "xStock",
     feeBps: 0, hasTransferFee: false, hasPermanentDelegate: true, pausable: true, mark: FIXTURE_MARK, priceSource: "fixture", replicaOf: null, equityMark: equityOpen ? 182.08 : null,
     basisBps: equityOpen ? 12 : null, multiplier: 1, pendingActivationTs: null, inActivationWindow: false, vol: 0.35, volSource: "fixture", expiries,
-    liveSeries: terms.length, maxLiveSeries: 12, minLots6: "10000", depthUsdc: terms.reduce((a, t) => a + t.capacity * t.strike, 0), bestAsk: 0.6, logo: null, underlyingSymbol: "NVDA", wrappersOfUnderlying: 1, sparkline: [], changePct: null, issuerMarkPrice: null, markSpreadBps: null, markSparkline: []
+    liveSeries: terms.length, maxLiveSeries: 12, minLots6: "10000", depthUsdc: terms.reduce((a, t) => a + t.capacity * t.strike, 0), bestAsk: 0.6, logo: null, underlyingSymbol: "NVDA", wrappersOfUnderlying: 1, sparkline: [], changePct: null, issuerMarkPrice: null, markSpreadBps: null, markSparkline: [], trade: null
   };
   return {
     cluster: "fixture",

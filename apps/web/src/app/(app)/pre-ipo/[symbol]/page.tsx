@@ -7,7 +7,7 @@ import { DiscoverTable } from "@/components/discover-table";
 import { short, spreadLabel, TokenMark, type PreIpoTokenView } from "@/components/preipo";
 import { Address, Badge, ErrorState, KV, Loading } from "@/components/ui";
 import { useCluster, explorerUrl } from "@/lib/cluster";
-import { usd, usd0, usdK } from "@/lib/format";
+import { usd, usd0, usdK, dayLabel } from "@/lib/format";
 import { useRoster } from "@/lib/use-roster";
 
 /*
@@ -15,7 +15,9 @@ import { useRoster } from "@/lib/use-roster";
  * both imply, the wrapper's facts read from the mint, the issuer's own terms, and the live Gap and Floor terms when
  * the token is listed here.
  */
-interface Prices { mark: Point[]; issuerMark?: Point[] }
+interface Prices { mark: Point[]; issuerMark?: Point[]; tradeDaily?: Point[]; tradeHourly?: Point[] }
+type Window = "1d" | "7d" | "30d" | "all";
+const DAYS: Record<Window, number> = { "1d": 1, "7d": 7, "30d": 30, all: 400 };
 
 function Fig({ k, v, s, tone }: { k: string; v: string; s: string; tone?: "up" | "down" }) {
   return (
@@ -32,7 +34,7 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
   const cluster = useCluster();
   const [token, setToken] = useState<PreIpoTokenView | null | undefined>(undefined);
   const [prices, setPrices] = useState<Prices | null>(null);
-  const [days, setDays] = useState(7);
+  const [win, setWin] = useState<Window>("30d");
   const { data } = useRoster(symbol);
   useEffect(() => {
     // One failed read of the issuer must not read as "not in the registry": retry a few times before giving up.
@@ -43,16 +45,22 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
   const marketMint = token?.market?.mint;
   useEffect(() => {
     if (!marketMint) return;
-    fetch(`/api/prices/${marketMint}?days=${days}`, { cache: "no-store" }).then(async (r) => (r.ok ? ((await r.json()) as Prices) : null)).then(setPrices).catch(() => setPrices(null));
-  }, [marketMint, days]);
+    fetch(`/api/prices/${marketMint}?days=${DAYS[win]}`, { cache: "no-store" }).then(async (r) => (r.ok ? ((await r.json()) as Prices) : null)).then(setPrices).catch(() => setPrices(null));
+  }, [marketMint, win]);
 
   if (token === undefined) return <Loading what="the token" />;
   if (!token) return <ErrorState message={`${symbol} is not in the PreStocks registry.`} next={<Link className="link" href="/pre-ipo">Back to PreStocks</Link>} />;
   const listed = !!token.market && data?.underlying.symbol.toLowerCase() === symbol.toLowerCase();
+  // The chart is the mainnet token's real trades: hourly closes for a day or a week, daily closes beyond; the issuer's
+  // mark is drawn dashed over the part of the window this cluster has recorded it for.
+  const trade = win === "1d" || win === "7d" ? (prices?.tradeHourly ?? []) : (prices?.tradeDaily ?? []);
   const series = [
-    ...(prices?.mark.length ? [{ label: `${token.symbol} token price`, points: prices.mark }] : []),
+    ...(trade.length ? [{ label: `${token.symbol} on ${token.market?.trade?.pool ?? "its reference pool"}`, points: trade }] : []),
     ...(prices?.issuerMark?.length ? [{ label: "issuer mark", points: prices.issuerMark, dashed: true, color: "var(--slate)" }] : [])
   ];
+  const tr = token.market?.trade ?? null;
+  const bestFloor = data?.terms.filter((t) => t.side === "put" && t.ask > 0 && t.capacity > 0).sort((a, b) => b.strike - a.strike)[0];
+  const bestGap = data?.terms.filter((t) => t.side === "call" && t.ask > 0 && t.capacity > 0).sort((a, b) => a.strike - b.strike)[0];
   const calls = data?.terms.filter((t) => t.side === "call" && t.ask > 0).length ?? 0;
   const puts = data?.terms.filter((t) => t.side === "put" && t.ask > 0).length ?? 0;
 
@@ -92,22 +100,25 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
         <Fig k="Mark price" v={token.markPrice === null ? "n/a" : `$${usd(token.markPrice)}`} s="the gross price per share, per the issuer" />
         <Fig k="Mark valuation" v={token.markValuation === null ? "n/a" : `$${short(token.markValuation)}`} s="the company, at the mark" />
         <Fig k="Market cap" v={token.tokenPrice && token.supply ? `$${short(token.tokenPrice * token.supply)}` : "n/a"} s={token.supply ? `${usdK(token.supply)} tokens at the token price` : "supply not published"} />
+        <Fig k="24h" v={tr?.change24hPct === null || tr?.change24hPct === undefined ? "…" : `${tr.change24hPct >= 0 ? "+" : "−"}${Math.abs(tr.change24hPct).toFixed(1)}%`} s="from the reference pool's trades" tone={tr?.change24hPct === null || tr?.change24hPct === undefined ? undefined : tr.change24hPct >= 0 ? "up" : "down"} />
+        <Fig k="7 days" v={tr?.change7dPct === null || tr?.change7dPct === undefined ? "…" : `${tr.change7dPct >= 0 ? "+" : "−"}${Math.abs(tr.change7dPct).toFixed(1)}%`} s={tr ? `${tr.days} days of trades recorded` : "reading the pool"} tone={tr?.change7dPct === null || tr?.change7dPct === undefined ? undefined : tr.change7dPct >= 0 ? "up" : "down"} />
+        <Fig k="Liquidity" v={tr?.liquidityUsd ? `$${short(tr.liquidityUsd)}` : "…"} s={tr?.volume24hUsd ? `$${short(tr.volume24hUsd)} traded in 24h on ${tr.pool}` : tr ? tr.pool : "the deepest USDC pool"} />
       </div>
       <div className="grid-2 split-left" style={{ marginBottom: 16 }}>
         <div className="card">
           <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
             <div>
-              <div className="h6">Token price and the mark</div>
-              <div className="small muted" style={{ marginTop: 2 }}>{token.market ? "Both figures as the services record them every tick: the solid line is where the token trades, the dashed one the issuer's mark." : "Recorded only once the token is listed; the issuer's live figures are above."}</div>
+              <div className="h6">Where the token has traded</div>
+              <div className="small muted" style={{ marginTop: 2 }}>{tr ? `Closes from ${tr.pool} on mainnet, the deepest USDC pool for the token; the dashed line is the issuer's mark where this cluster has recorded it.` : "Reading the token's reference pool on mainnet; the issuer's live figures are above."}</div>
             </div>
             <div className="seg" role="group" aria-label="Window">
-              {[1, 7, 30].map((d) => <button key={d} className={days === d ? "on" : ""} onClick={() => setDays(d)}>{d === 1 ? "24h" : `${d}d`}</button>)}
+              {(["1d", "7d", "30d", "all"] as Window[]).map((w) => <button key={w} className={win === w ? "on" : ""} onClick={() => setWin(w)}>{w === "1d" ? "24h" : w === "all" ? "All" : w}</button>)}
             </div>
           </div>
           <div style={{ padding: "12px 16px 14px" }}>
-            <LineChart series={series} format={(v) => `$${usd(v)}`} empty={token.market ? "No prices recorded yet on this cluster; the chart fills as the services tick." : "Not listed on this cluster, so nothing is recorded."} />
+            <LineChart series={series} format={(v) => `$${usd(v)}`} timeFormat={win === "1d" || win === "7d" ? undefined : (t) => new Date(t * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" })} empty={tr ? "No trades in this window." : "Reading the token's trade history from its reference pool."} />
           </div>
-          {token.market ? <div className="small muted" style={{ padding: "0 20px 14px" }}>Recent volatility {(token.market.vol * 100).toFixed(0)}% ({token.market.volSource === "recorded" ? "measured from the recorded token prices" : "a stated floor until a week of prices exists"}); the quoter prices off the token price and never off the mark.</div> : null}
+          {token.market ? <div className="small muted" style={{ padding: "0 20px 14px" }}>Recent volatility {(token.market.vol * 100).toFixed(0)}% annualised ({token.market.volSource === "recorded" ? "measured from the pool's daily closes over 7, 30 and 90 days" : "a stated floor until a week of closes exists"}); the quoter prices every term off the token price and never off the mark.</div> : null}
         </div>
         <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
           <div className="card pad">
@@ -136,10 +147,33 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
         </div>
       </div>
 
+      {listed && data ? (
+        <div className="pdo" style={{ marginBottom: 16 }}>
+          <Link href={bestFloor ? `/trade/${bestFloor.id}` : `/markets/${token.symbol}`} className="card pdo-card">
+            <Badge tone="blue">Floor</Badge>
+            <b>A known price on a known date</b>
+            <span>Sell {token.symbol} at the strike any time through the date. The USDC is locked before you buy; no oracle can block the exit.</span>
+            {bestFloor ? <em className="mono">${usdK(bestFloor.strike)} through {dayLabel(bestFloor.expiryTs)} · ${usd(bestFloor.ask)} per token</em> : <em className="muted">no floor quoted right now</em>}
+          </Link>
+          <Link href={bestGap ? `/trade/${bestGap.id}` : `/markets/${token.symbol}`} className="card pdo-card">
+            <Badge tone="green">Gap</Badge>
+            <b>The upside with the loss capped</b>
+            <span>The right to buy {token.symbol} at the strike through the date. If it never gets there you lose the premium and nothing else.</span>
+            {bestGap ? <em className="mono">${usdK(bestGap.strike)} through {dayLabel(bestGap.expiryTs)} · ${usd(bestGap.ask)} per token</em> : <em className="muted">no gap quoted right now</em>}
+          </Link>
+          <Link href={`/underwrite?m=${token.symbol}`} className="card pdo-card">
+            <Badge>Earn</Badge>
+            <b>Get paid to take the other side</b>
+            <span>Hold {token.symbol} and be paid to sell it higher, or lock USDC and be paid to buy it lower. Paid risk, never yield.</span>
+            {bestFloor ? <em className="mono">writing the ${usdK(bestFloor.strike)} floor pays ${usd(bestFloor.ask)} per token</em> : <em className="muted">quote the first ask</em>}
+          </Link>
+        </div>
+      ) : null}
+
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
           <div>
-            <div className="h6">A known price on a known date, on {token.symbol}</div>
+            <div className="h6">Every live term on {token.symbol}</div>
             <div className="small muted" style={{ marginTop: 2 }}>{listed ? `${calls} Gap and ${puts} Floor terms quoted · $${usd0(token.market!.depthUsdc)} executable depth${token.market!.bestAsk !== null ? ` · best ask $${usd(token.market!.bestAsk)} per token` : ""}. A Floor is the funded exit: sell at the strike any time through the date, USDC already locked.` : "Not listed on this cluster. Tier 3 names can be quoted by any underwriter once their escrow is proven."}</div>
           </div>
           {listed ? <div className="flex items-center gap-2"><Link href={`/underwrite?m=${token.symbol}`} className="btn secondary sm">Earn on {token.symbol}</Link><Link href={`/vaults`} className="btn secondary sm">Vaults</Link></div> : null}

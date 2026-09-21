@@ -17,7 +17,8 @@ import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
 import { Quoter, DEFAULT_QUOTER, VaultQuoter, DEFAULT_VAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
 import { loadSecretKey, mapLimit } from "@roster/core";
-import { issuerMark, jupiterPrice, launchSet, refreshSnapshots, snapshotOf, snapshotPrice, xstocksQuote } from "./registry";
+import { issuerMark, jupiterPrice, launchSet, refreshSnapshots, snapshotOf, snapshotPrice, xstocksQuote, preipoTokens } from "./registry";
+import { changePct, tokenHistory, type Candle, type Pool } from "@roster/registry";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
 const args = new Set(process.argv.slice(2));
@@ -60,6 +61,8 @@ interface MarketLive {
   /** Pre-IPO only: the issuer's mark beside the token price, and the token's spread to it in basis points, signed. */
   issuerMarkPrice: number | null;
   markSpreadBps: number | null;
+  /** Pre-IPO only: from the reference pool's real trade history. */
+  trade: { pool: string; poolAddress: string; liquidityUsd: number | null; volume24hUsd: number | null; change24hPct: number | null; change7dPct: number | null; change30dPct: number | null; daily: [number, number][]; days: number } | null;
   multiplier: number;
   pendingDividendMultiplier: number | null;
   pendingActivationTs: number | null;
@@ -116,15 +119,58 @@ async function main() {
   let blocked: string | null = null;
   // Realised vol per symbol, refreshed hourly: Benchmarks is a slow, keyed endpoint and vol does not move per tick.
   const volCache = new Map<string, { at: number; v: Awaited<ReturnType<typeof estimateVol>> }>();
-  // A pre-IPO token has no Benchmarks symbol: its vol comes from the marks this process records, behind a floor that
-  // says what the recorded ticks show (an 8 percent range in six hours on SPACEX, 2026-09-20), until a week exists.
+  /*
+   * Trade history for every PreStocks token from its deepest USDC pool (GeckoTerminal, public, about thirty calls a
+   * minute): daily and hourly candles kept in the store under `gt_day:<mainnet mint>` and `gt_hour:<mainnet mint>`,
+   * the pool's liquidity and volume in memory. One token is refreshed at a time, forty-five seconds apart, so the rate
+   * limit is never spent in a burst and a restart picks up where the store left off. The app reads it from here
+   * and never calls GeckoTerminal itself.
+   */
+  const history = new Map<string, { pool: Pool; daily: Candle[]; hourly: Candle[]; at: number }>();
+  async function refreshHistory(): Promise<void> {
+    const tokens = [...(await preipoTokens()).values()];
+    const stale = tokens.filter((t) => { const h = history.get(t.mint); return !h || Date.now() - h.at > 10 * 60_000; });
+    const next = stale[0];
+    if (!next) return;
+    try {
+      const h = await tokenHistory(next.mint);
+      if (h && h.pool) {
+        history.set(next.mint, { pool: h.pool, daily: h.daily, hourly: h.hourly, at: Date.now() });
+        for (const c of h.daily) store.recordPrice({ feed_id: `gt_day:${next.mint}`, price: c[4], conf: 0, publish_time: c[0] });
+        for (const c of h.hourly) store.recordPrice({ feed_id: `gt_hour:${next.mint}`, price: c[4], conf: 0, publish_time: c[0] });
+        volCache.delete(next.symbol);
+        console.log(`[history] ${next.symbol} ${h.pool.name}: ${h.daily.length} days, ${h.hourly.length} hours, liquidity $${Math.round(h.pool.liquidityUsd ?? 0)}`);
+      } else {
+        // No pool quoted in USDC, USDT or SOL: looked at again in an hour, not every ten minutes.
+        history.set(next.mint, { pool: { address: "", name: "", liquidityUsd: null, volume24hUsd: null, priceUsd: null }, daily: [], hourly: [], at: Date.now() + 50 * 60_000 });
+        console.log(`[history] ${next.symbol}: no USDC pool listed`);
+      }
+    } catch (e) {
+      console.warn(`[history] ${next.symbol}: ${(e as Error).message.slice(0, 120)}`);
+      // A refused call (429) waits its turn again rather than retrying at once.
+      const h = history.get(next.mint);
+      history.set(next.mint, h ? { ...h, at: Date.now() - 8 * 60_000 } : { pool: { address: "", name: "", liquidityUsd: null, volume24hUsd: null, priceUsd: null }, daily: [], hourly: [], at: Date.now() - 8 * 60_000 });
+    }
+  }
+  /** Daily closes for a PreStocks token, from the store (survives restarts) with the live refresh on top. */
+  function dailyCloses(mainnetMint: string): { publish_time: number; price: number }[] {
+    return store.priceHistory(`gt_day:${mainnetMint}`, Math.floor(Date.now() / 1000) - 400 * 86_400);
+  }
+
+  // A pre-IPO token has no Benchmarks symbol: its vol is measured from the real daily closes of its reference pool
+  // (GeckoTerminal), else from the marks this process records, behind a stated floor until a week of either exists.
   const PREIPO_VOL_FLOOR = Number(process.env.PREIPO_VOL_FLOOR ?? 0.9);
-  async function volFor(symbol: string, mint: PublicKey, wrapper: string) {
+  async function volFor(symbol: string, mint: PublicKey, wrapper: string, replicaOf: string | null) {
     const hit = volCache.get(symbol);
     if (hit && Date.now() - hit.at < 3_600_000) return hit.v;
-    const v = wrapper === "PreStocks"
-      ? volFromRecorded(store.priceHistory(`mark:${mint.toBase58()}`, Math.floor(Date.now() / 1000) - 92 * 86_400), PREIPO_VOL_FLOOR)
-      : await estimateVol(`Crypto.${symbol.toUpperCase()}/USD`, Number(process.env.VOL_FLOOR ?? 0.35), process.env.PYTH_CORE_API_KEY);
+    let v: Awaited<ReturnType<typeof estimateVol>>;
+    if (wrapper === "PreStocks") {
+      const closes = dailyCloses(replicaOf ?? mint.toBase58());
+      v = closes.length >= 7 ? { ...volFromRecorded(closes, PREIPO_VOL_FLOOR), source: "recorded" as const } : volFromRecorded(store.priceHistory(`mark:${mint.toBase58()}`, Math.floor(Date.now() / 1000) - 92 * 86_400), PREIPO_VOL_FLOOR);
+      if (closes.length >= 7 && v.vol30 === null && v.vol7 === null) v = { ...v, source: "preipo_floor" };
+    } else {
+      v = await estimateVol(`Crypto.${symbol.toUpperCase()}/USD`, Number(process.env.VOL_FLOOR ?? 0.35), process.env.PYTH_CORE_API_KEY);
+    }
     volCache.set(symbol, { at: Date.now(), v });
     return v;
   }
@@ -229,14 +275,16 @@ async function main() {
       // an arbitrage could close, so it never reaches the basis breaker.
       const markSpreadBps = price !== null && issuerMarkPrice ? ((price - issuerMarkPrice) / issuerMarkPrice) * 10_000 : null;
       if (issuerMarkPrice !== null) store.recordPrice({ feed_id: `issuer_mark:${l.mint.toBase58()}`, price: issuerMarkPrice, conf: 0, publish_time: Math.floor(Date.now() / 1000) });
-      const vol = await volFor(l.symbol, l.mint, l.wrapper);
+      const vol = await volFor(l.symbol, l.mint, l.wrapper, l.replicaOf);
       const session = sessionAt(nowTs);
       const basisBps = price !== null && equityPrice !== null && session === "regular" ? ((price - equityPrice) / equityPrice) * 10_000 : null;
       if (basisBps !== null) store.recordBasis(l.mint.toBase58(), basisBps, nowTs);
       const noSession = l.wrapper === "PreStocks";
       const paused = await keeper.mintPaused(market.mint, market.tokenProgram);
       const snap = snapshotOf(l.replicaOf ?? l.mint.toBase58());
-      const state: MarketLive = { change24hPct: snap?.change24hPct ?? null, holders: snap?.holders ?? null, replicaOf: l.replicaOf, logo: l.logo ?? snap?.logo ?? null, wrappersOfUnderlying: l.wrappersOfUnderlying, underlyingSymbol: l.underlyingSymbol, market, meta: meta.get(l.mint.toBase58())!, price, priceAt, priceSource, wrapper: l.wrapper, feeBps: l.feeBps, equityPrice, basisBps, issuerMarkPrice, markSpreadBps, multiplier: mult.onChain, pendingDividendMultiplier: mult.pendingMultiplier !== null && mult.pendingIsDividend && mult.pendingAt !== null && market.allowedExpiries.some((e) => e > BigInt(mult.pendingAt!)) ? mult.pendingMultiplier : null, pendingActivationTs: mult.pendingAt, inActivationWindow: mult.inWindow, vol: vol.blended, volSource: vol.source, session, paused };
+      const hist = l.wrapper === "PreStocks" ? history.get(l.replicaOf ?? l.mint.toBase58()) : undefined;
+      const trade: MarketLive["trade"] = hist && hist.pool.address ? { pool: hist.pool.name, poolAddress: hist.pool.address, liquidityUsd: hist.pool.liquidityUsd, volume24hUsd: hist.pool.volume24hUsd, change24hPct: changePct(hist.hourly, 86_400), change7dPct: changePct(hist.daily, 7 * 86_400), change30dPct: changePct(hist.daily, 30 * 86_400), daily: hist.daily.slice(-90).map((c) => [c[0], c[4]] as [number, number]), days: hist.daily.length } : null;
+      const state: MarketLive = { trade, change24hPct: trade?.change24hPct ?? snap?.change24hPct ?? null, holders: snap?.holders ?? null, replicaOf: l.replicaOf, logo: l.logo ?? snap?.logo ?? null, wrappersOfUnderlying: l.wrappersOfUnderlying, underlyingSymbol: l.underlyingSymbol, market, meta: meta.get(l.mint.toBase58())!, price, priceAt, priceSource, wrapper: l.wrapper, feeBps: l.feeBps, equityPrice, basisBps, issuerMarkPrice, markSpreadBps, multiplier: mult.onChain, pendingDividendMultiplier: mult.pendingMultiplier !== null && mult.pendingIsDividend && mult.pendingAt !== null && market.allowedExpiries.some((e) => e > BigInt(mult.pendingAt!)) ? mult.pendingMultiplier : null, pendingActivationTs: mult.pendingAt, inActivationWindow: mult.inWindow, vol: vol.blended, volSource: vol.source, session, paused };
       live.set(l.symbol, state);
       if (!flag("--no-keeper")) {
         await keeper.rollGrid(market, nowTs, (process.env.EXTRA_EXPIRIES ?? "").split(",").filter(Boolean).map(BigInt));
@@ -307,7 +355,7 @@ async function main() {
       if (url.pathname === "/v1/roster") {
         const nowTs = await clockUnix(connection);
         const wall = Math.floor(Date.now() / 1000);
-        const markets = [...live.values()].map((m) => ({ symbol: m.meta.symbol, name: m.meta.name, wrapper: m.wrapper, feeBps: m.feeBps, mint: m.market.mint.toBase58(), sparkline: store.priceHistory(`mark:${m.market.mint.toBase58()}`, wall - 86_400).map((p) => [p.publish_time, p.price] as [number, number]).filter((_, i, a) => i % Math.max(1, Math.floor(a.length / 120)) === 0), market: m.market.address.toBase58(), decimals: m.market.decimals, tier: m.market.tier, listed: m.market.listed, paused: m.market.paused || m.paused, hasTransferFee: m.market.hasTransferFee, hasPermanentDelegate: m.market.hasPermanentDelegate, pausable: m.market.pausable, hookProgram: m.market.hookProgram.toBase58(), allowedExpiries: m.market.allowedExpiries.map(String), strikeStep: m.market.strikeStep.toString(), minLots6: m.market.minLots6.toString(), maxLots6: m.market.maxLots6.toString(), maxLiveSeries: m.market.maxLiveSeries, liveSeries: m.market.liveSeries, price: m.price, priceAt: m.priceAt, priceSource: m.priceSource, change24hPct: m.change24hPct, holders: m.holders, replicaOf: m.replicaOf, logo: m.logo, wrappersOfUnderlying: m.wrappersOfUnderlying, underlyingSymbol: m.underlyingSymbol, equityPrice: m.equityPrice, basisBps: m.basisBps, issuerMarkPrice: m.issuerMarkPrice, markSpreadBps: m.markSpreadBps, markSparkline: m.issuerMarkPrice !== null ? store.priceHistory(`issuer_mark:${m.market.mint.toBase58()}`, wall - 86_400).map((p) => [p.publish_time, p.price] as [number, number]).filter((_, i, a) => i % Math.max(1, Math.floor(a.length / 120)) === 0) : undefined, multiplier: m.multiplier, pendingActivationTs: m.pendingActivationTs, inActivationWindow: m.inActivationWindow, vol: m.vol, volSource: m.volSource, series: store.series(m.market.address.toBase58()).map((s) => ({ ...s, asks: JSON.parse(s.asks_json), writers: JSON.parse(s.writers_json), asks_json: undefined, writers_json: undefined })) }));
+        const markets = [...live.values()].map((m) => ({ symbol: m.meta.symbol, name: m.meta.name, wrapper: m.wrapper, feeBps: m.feeBps, mint: m.market.mint.toBase58(), sparkline: store.priceHistory(`mark:${m.market.mint.toBase58()}`, wall - 86_400).map((p) => [p.publish_time, p.price] as [number, number]).filter((_, i, a) => i % Math.max(1, Math.floor(a.length / 120)) === 0), market: m.market.address.toBase58(), decimals: m.market.decimals, tier: m.market.tier, listed: m.market.listed, paused: m.market.paused || m.paused, hasTransferFee: m.market.hasTransferFee, hasPermanentDelegate: m.market.hasPermanentDelegate, pausable: m.market.pausable, hookProgram: m.market.hookProgram.toBase58(), allowedExpiries: m.market.allowedExpiries.map(String), strikeStep: m.market.strikeStep.toString(), minLots6: m.market.minLots6.toString(), maxLots6: m.market.maxLots6.toString(), maxLiveSeries: m.market.maxLiveSeries, liveSeries: m.market.liveSeries, price: m.price, priceAt: m.priceAt, priceSource: m.priceSource, change24hPct: m.change24hPct, holders: m.holders, replicaOf: m.replicaOf, logo: m.logo, wrappersOfUnderlying: m.wrappersOfUnderlying, underlyingSymbol: m.underlyingSymbol, equityPrice: m.equityPrice, basisBps: m.basisBps, issuerMarkPrice: m.issuerMarkPrice, markSpreadBps: m.markSpreadBps, trade: m.trade, markSparkline: m.issuerMarkPrice !== null ? store.priceHistory(`issuer_mark:${m.market.mint.toBase58()}`, wall - 86_400).map((p) => [p.publish_time, p.price] as [number, number]).filter((_, i, a) => i % Math.max(1, Math.floor(a.length / 120)) === 0) : undefined, multiplier: m.multiplier, pendingActivationTs: m.pendingActivationTs, inActivationWindow: m.inActivationWindow, vol: m.vol, volSource: m.volSource, series: store.series(m.market.address.toBase58()).map((s) => ({ ...s, asks: JSON.parse(s.asks_json), writers: JSON.parse(s.writers_json), asks_json: undefined, writers_json: undefined })) }));
         const protocol = await reader.fetchProtocol().catch(() => null);
         return json(200, { cluster, programDeployed: true, program: ROSTER_PROGRAM_ID.toBase58(), nowTs, session: sessionAt(nowTs), feeBps: protocol?.feeBps ?? null, keeperFeeUsdc: protocol?.keeperFeeUsdc.toString() ?? null, graceSecs: protocol?.graceSecs.toString() ?? null, treasury: protocol?.treasury.toBase58() ?? null, quoter: quoterClient.wallet.toBase58(), blocked, hermesKeyed: hermes.keyed, markets, quoterLog: quoter.log.slice(-40), keeperLog: keeper.log.slice(-40) });
       }
@@ -335,6 +383,20 @@ async function main() {
         const out = held.map((x, i) => ({ series: x.row.address, market: x.row.market, side: x.row.side, strike_usdc_per_lot: x.row.strike_usdc_per_lot, expiry_ts: x.row.expiry_ts, position_mint: x.row.position_mint, lots6: x.amount.toString(), autoExercise: !!optIns[i] }));
         return json(200, { wallet: wallet.toBase58(), positions: out, events: store.events({ wallet: wallet.toBase58(), limit: 100 }) });
       }
+      const th = url.pathname.match(/^\/v1\/history\/([1-9A-HJ-NP-Za-km-z]+)$/);
+      if (th) {
+        const mainnetMint = th[1]!;
+        const h = history.get(mainnetMint);
+        const since = Number(url.searchParams.get("since") ?? 0);
+        return json(200, {
+          mint: mainnetMint,
+          pool: h?.pool.address ? { name: h.pool.name, address: h.pool.address, liquidityUsd: h.pool.liquidityUsd, volume24hUsd: h.pool.volume24hUsd } : null,
+          daily: store.priceHistory(`gt_day:${mainnetMint}`, since).map((p) => [p.publish_time, p.price]),
+          hourly: store.priceHistory(`gt_hour:${mainnetMint}`, since).map((p) => [p.publish_time, p.price]),
+          change24hPct: h ? changePct(h.hourly, 86_400) : null, change7dPct: h ? changePct(h.daily, 7 * 86_400) : null, change30dPct: h ? changePct(h.daily, 30 * 86_400) : null,
+          refreshedAt: h ? Math.floor(h.at / 1000) : null
+        });
+      }
       const hist = url.pathname.match(/^\/v1\/prices\/([1-9A-HJ-NP-Za-km-z]+)$/);
       if (hist) {
         const mintKey = hist[1]!;
@@ -348,6 +410,9 @@ async function main() {
           token: /^0+$/.test(token) ? [] : store.priceHistory(token, since).map((p) => [p.publish_time, p.price]),
           equity: /^0+$/.test(equity) ? [] : store.priceHistory(equity, since).map((p) => [p.publish_time, p.price]),
           issuerMark: store.priceHistory(`issuer_mark:${mintKey}`, since).map((p) => [p.publish_time, p.price]),
+          // Real trade history of the mainnet token behind this market, when it has a reference pool.
+          tradeDaily: m?.replicaOf || m ? store.priceHistory(`gt_day:${m?.replicaOf ?? mintKey}`, since).map((p) => [p.publish_time, p.price]) : [],
+          tradeHourly: m?.replicaOf || m ? store.priceHistory(`gt_hour:${m?.replicaOf ?? mintKey}`, since).map((p) => [p.publish_time, p.price]) : [],
           basis: store.basisHistory(mintKey, since)
         });
       }
@@ -407,6 +472,8 @@ async function main() {
     return;
   }
   setInterval(() => void pullEvents(), Number(process.env.EVENTS_PULL_MS ?? 3_000));
+  void refreshHistory();
+  setInterval(() => void refreshHistory(), 45_000);
   // One tick at a time: a slow tick (many sends) must not overlap the next, or the keeper and quoter race themselves.
   let inFlight = false;
   setInterval(() => {

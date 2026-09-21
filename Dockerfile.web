@@ -7,6 +7,8 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages ./packages
 COPY apps/web ./apps/web
 COPY fixtures ./fixtures
+# The e2e specs are in the web tsconfig and import from scripts/, so the type check needs them.
+COPY scripts ./scripts
 COPY tsconfig.base.json tsconfig.json ./
 RUN pnpm install --frozen-lockfile --ignore-scripts
 ARG NEXT_PUBLIC_CLUSTER=devnet

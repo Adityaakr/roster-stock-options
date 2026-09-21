@@ -333,7 +333,7 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
 .page-head h1 { font-family: var(--display); font-weight: 500; font-size: 32px; line-height: 36px; letter-spacing: -0.03em; margin: 0; }
 .page-head p { margin: 6px 0 0; color: var(--ink-2); font-size: 14px; line-height: 21px; }
-.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

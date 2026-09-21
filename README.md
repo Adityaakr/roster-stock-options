@@ -7,8 +7,7 @@
   <a href="programs/roster_finance">Program</a> ·
   <a href="docs">Docs</a> ·
   <a href="docs/01-architecture.md">Architecture</a> ·
-  <a href="docs/PRICING.md">Pricing</a> ·
-  <a href="#14-risk">Risk</a>
+  <a href="docs/PRICING.md">Pricing</a>
 </p>
 
 <p align="center"><code>47</code> program tests · <code>17</code> fork tests on the real mints · <code>6</code> browser journeys · <code>14</code> markets, <code>8</code> of them pre-IPO</p>
@@ -32,7 +31,6 @@ Fully paid contracts on tokenized stocks and pre-IPO tokens, on Solana. Choose a
 11. [Who has named this problem](#11-who-has-named-this-problem)
 12. [Why this is the best answer yet](#12-why-this-is-the-best-answer-yet)
 13. [Run it](#13-run-it)
-14. [Risk](#14-risk)
 
 ---
 
@@ -424,9 +422,3 @@ docs/                     architecture, decisions, pricing, intent, deploy, oper
 | [`DEVNET.md`](docs/DEVNET.md), [`DEPLOY.md`](docs/DEPLOY.md), [`SEEDING.md`](docs/SEEDING.md), [`UPGRADE.md`](docs/UPGRADE.md) | Cluster setup, hosting, the mainnet funding proposal, the upgrade runbook |
 | [`OPERATOR.md`](docs/OPERATOR.md) | External inputs and which step each one unlocks |
 | [`BUILD_LOG.md`](docs/BUILD_LOG.md) | What was built and verified, phase by phase |
-
-## 14. Risk
-
-Fully collateralized, American exercise, physical settlement. A contract does not protect against chain halts, token freezes, pauses or transfer restrictions on the underlying mint. Dividend reinvestment during a Gap accrues to the escrowed tokens and is captured by the buyer at exercise. xStocks are tracker certificates with no voting rights. PreStocks tokens confer no ownership, voting, dividend or information rights, and after an IPO must be converted within the issuer's window or expire worthless. Non-US wrappers; counsel before expanding.
-
-Contracts can expire worthless. Maximum loss on a purchase is the premium plus fees. Writing is paid risk. Nothing here is an offer of any security. The program is unaudited.

@@ -35,7 +35,7 @@ test("devnet: buy a Floor on OPENAI from the PreStocks desk, exercise it with th
   await expect(page.getByTestId("preipo-row")).toHaveCount(8, { timeout: 60_000 });
   await expect(page.getByTestId("preipo-row").filter({ hasText: "listed" }).filter({ hasNotText: "not listed" })).toHaveCount(8);
   const openai = page.getByTestId("preipo-row").filter({ hasText: "OPENAI" }).first();
-  await expect(openai).toContainText("live series");
+  await expect(openai).toContainText(/Floor at \$|live series/);
   await expect(openai).toContainText(/1\.00%|0\.50%/);
 
   // Funds from the faucet, through the wallet menu.

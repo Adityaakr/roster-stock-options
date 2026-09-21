@@ -114,11 +114,42 @@ apps/web                  the app: ask, markets, terms, positions, earn, vaults,
 docs/                     architecture, decisions, pricing, intent, deploy, operator, feeds, mints
 ```
 
-## Prior art, and what this design still carries
+## Who has named this problem
 
-PsyOptions built a fully collateralized, physically settled options book on Solana and shut down: not enough on-chain demand. Opyn abandoned its order-book v1. Zeta pivoted to perps. The book was never the failure; the empty book was. The vault model (Ribbon, Friktion, Katana) reliably attracted capital, and Hegic showed a pool that always quotes guarantees a counterparty on day one, at the cost of selling cheap into every volatility spike.
+Cited by publisher and month as the brief records them; none of these is our claim.
 
-Roster keeps the book and adds vaults that quote into it, with a utilisation skew so the vault stops selling as it fills. What it still carries: the vaults are short volatility with no hedge, because there is no single-name stock perp on Solana to hedge on. They will have losing epochs, and every one is published.
+- **CoinGecko, September 2026.** Perpetuals on tokenized equities did $376.3B against $7.5B of spot. The demand is for leverage; the instrument for it is the one that cannot liquidate you.
+- **Decentralised.co, September 2026.** 63% of tokenized-equity spot volume on Solana in 2026 happened outside US exchange hours: the token trades when the share does not. Their case for concentrating options liquidity on one asset concerned SOL; applying it to a stock is our reading.
+- **Pyth, February 2026.** Synthetic overnight pricing produced liquidations at untradeable prices. A mark the market never printed is still a mark a perp will liquidate on.
+- **Pantera, June 2026.** Equity-based tokenized startups were out-trading perps. The demand for the underlying is there; the instruments around it are not.
+- **The Block, May 2026.** A $200M pre-IPO position hedged against $3M of open interest. The exit market for private-company tokens is a rounding error next to the positions that need one.
+- **PreStocks, their own FAQ.** A holder can exit through on-chain liquidity, and after an IPO the token converts within a window or expires worthless. That is an exit whose price nobody knows in advance, on an asset with a hard deadline.
+- **Alpaca, on order types.** A limit order controls the price of a fill but not whether it fills. Through the hours a holder most needs to leave, it can sit there.
+
+Everyone above is describing the same gap from a different side: an asset that trades all week, a reference price that exists for a fifth of it, leverage that liquidates on the difference, and no way to fix a price for a date.
+
+## Why this is the best answer yet
+
+Each earlier answer solved one part and left the rest.
+
+| Approach | What it gets right | What it leaves | Roster |
+| --- | --- | --- | --- |
+| Perps (Hyperliquid, CEX stock perps) | Leverage, always open | Liquidation on a synthetic mark, funding every hour | Loss capped at the premium; no mark can liquidate; the token itself is delivered |
+| Loops (Kamino, Loopscale) | Spot exposure with borrow | Collateral liquidation, interest, no fixed exit | No borrowing; nothing to liquidate |
+| Order-book options (PsyOptions, Zeta v1) | Fully collateralized, physically settled, price discovery | Empty books; every strike its own thin market; shut down or pivoted | The same book, plus a vault that always quotes into it, and a live-series cap so the book cannot sprawl |
+| Pool options (Hegic) | A counterparty on day one | One implied volatility whatever the flow: sold cheap into every spike | The vault's ask rises with its own utilisation and stops at the cap; external makers can undercut it, so the book still discovers price |
+| Hedged pools (Lyra, Premia) | Capital efficiency | Need a perp to hedge on; there is no single-name stock perp on Solana | Only the two structurally safe writer positions, covered call and cash-secured put, so an unhedged writer's worst case is owning or having sold the stock at a strike they chose |
+| Vaults (Ribbon, Friktion, Katana) | Depositors accept "hold this, get paid" | Drawdowns hidden until they hit; one strike, one expiry, no bid | Weekly epochs with every result published with its sign; a bid on everything the vault has sold, so holders can leave without paying the strike |
+| Listed options (CBOE) | The instrument itself | Closed on Saturday; not on chain; not on pre-IPO names | Open all week; settles into the wallet; the same contract on OpenAI and SpaceX tokens |
+
+Four decisions carry it.
+
+1. **Exercise reads no oracle.** A holder burns, pays or delivers, and receives from a vault that was funded before the contract was sold. The hours when a feed is stale or absent are exactly the hours a holder needs to leave, so a feed was never allowed near the exit. Pyth prices the contract; it never gates it.
+2. **Raw-unit denomination.** Contracts are integers of raw tokens and USDC per unit, so dividends, splits and scaled-UI multiplier changes never touch a live position. The multiplier is used to display and to price, never to settle.
+3. **The book and the vault together.** The book alone died of empty strikes; the pool alone died of one price. Here the vault guarantees a counterparty on day one and prices its own risk by utilisation, and any maker who thinks it is wrong can undercut it in the same book.
+4. **Published risk.** Every quote's collateral by account, every exercise by signature, every vault epoch with its sign, on the roster page from day one. The claim is not "trust the vault"; it is "check it".
+
+What it still carries from its predecessors: the vaults are short volatility with no hedge available, and they will have losing epochs. Every one is published, the deposit screen shows three adverse scenarios in real numbers, and nothing on the product is called yield.
 
 ## Risk
 

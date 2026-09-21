@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { Icon } from "@/components/icons";
 import { WalletMenu } from "@/components/wallet-menu";
 import { useCluster } from "@/lib/cluster";
@@ -53,6 +54,7 @@ function Shell({ children }: { children: ReactNode }) {
   const market = useMarketParam(pathname);
   const withMarket = (href: string) => (market && ["/underwrite", "/roster", "/buy"].includes(href) ? `${href}?m=${encodeURIComponent(market)}` : href);
   const first = pathname.split("/")[1] ?? "";
+  const reduce = useReducedMotion();
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -65,6 +67,7 @@ function Shell({ children }: { children: ReactNode }) {
                 const soon = "soonOn" in it && (it.soonOn as string[]).includes(cluster.cluster);
                 return (
                   <Link key={it.href} href={withMarket(it.href)} aria-current={it.match(pathname) ? "page" : undefined} className={soon ? "soon" : undefined}>
+                    {it.match(pathname) ? <motion.i className="pill" layoutId="nav-pill" aria-hidden transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 38, mass: 0.6 }} /> : null}
                     <it.icon />
                     {it.label}
                     {soon ? <span className="soon-tag">soon</span> : null}

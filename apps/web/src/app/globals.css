@@ -318,11 +318,18 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; }
 .sidebar { border-right: 1px solid var(--line); padding: 20px 16px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 24px; background: var(--paper); }
 .sidebar nav { display: grid; gap: 2px; }
-.sidebar nav a { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 12px; border-radius: 6px; font-size: 14px; color: var(--ink-2); transition: background 120ms ease, color 120ms ease; }
-.sidebar nav a:hover { color: var(--ink); background: var(--surface); }
+.sidebar nav a { position: relative; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 12px; border-radius: 8px; font-size: 14px; color: var(--ink-2); transition: color 160ms var(--ease); isolation: isolate; }
+.sidebar nav a:hover { color: var(--ink); }
+.sidebar nav a::before { content: ""; position: absolute; inset: 0; border-radius: 8px; background: var(--ink); opacity: 0; transition: opacity 160ms var(--ease); z-index: -1; }
+.sidebar nav a:hover::before { opacity: 0.05; }
+/* The active pill is one element that slides between items (a shared layout animation), translucent ink over paper. */
+.sidebar nav a .pill { position: absolute; inset: 0; border-radius: 8px; background: var(--ink); opacity: 0.9; z-index: -1; }
+.sidebar nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sidebar nav a:focus:not(:focus-visible) { outline: none; }
 /* The current screen is a solid ink pill, the same weight as the primary button, so there is never a stray bar or a
    half-tinted box to read as a border. */
-.sidebar nav a[aria-current="page"] { color: var(--paper); background: var(--ink); font-weight: 500; }
+.sidebar nav a[aria-current="page"] { color: var(--paper); font-weight: 500; }
+.sidebar nav a[aria-current="page"]:hover::before { opacity: 0; }
 .sidebar nav a svg { width: 16px; height: 16px; flex: 0 0 16px; opacity: 0.7; }
 .sidebar nav a:hover svg, .sidebar nav a[aria-current="page"] svg { opacity: 1; }
 .sidebar .group { font-family: var(--mono); font-size: 11px; color: var(--slate); padding: 0 10px; margin: 8px 0 4px; }

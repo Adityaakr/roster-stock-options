@@ -8,3 +8,5 @@ allowBuilds:
   utf-8-validate: true
   sharp: true
   unrs-resolver: false
+  "@reown/appkit": false
+  keccak: false

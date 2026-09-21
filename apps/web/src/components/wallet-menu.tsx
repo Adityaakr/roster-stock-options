@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useConnect } from "@/lib/connect";
 import { useCluster, explorerUrl } from "@/lib/cluster";
 import { short } from "@/lib/format";
 import { Icon } from "@/components/icons";
@@ -18,7 +18,7 @@ async function fund(wallet: string, say: (s: string) => void): Promise<void> {
 /** Connect button, or the active wallet with a menu: copy, view on explorer, disconnect. The app signs and submits; the wallet's network setting never matters. */
 export function WalletMenu() {
   const { publicKey, disconnect, wallet } = useWallet();
-  const { setVisible } = useWalletModal();
+  const connect = useConnect();
   const cluster = useCluster();
   const [open, setOpen] = useState(false);
   const [faucet, setFaucet] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function WalletMenu() {
   if (!active) {
     return (
       <div className="btnrow">
-        <button className="btn primary sm" onClick={() => setVisible(true)}>
+        <button className="btn primary sm" onClick={() => connect()}>
           Connect wallet
         </button>
       </div>

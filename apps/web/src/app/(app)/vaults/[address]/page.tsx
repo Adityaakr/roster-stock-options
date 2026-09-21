@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useConnect } from "@/lib/connect";
 import { PublicKey } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { LineChart } from "@/components/charts";
@@ -277,7 +277,7 @@ function DepositPanel({ x, market, nowTs, onChanged }: { x: VaultView; market: R
   const cluster = useCluster();
   const { connection } = useConnection();
   const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const connect = useConnect();
   const tx = useTransaction();
   const v = x.v;
   const [amount, setAmount] = useState<number>(0);
@@ -351,7 +351,7 @@ function DepositPanel({ x, market, nowTs, onChanged }: { x: VaultView; market: R
       </div>
 
       {!publicKey ? (
-        <button className="btn primary vcta" onClick={() => setVisible(true)}>Connect wallet</button>
+        <button className="btn primary vcta" onClick={() => connect()}>Connect wallet</button>
       ) : (
         <button className="btn primary vcta" disabled={busy || amount <= 0 || !cluster.programDeployed || v.halted} data-testid="vault-deposit" onClick={() => void run("vault_deposit", { raw: (x.cc ? BigInt(Math.round(amount * x.rawPerToken)) : BigInt(Math.round(amount * 1e6))).toString() })}>
           {v.halted ? "Vault halted" : amount > 0 ? `Queue ${usdK(amount)} ${x.unit} for the roll` : "Enter an amount"}

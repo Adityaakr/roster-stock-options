@@ -28,6 +28,9 @@ test("devnet: deposit into the vault, buy from it, sell back to it", async ({ pa
 
   // Connect the burner and take funds.
   await page.getByRole("button", { name: /connect wallet/i }).first().click();
+  // The adapter modal lists Privy first and folds the rest; the burner sits behind "More options" when Privy is configured.
+  const more = page.getByRole("button", { name: /more options/i });
+  if (await more.isVisible()) { await more.click(); await expect(page.getByRole("button", { name: /burner wallet/i })).toHaveAttribute("tabindex", "0"); }
   await page.getByRole("button", { name: /burner wallet/i }).click();
   const walletBtn = page.getByTestId("wallet");
   await expect(walletBtn).toBeVisible({ timeout: 20_000 });

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MarketLogo } from "@/components/market-list";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useConnect } from "@/lib/connect";
 import { TxStatus } from "@/components/tx-status";
 import { Badge, ErrorState, KV, Loading } from "@/components/ui";
 import { useCluster } from "@/lib/cluster";
@@ -41,7 +41,7 @@ function UnderwriteInner() {
   const { data, error, reload } = useRoster(params.get("m"));
   const cluster = useCluster();
   const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const connect = useConnect();
   const tx = useTransaction();
   const wanted = params.get("t");
   const [side, setSide] = useState<Side>(wanted?.includes("-call-") ? "call" : "put");
@@ -249,7 +249,7 @@ function UnderwriteInner() {
 
             <div className="divider" style={{ margin: "18px 0" }} />
             {!publicKey ? (
-              <button className="btn primary wide" onClick={() => setVisible(true)}>Connect wallet to quote</button>
+              <button className="btn primary wide" onClick={() => connect()}>Connect wallet to quote</button>
             ) : (
               <button className="btn primary wide" disabled={!cluster.programDeployed || busy || expired || !t.series} onClick={quote} data-testid="write">Lock {side === "put" ? `$${usd0(Math.max(0, m.locked - (side === "put" ? free * t.strike : 0)))}` : `${Math.max(0, m.locked - free)} ${sym}`} and quote</button>
             )}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense, use, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useConnect } from "@/lib/connect";
 import { PayoffChart } from "@/components/payoff-chart";
 import { Slider } from "@/components/landing/examples";
 import { TxStatus } from "@/components/tx-status";
@@ -35,7 +35,7 @@ function ActInner({ id }: { id: string }) {
   const { data, error, reload } = useRoster(parsed?.symbol ?? null);
   const cluster = useCluster();
   const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const connect = useConnect();
   const tx = useTransaction();
   // The intent box hands over a size in the url; otherwise the default.
   const [size, setSize] = useState(Math.max(0, Number(search.get("size"))) || DEFAULT_SIZE);
@@ -149,7 +149,7 @@ function ActInner({ id }: { id: string }) {
           <div className="act-foot">
             <div className="divider" style={{ margin: "0 0 14px" }} />
             {!publicKey ? (
-              <button className="btn primary wide" onClick={() => setVisible(true)}>Connect wallet to buy</button>
+              <button className="btn primary wide" onClick={() => connect()}>Connect wallet to buy</button>
             ) : (
               <button className="btn primary wide" disabled={!canSign} onClick={buy} data-testid="buy">Buy {size} {u.symbol} {name}{c.fillable ? ` for $${usdSmart(c.total)}` : ""}</button>
             )}

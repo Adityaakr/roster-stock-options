@@ -13,6 +13,8 @@ COPY tsconfig.base.json tsconfig.json ./
 RUN pnpm install --frozen-lockfile --ignore-scripts
 ARG NEXT_PUBLIC_CLUSTER=devnet
 ENV NEXT_PUBLIC_CLUSTER=$NEXT_PUBLIC_CLUSTER
+ARG NEXT_PUBLIC_PRIVY_APP_ID
+ENV NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --filter @roster/web build
 EXPOSE 3000

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useConnect } from "@/lib/connect";
 import { TxStatus } from "@/components/tx-status";
 import { MarketLogo } from "@/components/market-list";
 import { Badge, ErrorState, KV, Loading, Tabs } from "@/components/ui";
@@ -35,7 +35,7 @@ function BuyInner() {
   const { data, error } = useRoster(params.get("m"));
   const cluster = useCluster();
   const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const connect = useConnect();
   const tx = useTransaction();
   const reduce = useReducedMotion();
   const [usdcIn, setUsdcIn] = useState(1000);
@@ -171,7 +171,7 @@ function BuyInner() {
               </div>
               {estimated && premium !== null ? <p className="small muted" style={{ margin: "8px 0 0" }}>Sized at the mark until a swap quote arrives; the transaction sizes the floor to the swap&apos;s minimum out.</p> : null}
               <div className="divider" style={{ margin: "16px 0" }} />
-              {!publicKey ? <button className="btn primary wide" onClick={() => setVisible(true)}>Connect wallet</button> : <button className="btn primary wide" disabled={!ready || !f || !w?.fillable} onClick={() => run(true)} data-testid="buy-floor">Buy {u.symbol} with a ${f ? usdK(f.strike) : "–"} floor</button>}
+              {!publicKey ? <button className="btn primary wide" onClick={() => connect()}>Connect wallet</button> : <button className="btn primary wide" disabled={!ready || !f || !w?.fillable} onClick={() => run(true)} data-testid="buy-floor">Buy {u.symbol} with a ${f ? usdK(f.strike) : "–"} floor</button>}
             </>
           ) : (
             <>
@@ -183,7 +183,7 @@ function BuyInner() {
                 { k: "Worst case", v: "the token price" }
               ]} />
               <div className="divider" style={{ margin: "16px 0" }} />
-              {!publicKey ? <button className="btn primary wide" onClick={() => setVisible(true)}>Connect wallet</button> : <button className="btn primary wide" disabled={!ready} onClick={() => run(false)} data-testid="buy-plain">Buy {tokens === null ? "" : `${tokens.toFixed(2)} `}{u.symbol}</button>}
+              {!publicKey ? <button className="btn primary wide" onClick={() => connect()}>Connect wallet</button> : <button className="btn primary wide" disabled={!ready} onClick={() => run(false)} data-testid="buy-plain">Buy {tokens === null ? "" : `${tokens.toFixed(2)} `}{u.symbol}</button>}
             </>
           )}
         </div>

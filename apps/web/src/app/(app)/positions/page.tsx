@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useConnect } from "@/lib/connect";
 import { TxStatus } from "@/components/tx-status";
 import { Address, Badge, Empty, ErrorState, KV, Loading, Stat } from "@/components/ui";
 import { useCluster, explorerUrl } from "@/lib/cluster";
@@ -22,7 +22,7 @@ export default function PositionsPage() {
   const { data, error } = useRoster();
   const cluster = useCluster();
   const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const connect = useConnect();
   const { positions, history, error: perror, reload } = usePositions();
   const list = data?.cluster === "fixture" ? data.positions : positions;
   const markets = new Map((data?.markets ?? []).map((m) => [m.symbol, m]));
@@ -41,7 +41,7 @@ export default function PositionsPage() {
       </div>
       {error || perror ? <ErrorState message={`Could not read positions: ${error ?? perror}`} next="Reload the page." /> : null}
       {!data && !error ? <Loading what="positions" /> : null}
-      {data && data.cluster !== "fixture" && !publicKey ? <Empty title="Connect a wallet" action="Positions are read from the wallet's position tokens, so there is nothing to show until one is connected." cta={<button className="btn primary" onClick={() => setVisible(true)}>Connect wallet</button>} /> : null}
+      {data && data.cluster !== "fixture" && !publicKey ? <Empty title="Connect a wallet" action="Positions are read from the wallet's position tokens, so there is nothing to show until one is connected." cta={<button className="btn primary" onClick={() => connect()}>Connect wallet</button>} /> : null}
       {data && list && list.length === 0 && history.length === 0 && (publicKey || data.cluster === "fixture") ? <Empty title="No positions" action="Buy a Gap or a Floor from the terms and it appears here with its countdown and its exercise terms." cta={<Link href="/markets" className="btn primary">See the terms</Link>} /> : null}
       {data && list && list.length > 0 ? (
         <>

@@ -11,6 +11,9 @@ const connection = new Connection(FORK_URL, "confirmed");
 
 async function connectBurner(page: Page): Promise<PublicKey> {
   await page.getByRole("button", { name: /connect wallet/i }).first().click();
+  // The adapter modal lists Privy first and folds the rest; the burner sits behind "More options" when Privy is configured.
+  const more = page.getByRole("button", { name: /more options/i });
+  if (await more.isVisible()) { await more.click(); await expect(page.getByRole("button", { name: /burner wallet/i })).toHaveAttribute("tabindex", "0"); }
   await page.getByRole("button", { name: /burner wallet/i }).click();
   const btn = page.getByTestId("wallet");
   await expect(btn).toBeVisible({ timeout: 20_000 });
@@ -22,7 +25,7 @@ test("a Protected Buy delivers the tokens and the floor in one transaction", asy
   const up = await forkReachable();
   const services = await servicesWarm();
   // The swap leg needs the fork (a devnet replica has no route), so the services must be the fork's.
-  const health = await fetch("http://127.0.0.1:8787/v1/health").then((r) => (r.ok ? r.json() : null)).catch(() => null) as { cluster?: string } | null;
+  const health = await fetch(`${process.env.SERVICES_URL ?? "http://127.0.0.1:8787"}/v1/health`).then((r) => (r.ok ? r.json() : null)).catch(() => null) as { cluster?: string } | null;
   test.skip(!up || !services || health?.cluster !== "fork", "fork or its services not running");
   await page.goto("/buy?m=NVDAx");
   await expect(page.getByRole("heading", { level: 1, name: "Protected Buy" })).toBeVisible();

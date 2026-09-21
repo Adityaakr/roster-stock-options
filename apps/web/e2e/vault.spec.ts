@@ -9,9 +9,9 @@ test.describe.configure({ mode: "serial" });
 
 test("devnet: deposit into the vault, buy from it, sell back to it", async ({ page }) => {
   test.setTimeout(600_000);
-  const health = await fetch("http://127.0.0.1:8787/v1/health").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const health = await fetch(`${process.env.SERVICES_URL ?? "http://127.0.0.1:8787"}/v1/health`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   test.skip(!health || (health as { cluster?: string }).cluster !== "devnet", "services are not on devnet");
-  const vaults = (await fetch("http://127.0.0.1:8787/v1/vaults").then((r) => r.json())) as { symbol: string; kind: string; totalShares: string }[];
+  const vaults = (await fetch(`${process.env.SERVICES_URL ?? "http://127.0.0.1:8787"}/v1/vaults`).then((r) => r.json())) as { symbol: string; kind: string; totalShares: string }[];
   const cc = vaults.find((v) => v.symbol === "NVDAx" && v.kind === "covered_call");
   test.skip(!cc || cc.totalShares === "0", "the NVDAx covered-call vault has not rolled yet");
   const errors: string[] = [];

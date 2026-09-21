@@ -23,7 +23,7 @@ async function waitDone(page: Page): Promise<string> {
 
 test("devnet: buy a Floor on OPENAI from the PreStocks desk, exercise it with the fee delivered on top", async ({ page }) => {
   test.setTimeout(600_000);
-  const roster = await fetch("http://127.0.0.1:8787/v1/roster").then((r) => (r.ok ? r.json() : null)).catch(() => null) as { cluster?: string; markets?: { symbol: string }[] } | null;
+  const roster = await fetch(`${process.env.SERVICES_URL ?? "http://127.0.0.1:8787"}/v1/roster`).then((r) => (r.ok ? r.json() : null)).catch(() => null) as { cluster?: string; markets?: { symbol: string }[] } | null;
   test.skip(!roster || roster.cluster !== "devnet" || !roster.markets?.some((m) => m.symbol === "OPENAI"), "services are not on devnet with OPENAI listed");
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));

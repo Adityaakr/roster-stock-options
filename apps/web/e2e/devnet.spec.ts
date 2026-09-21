@@ -27,14 +27,14 @@ test.describe.configure({ mode: "serial" });
 
 test("devnet: fund a wallet from the faucet, buy a Gap, buy a Floor, write and exercise", async ({ page }) => {
   test.setTimeout(600_000);
-  const health = await fetch("http://127.0.0.1:8787/v1/health").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const health = await fetch(`${process.env.SERVICES_URL ?? "http://127.0.0.1:8787"}/v1/health`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   test.skip(!health || (health as { cluster?: string }).cluster !== "devnet", "services are not on devnet");
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const connection = new Connection(RPC, "confirmed");
 
   await page.goto("/markets/NVDAx");
-  await expect(page.getByRole("heading", { level: 1, name: "NVDAx" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "NVDAx" })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("term-row").first()).toBeVisible({ timeout: 30_000 });
 
   // Connect the burner the test clusters offer, then take funds from the app's faucet: no cheatcode, no terminal.

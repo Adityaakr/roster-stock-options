@@ -130,6 +130,7 @@ async function main() {
   const vaultQuoter = new VaultQuoter(quoterClient, { ...DEFAULT_QUOTER, lotsPerSeries: BigInt(Math.round(Number(process.env.QUOTER_LOTS_PER_SERIES ?? 50) * 1e6)) }, DEFAULT_VAULT_QUOTER);
   /** The vaults seen on the last tick, by market, for the REST. */
   const vaultsLive = new Map<string, VaultState[]>();
+  let vaultsAnswer: { at: number; body: unknown[] } | null = null;
   const live = new Map<string, MarketLive>();
   let lastTick = 0;
   let blocked: string | null = null;
@@ -436,12 +437,15 @@ async function main() {
         });
       }
       if (url.pathname === "/v1/vaults") {
-        const out = [];
-        for (const [symbol, vs] of vaultsLive) {
-          for (const v of vs) {
+        // Every vault's balances and epoch records are live reads; one answer serves every page open for ten seconds,
+        // and the vaults are read side by side rather than one after another.
+        if (vaultsAnswer && Date.now() - vaultsAnswer.at < 10_000) return json(200, vaultsAnswer.body);
+        const all = [...vaultsLive].flatMap(([symbol, vs]) => vs.map((v) => ({ symbol, v })));
+        const out = await Promise.all(all.map(async ({ symbol, v }) => {
+          {
             const epochs = v.epoch > 0 ? await reader.fetchEpochRecords(v.address, Array.from({ length: Math.min(v.epoch, 30) }, (_, i) => v.epoch - 1 - i)).catch(() => []) : [];
             const [collateral, other] = await Promise.all([connection.getAccountInfo(v.collateralAta, "confirmed"), connection.getAccountInfo(v.otherAta, "confirmed")]);
-            out.push({
+            return ({
               symbol, address: v.address.toBase58(), kind: v.kind, halted: v.halted, manager: v.manager.toBase58(), shareMint: v.shareMint.toBase58(),
               collateralMint: v.collateralMint.toBase58(), otherMint: v.otherMint.toBase58(), collateralAta: v.collateralAta.toBase58(), otherAta: v.otherAta.toBase58(),
               collateralBalance: collateral ? collateral.data.readBigUInt64LE(64).toString() : "0", otherBalance: other ? other.data.readBigUInt64LE(64).toString() : "0",
@@ -453,7 +457,8 @@ async function main() {
               epochs: epochs.sort((a, b) => a.epoch - b.epoch).map((r) => ({ epoch: r.epoch, rolledAt: Number(r.rolledAt), navCollateralRaw: r.navCollateralRaw.toString(), navOther: r.navOther.toString(), markUsdcPerLot: r.markUsdcPerLot.toString(), totalSharesAfter: r.totalSharesAfter.toString(), premiumIn: r.premiumIn.toString(), buybackOut: r.buybackOut.toString(), assignedLots6: r.assignedLots6.toString(), pnlPerShare1e6: r.pnlPerShare1e6.toString(), sharesPerRaw1e12: r.sharesPerRaw1e12.toString(), collateralPerShare1e12: r.collateralPerShare1e12.toString(), otherPerShare1e12: r.otherPerShare1e12.toString() })),
             });
           }
-        }
+        }));
+        vaultsAnswer = { at: Date.now(), body: out };
         return json(200, out);
       }
       const vbid = url.pathname.match(/^\/v1\/vaults\/([1-9A-HJ-NP-Za-km-z]+)\/bid\/([1-9A-HJ-NP-Za-km-z]+)$/);

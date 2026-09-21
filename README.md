@@ -12,7 +12,7 @@
 
 <p align="center"><code>47</code> program tests · <code>17</code> fork tests on the real mints · <code>6</code> browser journeys · <code>14</code> markets, <code>8</code> of them pre-IPO</p>
 
-Fully paid contracts on tokenized stocks and pre-IPO tokens, on Solana. Choose an expiry, see the premium and the break-even, and know your maximum loss before you click. No borrowing, no funding payments, no margin calls. Every contract is backed in full from the moment it is sold and settles into your wallet as the token itself.
+Trade the upside of tokenized stocks on Solana with a fully paid contract. Choose your expiry, see your premium and break-even, and know your maximum loss before you buy. No borrowing, no funding payments, no margin calls.
 
 ---
 

@@ -1,3 +1,4 @@
+import { failoverFetch, rpcEndpoints } from "@roster/core";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
       return refusal((c as { id?: unknown }).id, `${typeof method === "string" ? method : "that method"} is not relayed; reads only, and transactions go through /api/tx/send`);
     }
   }
-  const res = await fetch(RPC, { method: "POST", headers: { "content-type": "application/json" }, body: raw, signal: AbortSignal.timeout(20_000) }).catch(() => null);
+  const res = await failoverFetch(rpcEndpoints(RPC, process.env.NEXT_PUBLIC_CLUSTER ?? null), 20_000)(RPC, { method: "POST", headers: { "content-type": "application/json" }, body: raw }).catch(() => null);
   if (!res) return NextResponse.json({ error: "the RPC did not answer" }, { status: 502 });
   const text = await res.text();
   return new NextResponse(text, { status: res.status, headers: { "content-type": "application/json" } });

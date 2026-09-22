@@ -1,3 +1,4 @@
+import { failoverFetch, rpcEndpoints } from "@roster/core";
 import "server-only";
 import { createHash } from "node:crypto";
 import { AddressLookupTableAccount, ComputeBudgetProgram, Connection, PublicKey, Transaction, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
@@ -15,7 +16,7 @@ const JUPITER_PROGRAM = new PublicKey("JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTa
 
 /** Every RPC read is bounded: a hung RPC must not hold a route open. */
 export function connection(): Connection {
-  return new Connection(RPC_URL, { commitment: "confirmed", fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(10_000) }) });
+  return new Connection(RPC_URL, { commitment: "confirmed", fetch: failoverFetch(rpcEndpoints(RPC_URL, process.env.NEXT_PUBLIC_CLUSTER ?? null), 10_000) });
 }
 
 /**

@@ -266,7 +266,7 @@ function UnderwriteInner() {
               <div><span>You lock</span><b className="mono">{side === "put" ? `$${usd0(m.locked)}` : `${m.locked} ${sym}`}</b><i className="small muted">until {dayLabel(t.expiryTs)} or exercise</i></div>
               <div><span>You receive</span><b className="mono up">${usdSmart(m.premium)}</b><i className="small muted">{m.locked > 0 ? `${((m.premium / (side === "put" ? m.locked : m.locked * u.mark)) * 100).toFixed(2)}% on collateral, to expiry` : ""}</i></div>
               <div><span>{side === "put" ? "Buy at, if assigned" : "Sell at, if assigned"}</span><b className="mono">${usd(m.effective)}</b><i className="small muted">strike {side === "put" ? "less" : "plus"} the premium</i></div>
-              <div><span>Worst case</span><b className="mono down">{side === "put" ? `−$${usdSmart(m.locked - m.premium)}` : "upside above the strike forgone"}</b><i className="small muted">{side === "put" ? `if ${sym} goes to zero` : `you keep ${sym} below $${usdK(t.strike)}`}</i></div>
+              <div><span>Worst case</span><b className="mono down">{side === "put" ? `−$${usdSmart(m.locked - m.premium)}` : "the upside above the strike"}</b><i className="small muted">{side === "put" ? `if ${sym} goes to zero` : `you keep ${sym} below $${usdK(t.strike)}`}</i></div>
             </div>
 
             <WriterSketch side={side} strike={t.strike} premium={m.premium} size={size} mark={u.mark} sym={sym} />

@@ -1,3 +1,4 @@
+import { failoverFetch, rpcEndpoints } from "@roster/core";
 import { NextResponse } from "next/server";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -75,7 +76,8 @@ export async function POST(req: Request) {
   const wait = PER_WALLET_MS - (Date.now() - last);
   if (wait > 0) return NextResponse.json({ error: `already funded; ask again in ${Math.ceil(wait / 60_000)} minutes` }, { status: 429 });
 
-  const connection = new Connection(process.env.RPC_URL ?? "https://api.devnet.solana.com", "confirmed");
+  const rpc = process.env.RPC_URL ?? "https://api.devnet.solana.com";
+  const connection = new Connection(rpc, { commitment: "confirmed", fetch: failoverFetch(rpcEndpoints(rpc, "devnet")) });
   // A few tokens per transaction: creating an account and minting for eight mints at once does not fit in one, and a
   // faucet that fails on its last leg has funded nobody.
   const legs: { mint: PublicKey; program: PublicKey; raw: bigint }[] = [

@@ -43,7 +43,7 @@ export function Hero({ data }: { data: RosterData }) {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 40, overflow: "clip" }}>
           <div style={{ maxWidth: 673, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
             <WordReveal as="h1" text="Stock leverage without margin liquidation." className="display" delay={0.6} stagger={0.05} style={{ textAlign: "center" }} />
-            <WordReveal as="p" text="Trade the upside of tokenized stocks on Solana with a fully paid contract. Choose your expiry, see your premium and break-even, and know your maximum loss before you buy. No borrowing, no funding payments, no margin calls." className="body" delay={1} stagger={0.03} style={{ textAlign: "center", maxWidth: 635 }} />
+            <WordReveal as="p" text="Trade the upside of tokenized stocks on Solana with a fully paid contract. Choose your expiry, see your premium and break-even, and know your maximum loss before you buy. No borrowing, no funding payments, no margin calls." marks={{ Solana: <Image src="/brands/solana.com.png" alt="" width={16} height={16} className="inline-mark" /> }} className="body" delay={1} stagger={0.03} style={{ textAlign: "center", maxWidth: 635 }} />
           </div>
           <div className="btnrow" style={{ justifyContent: "center", gap: 10 }}>
             <MountReveal delay={2} y={20}><a href="#terms" className="btn primary"><Roll>See the terms</Roll></a></MountReveal>

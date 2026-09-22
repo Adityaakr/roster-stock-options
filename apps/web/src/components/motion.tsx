@@ -41,9 +41,10 @@ export function MountReveal({ children, y = 20, delay = 0, className, style }: {
 }
 
 /** Word-by-word blur reveal on mount (Aoutive textEffect, tokenization "word"). */
-export function WordReveal({ text, delay = 0.6, stagger = 0.05, className, as: Tag = "h1", style }: { text: string; delay?: number; stagger?: number; className?: string; as?: "h1" | "h2" | "p"; style?: React.CSSProperties }) {
+export function WordReveal({ text, delay = 0.6, stagger = 0.05, className, as: Tag = "h1", style, marks }: { text: string; delay?: number; stagger?: number; className?: string; as?: "h1" | "h2" | "p"; style?: React.CSSProperties; /** A mark to set before a word, keyed by the word without punctuation. */ marks?: Record<string, ReactNode> }) {
   const reduce = useReducedMotion();
   const words = text.split(" ");
+  const markFor = (w: string) => marks?.[w.replace(/[^A-Za-z0-9]/g, "")];
   return (
     <Tag className={className} style={style} aria-label={text}>
       {words.map((w, i) => (
@@ -55,6 +56,7 @@ export function WordReveal({ text, delay = 0.6, stagger = 0.05, className, as: T
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ ...SPRING_TEXT, delay: delay + i * stagger }}
         >
+          {markFor(w)}
           {w}
           {i < words.length - 1 ? " " : ""}
         </motion.span>

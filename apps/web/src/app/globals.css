@@ -1245,3 +1245,4 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .phead { flex: 1 1 560px; max-width: 780px; min-width: 0; }
 .pprice { flex: none; margin-left: auto; align-self: flex-start; padding-top: 6px; }
 @media (max-width: 640px) { .phead { flex-basis: 100%; max-width: none; } .pprice { margin-left: 0; padding-top: 0; } }
+.inline-mark { display: inline-block; width: 1em; height: 1em; border-radius: 3px; vertical-align: -0.15em; margin-right: 0.3em; object-fit: cover; }

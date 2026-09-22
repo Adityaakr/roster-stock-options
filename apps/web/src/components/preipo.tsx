@@ -12,6 +12,8 @@ export interface PreIpoTokenView {
 }
 export function spreadLabel(pct: number | null): string {
   if (pct === null) return "n/a";
+  // Within a twentieth of a percent the token is at the mark; a signed zero would claim a direction it does not have.
+  if (Math.abs(pct) < 0.05) return "at the mark";
   return `${pct >= 0 ? "+" : "−"}${Math.abs(pct).toFixed(1)}% ${pct >= 0 ? "above" : "below"}`;
 }
 export function floatUsd(t: PreIpoTokenView): number {

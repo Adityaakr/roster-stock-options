@@ -35,16 +35,13 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
           <span className="mono">{u.symbol}</span>
         </label>
       </div>
-      <div className="flex items-center gap-2 flex-wrap small" style={{ marginBottom: 10 }}>
-        <span>Mark <b className="mono ink">${usd(u.mark)}</b></span>
-        <span className="muted">·</span>
-        {preIpo ? <Badge tone="blue" dot>No exchange session</Badge> : <Badge tone={data.session === "regular" ? "green" : "amber"} dot>{sess}</Badge>}
-        <span className="muted">·</span>
+      <div className="dfacts">
+        <span><i>Mark</i><b className="mono">${usd(u.mark)}</b></span>
+        <span><i>Session</i>{preIpo ? <Badge tone="blue" dot>No exchange session</Badge> : <Badge tone={data.session === "regular" ? "green" : "amber"} dot>{sess}</Badge>}</span>
         {preIpo
-          ? <span>Token vs issuer mark <b className={`mono ${market?.markSpreadBps === null || market?.markSpreadBps === undefined ? "muted" : market.markSpreadBps >= 0 ? "up" : "down"}`}>{market?.markSpreadBps === null || market?.markSpreadBps === undefined ? "n/a" : `${market.markSpreadBps >= 0 ? "+" : "−"}${(Math.abs(market.markSpreadBps) / 100).toFixed(1)}%`}</b>{market?.issuerMarkPrice ? <span className="muted"> (mark ${usd(market.issuerMarkPrice)})</span> : null}</span>
-          : <span>Token vs share basis <b className="mono ink">{u.basisBps === null ? "n/a, equity feed closed" : `${u.basisBps >= 0 ? "+" : ""}${u.basisBps} bps`}</b></span>}
-        <span className="muted">·</span>
-        <span>Expiry <b className="mono ink">{dayLabel(expiry)}</b> in <b className="mono ink">{countdown(expiry, data.nowTs)}</b></span>
+          ? <span><i>Token vs issuer mark</i><b className={`mono ${market?.markSpreadBps === null || market?.markSpreadBps === undefined ? "muted" : market.markSpreadBps >= 0 ? "up" : "down"}`}>{market?.markSpreadBps === null || market?.markSpreadBps === undefined ? "n/a" : `${market.markSpreadBps >= 0 ? "+" : "−"}${(Math.abs(market.markSpreadBps) / 100).toFixed(1)}%`}</b>{market?.issuerMarkPrice ? <span className="muted"> (mark ${usd(market.issuerMarkPrice)})</span> : null}</span>
+          : <span><i>Token vs share basis</i><b className="mono">{u.basisBps === null ? "n/a, equity feed closed" : `${u.basisBps >= 0 ? "+" : ""}${u.basisBps} bps`}</b></span>}
+        <span><i>Expiry</i><b className="mono">{dayLabel(expiry)} <em>in {countdown(expiry, data.nowTs)}</em></b></span>
       </div>
       <div className="card scroll-x">
         <table className="table dtable">
@@ -57,11 +54,12 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
               <th className="num">Max loss</th>
               <th className="num col-move">Move needed</th>
               <th className="num col-fill">Fillable</th>
+              <th className="d-go" aria-label="open"></th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <tr><td colSpan={7} className="muted">No live terms at this expiry.</td></tr>
+              <tr><td colSpan={8} className="muted">No live terms at this expiry.</td></tr>
             ) : rows.map((t) => {
               const c = costOf(t, size, u.multiplier, data.feeBps);
               const q = { ask: c.fillable ? c.premium / size : null, underwriters: c.writers };
@@ -72,7 +70,7 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
                       <div style={{ fontWeight: 500, whiteSpace: "nowrap" }}>${usd(t.strike)} <span className="muted">per share</span></div>
                       <div className="small mono" style={{ whiteSpace: "nowrap" }}>{t.side === "call" ? "right to buy" : "right to sell"} through {dayLabel(t.expiryTs)}</div>
                     </td>
-                    <td className="num muted" colSpan={5}>{t.capacity > 0 ? `not fillable at ${size}; ${Math.floor(t.capacity)} ${u.symbol} available` : "no ask resident on this term"}</td>
+                    <td className="num muted" colSpan={6}>{t.capacity > 0 ? `not fillable at ${size}; ${Math.floor(t.capacity)} ${u.symbol} available` : "no ask resident on this term"}</td>
                     <td className="num">{Math.floor(t.capacity)} {u.symbol}</td>
                   </tr>
                 );
@@ -83,15 +81,16 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
               return (
                 <tr key={t.id} className="row-link" data-testid="term-row" onClick={() => router.push(`/trade/${t.id}`)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/trade/${t.id}`); }}>
                   <td>
-                    <div style={{ fontWeight: 500, whiteSpace: "nowrap" }}>${usd(t.strike)} <span className="muted">per share</span></div>
-                    <div className="small mono" style={{ whiteSpace: "nowrap" }}>{t.side === "call" ? "right to buy" : "right to sell"} through {dayLabel(t.expiryTs)}{q.underwriters > 1 ? ` · ${q.underwriters} makers` : ""}</div>
+                    <div className="d-strike"><b className="mono">${usd(t.strike)}</b><span className="muted">per share</span></div>
+                    <div className="small muted" style={{ whiteSpace: "nowrap" }}>{t.side === "call" ? "right to buy" : "right to sell"} through {dayLabel(t.expiryTs)}{q.underwriters > 1 ? ` · ${q.underwriters} makers` : ""}</div>
                   </td>
-                  <td className="num">${usd(q.ask)}</td>
-                  <td className="num col-cost">${usdSmart(q.ask * size)}</td>
-                  <td className="num col-be">${usd(be)}</td>
-                  <td className="num">${usdSmart(ml)}</td>
-                  <td className={`num col-move ${mv <= 0 ? "up" : ""}`}>{mv >= 0 ? "+" : "−"}{Math.abs(mv).toFixed(1)}%</td>
-                  <td className="num col-fill">{Math.floor(t.capacity)} {u.symbol}</td>
+                  <td className="num"><b className="d-prem mono">${usd(q.ask)}</b></td>
+                  <td className="num col-cost mono">${usdSmart(q.ask * size)}</td>
+                  <td className="num col-be mono">${usd(be)}</td>
+                  <td className="num mono d-loss">−${usdSmart(ml)}</td>
+                  <td className={`num col-move mono ${mv <= 0 ? "up" : ""}`}>{mv >= 0 ? "+" : "−"}{Math.abs(mv).toFixed(1)}%</td>
+                  <td className="num col-fill"><span className="d-fill mono">{Math.floor(t.capacity)} {u.symbol}</span></td>
+                  <td className="d-go" aria-hidden>→</td>
                 </tr>
               );
             })}

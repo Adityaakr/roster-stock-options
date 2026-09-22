@@ -50,12 +50,12 @@ export default function PreIpoPage() {
           <h1>PreStocks</h1>
           <p>The stocks that have not listed yet, priced two ways: the issuer&apos;s mark for the share and where the token trades. A Gap or a Floor on each, backed before you buy, settled in the token itself.</p>
         </div>
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="hstat"><span>Tokens</span><b className="mono"><CountUp value={String(tokens.length)} /></b></div>
-          <div className="hstat"><span>Listed here</span><b className="mono"><CountUp value={String(listed.length)} /></b></div>
-          <div className="hstat"><span>Market cap, all eight</span><b className="mono">${short(float)}</b></div>
-          <div className="hstat"><span>Above the mark</span><b className="mono">{above} <span className="muted" style={{ fontWeight: 400, fontSize: 13 }}>· below {below}</span></b></div>
-        </div>
+      </div>
+      <div className="pstats">
+        <div className="pstat"><span>Tokens</span><b className="mono"><CountUp value={String(tokens.length)} /></b><i>from the issuer&apos;s API</i></div>
+        <div className="pstat"><span>Listed here</span><b className="mono"><CountUp value={String(listed.length)} /></b><i>with a live market</i></div>
+        <div className="pstat"><span>Market cap, all eight</span><b className="mono">${short(float)}</b><i>at the token price</i></div>
+        <div className="pstat"><span>Against the mark</span><b className="mono">{above} <em>above</em> · {below} <em>below</em></b><i>where the token trades</i></div>
       </div>
 
       <WhatRosterAdds tokens={tokens} />
@@ -101,7 +101,7 @@ export default function PreIpoPage() {
         </Stagger>
       )}
 
-      <div className="grid-2" style={{ marginTop: 22 }}>
+      <div className="grid-2 stretch" style={{ marginTop: 22 }}>
         <div className="card pad">
           <div className="h6">PreStocks&apos; own terms</div>
           <div className="ask-rows" style={{ marginTop: 10 }}>
@@ -116,6 +116,11 @@ export default function PreIpoPage() {
           <div className="h6">What a contract here is</div>
           <p className="body-sm" style={{ margin: "6px 0 0" }}>A Gap is the right to buy the token at a strike through a date; a Floor the right to sell it. Both are backed in full from the moment they are sold and settle in the token itself, with no oracle in the way of an exit. The mint takes its {tokens[0]?.feeBps ? `${(tokens[0].feeBps / 100).toFixed(2)}%` : "transfer"} fee on every move, so a Gap delivers the shares less the fee and a Floor has you deliver the fee on top; the ticket states both in numbers. Prices come from where the token trades, never from the mark: the mark is what the issuer says a share is worth, and no one will pay it for the token.</p>
           <p className="body-sm" style={{ margin: "8px 0 0" }}>The spread between the two is shown as a premium or a discount. It is not a basis anyone can close, because nothing converts one into the other before a listing.</p>
+          <div className="ask-rows" style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+            <div><span>Priced from</span><b style={{ fontWeight: 400 }}>the token&apos;s trades, never the issuer&apos;s mark</b></div>
+            <div><span>The fee</span><b style={{ fontWeight: 400 }}>{tokens[0]?.feeBps !== null && tokens[0]?.feeBps !== undefined ? `${(tokens[0].feeBps / 100).toFixed(2)}% on every move, stated on the ticket in numbers` : "stated on the ticket in numbers"}</b></div>
+            <div><span>At exercise</span><b style={{ fontWeight: 400 }}>no oracle, no keeper; the token itself is delivered</b></div>
+          </div>
         </div>
       </div>
       <p className="small" style={{ marginTop: 14 }}>Figures read now from prestocks.com/api and refreshed every minute; logos are the issuer&apos;s. Mint facts and verdicts from the registry run{data.generatedAt ? ` of ${new Date(data.generatedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}` : ""}. PreStocks tokens have no Pyth feed: the token price prices these terms, recent volatility is measured from the prices the services record, and auto-exercise is off on them.</p>
@@ -185,13 +190,13 @@ function SpreadChart({ tokens, onPick }: { tokens: PreIpoTokenView[]; onPick: (t
           const w = (Math.abs(v) / max) * 50;
           return (
             <button key={t.mint} className="spread-row" onClick={() => onPick(t)} aria-label={`${t.symbol} ${spreadLabel(v)}`}>
-              <span className="flex items-center gap-2" style={{ minWidth: 0 }}><TokenMark t={t} size={22} /><b>{t.symbol}</b></span>
+              <span className="flex items-center gap-2" style={{ minWidth: 0 }}><TokenMark t={t} size={24} /><span className="spread-name"><b>{t.symbol}</b><i>{t.name.replace(/\s+PreStocks$/i, "")}</i></span></span>
               <span className="spread-track" aria-hidden>
                 <i className="mid" />
                 <i className={`bar ${v >= 0 ? "up" : "down"}`} style={v >= 0 ? { left: "50%", width: `${w}%` } : { right: "50%", width: `${w}%` }} />
               </span>
-              <span className={`mono ${v >= 0 ? "up" : "down"}`} style={{ textAlign: "right" }}>{spreadLabel(v)}</span>
-              <span className="small muted mono hide-sm" style={{ textAlign: "right" }}>${usd(t.tokenPrice ?? 0)} vs ${usd(t.markPrice ?? 0)}</span>
+              <span className={`mono spread-pct ${Math.abs(v) < 0.05 ? "muted" : v >= 0 ? "up" : "down"}`}>{spreadLabel(v)}</span>
+              <span className="spread-prices hide-sm"><b className="mono">${usd(t.tokenPrice ?? 0)}</b><i>token</i><b className="mono muted">${usd(t.markPrice ?? 0)}</b><i>mark</i></span>
             </button>
           );
         })}

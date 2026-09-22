@@ -16,7 +16,7 @@ import { Hermes, HermesError, estimateVol, readMultiplier, sessionAt, volFromRec
 import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
 import { Quoter, DEFAULT_QUOTER, VaultQuoter, DEFAULT_VAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
-import { loadSecretKey, mapLimit, nextExpiries } from "@roster/core";
+import { failoverFetch, loadSecretKey, mapLimit, nextExpiries, rpcEndpoints, rpcState } from "@roster/core";
 import { issuerMark, jupiterPrice, launchSet, refreshSnapshots, snapshotOf, snapshotPrice, xstocksQuote, preipoTokens } from "./registry";
 import { changePct, tokenHistory, type Candle, type Pool } from "@roster/registry";
 
@@ -74,7 +74,9 @@ interface MarketLive {
 }
 
 async function main() {
-  const connection = new Connection(RPC, "confirmed");
+  // The configured endpoint first, then any RPC_FALLBACK_URLS, then the public cluster endpoint; see core/rpc.ts.
+  const rpcCluster = RPC.includes("127.0.0.1") || RPC.includes("localhost") ? null : RPC.includes("devnet") || process.env.NEXT_PUBLIC_CLUSTER === "devnet" ? "devnet" : process.env.NEXT_PUBLIC_CLUSTER ?? null;
+  const connection = new Connection(RPC, { commitment: "confirmed", fetch: failoverFetch(rpcEndpoints(RPC, rpcCluster)) });
   const genesis = await connection.getGenesisHash();
   const isFork = RPC.includes("127.0.0.1") || RPC.includes("localhost");
   // Devnet is a real cluster with replica mints (docs/DEVNET.md): the same code, priced from each replica's mainnet
@@ -243,9 +245,11 @@ async function main() {
 
   async function tick(): Promise<void> {
     const nowTs = await clockUnix(connection);
+    // On the public endpoint every read is paced; one market at a time keeps a tick inside the pace.
+    const concurrency = rpcState.degraded ? 1 : MARKET_CONCURRENCY;
     // One batched snapshot call for every market, cached for a minute inside the registry module.
     await refreshSnapshots(launch.map((l) => l.replicaOf ?? l.mint.toBase58()));
-    await mapLimit(launch, MARKET_CONCURRENCY, async (l) => {
+    await mapLimit(launch, concurrency, async (l) => {
       const market = await reader.fetchMarket(l.mint);
       if (!market) return;
       await seedSeriesIndex(market.address);

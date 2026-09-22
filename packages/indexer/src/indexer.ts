@@ -11,7 +11,7 @@ import { getAccount } from "@solana/spl-token";
 import BN from "bn.js";
 import type { RosterClient} from "@roster/sdk";
 import { type MarketState, type SeriesState } from "@roster/sdk";
-import { mapLimit } from "@roster/core";
+import { mapLimit, rpcState } from "@roster/core";
 import type { Store, SeriesRow, MarketRow } from "./store";
 
 const anchor = ((anchorNs as { default?: unknown }).default ?? anchorNs) as typeof anchorNs;
@@ -174,7 +174,8 @@ export class Indexer {
     }
     if (this.store.getKv(BACKFILL_DONE)) return added;
     const cursor = this.store.getKv(BACKFILL_BEFORE);
-    if (!cursor || Date.now() < this.backfillNotBefore) return added;
+    // On a paced public endpoint the head of the chain is what matters; history waits for a keyed endpoint.
+    if (!cursor || Date.now() < this.backfillNotBefore || rpcState.degraded) return added;
     for (let pages = 0; pages < BACKFILL_PAGES_PER_PULL; pages++) {
       const from = this.store.getKv(BACKFILL_BEFORE)!;
       let page: ConfirmedSignatureInfo[];

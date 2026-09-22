@@ -15,6 +15,9 @@ export function rpcEndpoints(primary: string, cluster: string | null): string[] 
 
 const isPublic = (url: string) => Object.values(PUBLIC).some((p) => url.startsWith(p));
 
+/** Whether reads are currently going to a public, paced endpoint: loops that can wait (history backfill) should. */
+export const rpcState = { degraded: false };
+
 /** A pace of `perSecond` calls: each caller waits for its slot, so a burst from many loops becomes a steady stream. */
 function pacer(perSecond: number): () => Promise<void> {
   const gap = 1000 / perSecond;
@@ -52,6 +55,7 @@ export function failoverFetch(urls: string[], timeoutMs = 15_000): (url: string 
             break;
           }
           if (at !== preferred) { console.warn(`[rpc] now preferring ${name(url)}`); preferred = at; }
+          rpcState.degraded = !!pace[at];
           return res;
         } catch (e) {
           lastErr = e;

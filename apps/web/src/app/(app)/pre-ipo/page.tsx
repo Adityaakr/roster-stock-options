@@ -123,7 +123,6 @@ export default function PreIpoPage() {
           </div>
         </div>
       </div>
-      <p className="small" style={{ marginTop: 14 }}>Figures read now from prestocks.com/api and refreshed every minute; logos are the issuer&apos;s. Mint facts and verdicts from the registry run{data.generatedAt ? ` of ${new Date(data.generatedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}` : ""}. PreStocks tokens have no Pyth feed: the token price prices these terms, recent volatility is measured from the prices the services record, and auto-exercise is off on them.</p>
     </div>
   );
 }

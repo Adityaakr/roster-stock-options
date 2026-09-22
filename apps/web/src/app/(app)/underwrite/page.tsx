@@ -285,11 +285,14 @@ function UnderwriteInner() {
         </div>
 
         {mine ? <div style={{ padding: "0 20px 20px" }}><MySlot t={t} sym={sym} multiplier={u.multiplier} mine={mine} myAsks={myAsks} free={free} expired={expired} nowTs={data.nowTs} busy={busy} onAction={run} /></div> : (
-          <ol className="ask-how wafter">
-            <li><span><b>Your ask goes live on the roster</b> next to every other maker on the term; buyers match the cheapest asks first, so a fill can be partial.</span></li>
-            <li><span><b>Premium accrues to your slot</b> with each fill and is yours to claim any time; the unsold part can be withdrawn any time.</span></li>
-            <li><span><b>At expiry</b> what was not assigned is released and what was is settled at the strike, in one transaction anyone can send.</span></li>
-          </ol>
+          <details className="ask-howto wafter-howto">
+            <summary>How this works</summary>
+            <ol className="ask-how">
+              <li><span><b>Your ask goes live on the roster</b> next to every other maker on the term; buyers match the cheapest asks first, so a fill can be partial.</span></li>
+              <li><span><b>Premium accrues to your slot</b> with each fill and is yours to claim any time; the unsold part can be withdrawn any time.</span></li>
+              <li><span><b>At expiry</b> what was not assigned is released and what was is settled at the strike, in one transaction anyone can send.</span></li>
+            </ol>
+          </details>
         )}
       </section>
     </div>

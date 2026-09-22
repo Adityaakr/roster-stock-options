@@ -1256,3 +1256,5 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .stack-fill > .card:last-child { flex: 1 1 auto; }
 .kv.kv-2, .kv.wrap.kv-2 { grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr); column-gap: 20px; }
 @media (max-width: 809px) { .kv.kv-2, .kv.wrap.kv-2 { grid-template-columns: max-content minmax(0, 1fr); } }
+.wafter-howto { margin: 0; padding: 14px 20px 16px; border-top: 1px solid var(--line); }
+.wafter-howto .ask-how { margin-top: 10px; }

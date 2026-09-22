@@ -108,8 +108,8 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
         <Fig k="7 days" v={tr?.change7dPct === null || tr?.change7dPct === undefined ? "…" : `${tr.change7dPct >= 0 ? "+" : "−"}${Math.abs(tr.change7dPct).toFixed(1)}%`} s={tr ? `${tr.days} days of trades recorded` : "reading the pool"} tone={tr?.change7dPct === null || tr?.change7dPct === undefined ? undefined : tr.change7dPct >= 0 ? "up" : "down"} />
         <Fig k="Liquidity" v={tr?.liquidityUsd ? `$${short(tr.liquidityUsd)}` : "…"} s={tr?.volume24hUsd ? `$${short(tr.volume24hUsd)} traded in 24h on ${tr.pool}` : tr ? tr.pool : "the deepest USDC pool"} />
       </div>
-      <div className="grid-2 split-left" style={{ marginBottom: 16 }}>
-        <div className="card">
+      <div className="grid-2 split-left stretch" style={{ marginBottom: 16 }}>
+        <div className="card chart-card">
           <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
             <div>
               <div className="h6">Where the token has traded</div>
@@ -119,8 +119,8 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
               {(["1d", "7d", "30d", "all"] as Window[]).map((w) => <button key={w} className={win === w ? "on" : ""} onClick={() => setWin(w)}>{w === "1d" ? "24h" : w === "all" ? "All" : w}</button>)}
             </div>
           </div>
-          <div style={{ padding: "12px 16px 14px" }}>
-            <LineChart series={series} format={(v) => `$${usd(v)}`} timeFormat={win === "1d" || win === "7d" ? undefined : (t) => new Date(t * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" })} empty={tr ? "No trades in this window." : "Reading the token's trade history from its reference pool."} />
+          <div className="chart-body">
+            <LineChart series={series} fill format={(v) => `$${usd(v)}`} timeFormat={win === "1d" || win === "7d" ? undefined : (t) => new Date(t * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" })} empty={tr ? "No trades in this window." : "Reading the token's trade history from its reference pool."} />
           </div>
           {token.market ? <div className="small muted" style={{ padding: "0 20px 14px" }}>Recent volatility {(token.market.vol * 100).toFixed(0)}% annualised ({token.market.volSource === "recorded" ? "measured from the pool's daily closes over 7, 30 and 90 days" : "a stated floor until a week of closes exists"}); the quoter prices every term off the token price and never off the mark.</div> : null}
         </div>

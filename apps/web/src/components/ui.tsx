@@ -34,9 +34,9 @@ export function Stat({ k, v, s, tone }: { k: string; v: ReactNode; s?: ReactNode
   );
 }
 
-export function KV({ items, wrap = false }: { items: { k: string; v: ReactNode }[]; wrap?: boolean }) {
+export function KV({ items, wrap = false, columns = 1 }: { items: { k: string; v: ReactNode }[]; wrap?: boolean; /** Two lays the pairs out side by side on wide screens. */ columns?: 1 | 2 }) {
   return (
-    <dl className={`kv ${wrap ? "wrap" : ""}`}>
+    <dl className={`kv ${wrap ? "wrap" : ""} ${columns === 2 ? "kv-2" : ""}`}>
       {items.map((it) => (
         <div key={it.k} className="contents">
           <dt>{it.k}</dt>

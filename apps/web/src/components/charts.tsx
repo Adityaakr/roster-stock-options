@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 /*
  * Two SVG charts in the site's own type and lines: a sparkline for lists and a line chart with a hover readout for
@@ -27,11 +27,22 @@ export function Sparkline({ points, width = 96, height = 28 }: { points: Point[]
 
 export interface Series { label: string; points: Point[]; color?: string; dashed?: boolean }
 
-export function LineChart({ series, height = 260, format = (v: number) => v.toFixed(2), timeFormat, empty = "No history recorded yet on this cluster." }: { series: Series[]; height?: number; format?: (v: number) => string; timeFormat?: (t: number) => string; empty?: string }) {
+/**
+ * `fill` draws the chart at the size of its container, measured live, instead of at a fixed aspect: the card it sits
+ * in can then be as tall as the column beside it with no letterbox and no stretched type.
+ */
+export function LineChart({ series, height = 260, format = (v: number) => v.toFixed(2), timeFormat, empty = "No history recorded yet on this cluster.", fill = false }: { series: Series[]; height?: number; format?: (v: number) => string; timeFormat?: (t: number) => string; empty?: string; fill?: boolean }) {
   const ref = useRef<SVGSVGElement>(null);
+  const box = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<number | null>(null);
-  const W = 800;
-  const H = height;
+  const size = useSyncExternalStore(
+    (cb) => { const el = box.current; if (!el || typeof ResizeObserver === "undefined") return () => undefined; const ro = new ResizeObserver(cb); ro.observe(el); return () => ro.disconnect(); },
+    () => { const el = box.current; return el ? `${Math.round(el.clientWidth)}x${Math.round(el.clientHeight)}` : "0x0"; },
+    () => "0x0"
+  );
+  const [bw, bh] = size.split("x").map(Number) as [number, number];
+  const W = fill && bw > 0 ? bw : 800;
+  const H = fill && bh > 0 ? bh : height;
   const pad = { l: 8, r: 64, t: 16, b: 28 };
   const all = series.flatMap((s) => s.points);
   const dims = useMemo(() => {
@@ -60,8 +71,9 @@ export function LineChart({ series, height = 260, format = (v: number) => v.toFi
     return best;
   };
   return (
-    <div className="chart">
-      <svg ref={ref} viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }} role="img" aria-label={series.map((s) => s.label).join(", ")}
+    <div className={`chart ${fill ? "chart-fill" : ""}`}>
+      <div className="chart-svgbox" ref={box}>
+      <svg ref={ref} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio={fill ? "none" : undefined} style={{ width: "100%", height: fill ? "100%" : "auto", display: "block" }} role="img" aria-label={series.map((s) => s.label).join(", ")}
         onMouseMove={(e) => { const r = ref.current!.getBoundingClientRect(); const x = ((e.clientX - r.left) / r.width) * W; setHover(Math.min(1, Math.max(0, (x - pad.l) / (W - pad.l - pad.r)))); }}
         onMouseLeave={() => setHover(null)}>
         {ticksY.map((t) => (
@@ -77,6 +89,7 @@ export function LineChart({ series, height = 260, format = (v: number) => v.toFi
         {hoverT !== null ? <line x1={sx(hoverT)} x2={sx(hoverT)} y1={pad.t} y2={H - pad.b} stroke="var(--line-strong)" strokeDasharray="2 3" /> : null}
         {hoverT !== null ? series.map((s) => { const p = nearest(s); return p ? <circle key={s.label} cx={sx(p[0])} cy={sy(p[1])} r="3.5" fill={s.color ?? "var(--ink)"} stroke="var(--paper)" strokeWidth="1.5" /> : null; }) : null}
       </svg>
+      </div>
       <div className="chart-legend">
         {series.map((s) => { const p = hoverT !== null ? nearest(s) : s.points[s.points.length - 1]; return (
           <span key={s.label}><i style={{ background: s.color ?? "var(--ink)", borderStyle: s.dashed ? "dashed" : "solid" }} />{s.label} <b className="mono">{p ? format(p[1]) : "–"}</b>{p && hoverT !== null ? <span className="muted"> · {tf(p[0])}</span> : null}</span>

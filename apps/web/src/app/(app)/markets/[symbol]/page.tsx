@@ -76,8 +76,8 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
         </div>
       </div>
 
-      <div className="grid-2 split-left" style={{ marginBottom: 16 }}>
-        <div className="card">
+      <div className="grid-2 split-left stretch" style={{ marginBottom: 16 }}>
+        <div className="card chart-card">
           <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
             <div>
               <div className="h6">Mark</div>
@@ -87,8 +87,8 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
               {[1, 7, 30].map((d) => <button key={d} className={days === d ? "on" : ""} onClick={() => setDays(d)}>{d === 1 ? "24h" : `${d}d`}</button>)}
             </div>
           </div>
-          <div style={{ padding: "12px 16px 14px" }}>
-            <LineChart series={series} height={320} format={(v) => `$${usd(v)}`} empty="No marks recorded yet on this cluster; the chart fills as the services tick." />
+          <div className="chart-body">
+            <LineChart series={series} height={320} fill format={(v) => `$${usd(v)}`} empty="No marks recorded yet on this cluster; the chart fills as the services tick." />
           </div>
         </div>
         <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
@@ -129,11 +129,34 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
         </div>
       </div>
 
-      <div className="grid-2" style={{ marginBottom: 16 }}>
+      <div className="grid-2 stretch" style={{ marginBottom: 16 }}>
+        <div className="stack-fill">
         <div className="card pad">
           <div className="h6">Depth by expiry</div>
           <div className="small" style={{ margin: "2px 0 14px" }}>USDC notional fillable now on each expiry&apos;s terms.</div>
           {byExpiry.length ? <Bars rows={byExpiry} format={(v) => `$${usd0(v)}`} /> : <div className="small muted">No expiry on the grid.</div>}
+        </div>
+        <div className="card">
+          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid var(--line)" }}>
+            <div className="h6">Exercise history</div>
+            <div className="small" style={{ marginTop: 2 }}>Every exercise on {m.symbol}, including the ones that declined.</div>
+          </div>
+          <div className="scroll-x">
+            <table className="table">
+              <thead><tr><th>When</th><th>Event</th><th className="num">Size</th><th className="num">Signature</th></tr></thead>
+              <tbody>
+                {data.exercises.length === 0 ? <tr><td colSpan={4} className="muted">No exercises yet on this cluster.</td></tr> : data.exercises.slice(0, 8).map((e, i) => (
+                  <tr key={i}>
+                    <td className="small mono">{timeLabel(e.ts)}</td>
+                    <td>{e.kind === "auto_exercise" ? "Auto-exercise" : "Exercise"} {e.ok ? null : <Badge tone="amber">declined</Badge>}<div className="small">{e.note}</div></td>
+                    <td className="num">{e.shares} {m.symbol}</td>
+                    <td className="num">{e.signature ? <Address value={e.signature} n={5} href={explorerUrl(cluster, "tx", e.signature)} /> : "–"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
         </div>
         <div className="card pad">
           <div className="h6">The roster behind {m.symbol}</div>
@@ -184,11 +207,11 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
         </div>
       ) : null}
 
-      <div className="grid-2" style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16 }}>
         <div className="card pad">
           <div className="h6">The wrapper</div>
           <div className="small" style={{ margin: "2px 0 12px" }}>Read from the mint. What the issuer can do to this token, and so to a contract on it.</div>
-          <KV wrap items={[
+          <KV wrap columns={2} items={[
             { k: "Mint", v: m.mint ? <Address value={m.mint} href={explorerUrl(cluster, "address", m.mint)} /> : "none" },
             { k: "Decimals", v: <span className="mono">{m.decimals}</span> },
             { k: "Permanent delegate", v: m.hasPermanentDelegate ? "yes: the issuer can move tokens from any account, including a vault" : "no" },
@@ -196,27 +219,6 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
             { k: "Transfer fee", v: m.feeBps > 0 ? `${(m.feeBps / 100).toFixed(2)}% on every transfer; exercise delivers the raw amount less the fee` : "none" },
             { k: "Rights", v: m.wrapperTier === "xStock" ? "tracker certificate, no voting rights; dividends reinvested through the multiplier" : m.wrapperTier === "Ondo" ? "Ondo tokenized stock; no voting rights, corporate actions through the issuer's multiplier" : "backed by holding entities invested in the company; no ownership, voting, dividend or information rights" }
           ]} />
-        </div>
-        <div className="card">
-          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid var(--line)" }}>
-            <div className="h6">Exercise history</div>
-            <div className="small" style={{ marginTop: 2 }}>Every exercise on {m.symbol}, including the ones that declined.</div>
-          </div>
-          <div className="scroll-x">
-            <table className="table">
-              <thead><tr><th>When</th><th>Event</th><th className="num">Size</th><th className="num">Signature</th></tr></thead>
-              <tbody>
-                {data.exercises.length === 0 ? <tr><td colSpan={4} className="muted">No exercises yet on this cluster.</td></tr> : data.exercises.slice(0, 8).map((e, i) => (
-                  <tr key={i}>
-                    <td className="small mono">{timeLabel(e.ts)}</td>
-                    <td>{e.kind === "auto_exercise" ? "Auto-exercise" : "Exercise"} {e.ok ? null : <Badge tone="amber">declined</Badge>}<div className="small">{e.note}</div></td>
-                    <td className="num">{e.shares} {m.symbol}</td>
-                    <td className="num">{e.signature ? <Address value={e.signature} n={5} href={explorerUrl(cluster, "tx", e.signature)} /> : "–"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
       <p className="small" style={{ marginTop: 4 }}>{TIER_LABEL[m.tier]}: {TIER_RULE[m.tier]}</p>

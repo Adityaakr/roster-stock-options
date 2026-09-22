@@ -2,7 +2,7 @@
 
 import { motion, useInView, useReducedMotion, useScroll, useTransform, type MotionValue } from "motion/react";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, useSyncExternalStore } from "react";
 
 /*
  * Motion catalogue, taken from the Aoutive reference:
@@ -246,10 +246,24 @@ export function Ticker({ children, velocity = 50, hoverModifier = 40, gap = 48, 
 }
 
 /** Slide in from the side on first view (Aoutive styleTransformEffect: x ±290 → 0, spring 300/100). */
+/** True below `px` wide, read from matchMedia; false on the server and until the first client render. */
+export function useNarrow(px = 810): boolean {
+  return useSyncExternalStore(
+    (cb) => { const m = window.matchMedia(`(max-width: ${px - 1}px)`); m.addEventListener("change", cb); return () => m.removeEventListener("change", cb); },
+    () => window.matchMedia(`(max-width: ${px - 1}px)`).matches,
+    () => false
+  );
+}
+
 export function SlideIn({ children, x = 0, y = 0, className }: { children: ReactNode; x?: number; y?: number; className?: string }) {
   const reduce = useReducedMotion();
+  // A sideways slide needs room: in a single narrow column the card starts almost entirely out of its clipped row and
+  // the sliver left showing never counts as in view. The server renders the wide layout's offset and the client only
+  // learns the width after mounting, so below 810px the stylesheet pins the transform and the card simply stands.
+  const narrow = useNarrow();
+  const from = narrow ? { x: 0, y: 40 } : { x, y };
   return (
-    <motion.div className={className} initial={reduce ? false : { x, y }} whileInView={{ x: 0, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ type: "spring", stiffness: 300, damping: 100, mass: 1 }}>
+    <motion.div className={`slidein ${className ?? ""}`} initial={reduce ? false : from} whileInView={{ x: 0, y: 0 }} viewport={{ once: true, amount: 0.05 }} transition={{ type: "spring", stiffness: 300, damping: 100, mass: 1 }}>
       {children}
     </motion.div>
   );

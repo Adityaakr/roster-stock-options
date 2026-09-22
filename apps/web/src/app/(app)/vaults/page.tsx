@@ -88,21 +88,21 @@ export default function VaultsPage() {
                         </div>
                       </div>
                     </td>
-                    <td><Badge tone={x.v.halted ? "amber" : "green"} dot>{x.v.halted ? "halted" : "quoting"}</Badge></td>
-                    <td className="num">
+                    <td data-k="Status"><Badge tone={x.v.halted ? "amber" : "green"} dot>{x.v.halted ? "halted" : "quoting"}</Badge></td>
+                    <td className="num" data-k="Deposits">
                       <div className="mono">{usdK(x.collateral + x.otherInCollateral)} {x.unit}</div>
                       <div className="small muted mono">{x.depositsUsd !== null ? `$${usd0(x.depositsUsd)}` : "no mark"}</div>
                     </td>
-                    <td className="num">
+                    <td className="num" data-k="Exposure">
                       <div className="mono">{usdK(x.locked)} {x.unit}</div>
                       <div className="small muted mono">{x.collateral > 0 ? `${Math.round((x.locked / x.collateral) * 100)}% locked` : "nothing locked"}</div>
                     </td>
-                    <td><div className="small">{x.cc ? "Calls" : "Puts"} on {x.v.symbol}</div><div className="small muted">cap {usdK(x.capLots)} lots</div></td>
-                    <td className={`num mono ${x.lastPnlPerShare === null ? "muted" : x.lastPnlPerShare < 0 ? "down" : x.lastPnlPerShare > 0 ? "up" : ""}`}>
+                    <td data-k="Writes"><div className="small">{x.cc ? "Calls" : "Puts"} on {x.v.symbol}</div><div className="small muted">cap {usdK(x.capLots)} lots</div></td>
+                    <td data-k="Last epoch" className={`num mono ${x.lastPnlPerShare === null ? "muted" : x.lastPnlPerShare < 0 ? "down" : x.lastPnlPerShare > 0 ? "up" : ""}`}>
                       <div>{x.lastPnlPct !== null ? `${x.lastPnlPct >= 0 ? "+" : "−"}${(Math.abs(x.lastPnlPct) * 100).toFixed(2)}%` : x.lastPnlPerShare === null ? "no epoch yet" : pnlLabel(x.lastPnlPerShare, x.unit)}</div>
                       <div className="small muted">${usd(x.premiumIn)} so far</div>
                     </td>
-                    <td className="num mono">
+                    <td className="num mono" data-k="Next roll">
                       <div>{countdown(x.v.nextRollTs, nowTs)}</div>
                       <div className="small muted">{Math.round(x.v.rollIntervalSecs / 3600)}h cycle</div>
                     </td>

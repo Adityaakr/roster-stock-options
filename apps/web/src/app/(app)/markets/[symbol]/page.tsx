@@ -140,14 +140,14 @@ export default function MarketPage({ params }: { params: Promise<{ symbol: strin
           <div className="small" style={{ margin: "2px 0 14px" }}>Who is quoting and what they have locked in the series vaults.</div>
           {data.underwriters.length === 0 ? <div className="small muted">No maker has quoted this market yet.</div> : (
             <table className="table">
-              <thead><tr><th>Maker</th><th className="num">USDC</th><th className="num">{m.symbol}</th><th className="num">Account</th></tr></thead>
+              <thead><tr><th>Maker</th><th className="num">USDC</th><th className="num">{m.symbol}</th><th className="num col-acct">Account</th></tr></thead>
               <tbody>
                 {data.underwriters.map((w) => (
                   <tr key={w.name}>
                     <td><div className="flex items-center gap-2">{w.name}<Badge tone={w.live ? "green" : undefined} dot={w.live}>{w.live ? "live" : "idle"}</Badge></div></td>
                     <td className="num">${usd0(w.usdcReserved)}</td>
                     <td className="num">{Math.floor(w.underlyingReserved)}</td>
-                    <td className="num">{w.account ? <Address value={w.account} href={explorerUrl(cluster, "address", w.account)} /> : <span className="muted">linked at deploy</span>}</td>
+                    <td className="num col-acct">{w.account ? <Address value={w.account} href={explorerUrl(cluster, "address", w.account)} /> : <span className="muted">linked at deploy</span>}</td>
                   </tr>
                 ))}
               </tbody>

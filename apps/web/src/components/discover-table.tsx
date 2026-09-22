@@ -47,16 +47,16 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
         <span>Expiry <b className="mono ink">{dayLabel(expiry)}</b> in <b className="mono ink">{countdown(expiry, data.nowTs)}</b></span>
       </div>
       <div className="card scroll-x">
-        <table className="table" style={{ minWidth: 760 }}>
+        <table className="table dtable">
           <thead>
             <tr>
               <th>{productName(side)} at</th>
               <th className="num">Premium / share</th>
-              <th className="num">Cost for {size}</th>
-              <th className="num">Break-even</th>
+              <th className="num col-cost">Cost for {size}</th>
+              <th className="num col-be">Break-even</th>
               <th className="num">Max loss</th>
-              <th className="num">Move needed</th>
-              <th className="num">Fillable</th>
+              <th className="num col-move">Move needed</th>
+              <th className="num col-fill">Fillable</th>
             </tr>
           </thead>
           <tbody>
@@ -87,11 +87,11 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
                     <div className="small mono" style={{ whiteSpace: "nowrap" }}>{t.side === "call" ? "right to buy" : "right to sell"} through {dayLabel(t.expiryTs)}{q.underwriters > 1 ? ` · ${q.underwriters} makers` : ""}</div>
                   </td>
                   <td className="num">${usd(q.ask)}</td>
-                  <td className="num">${usdSmart(q.ask * size)}</td>
-                  <td className="num">${usd(be)}</td>
+                  <td className="num col-cost">${usdSmart(q.ask * size)}</td>
+                  <td className="num col-be">${usd(be)}</td>
                   <td className="num">${usdSmart(ml)}</td>
-                  <td className={`num ${mv <= 0 ? "up" : ""}`}>{mv >= 0 ? "+" : "−"}{Math.abs(mv).toFixed(1)}%</td>
-                  <td className="num">{Math.floor(t.capacity)} {u.symbol}</td>
+                  <td className={`num col-move ${mv <= 0 ? "up" : ""}`}>{mv >= 0 ? "+" : "−"}{Math.abs(mv).toFixed(1)}%</td>
+                  <td className="num col-fill">{Math.floor(t.capacity)} {u.symbol}</td>
                 </tr>
               );
             })}

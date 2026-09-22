@@ -62,14 +62,14 @@ export function RosterProof({ data }: { data: RosterData }) {
                 <div className="pf-title">Reserved capital</div>
                 <div className="pf-sub">in program-owned vaults, per maker</div>
                 <table className="pf-table">
-                  <thead><tr><th>Maker</th><th className="num">USDC</th><th className="num">{sym}</th><th className="num">Account</th></tr></thead>
+                  <thead><tr><th>Maker</th><th className="num">USDC</th><th className="num">{sym}</th><th className="num col-acct">Account</th></tr></thead>
                   <tbody>
                       {live.length === 0 ? <tr><td colSpan={4} className="muted">No maker has quoted yet.</td></tr> : live.map((u) => (
                         <tr key={u.name}>
                           <td>{u.name}</td>
                           <td className="num mono">${usd0(u.usdcReserved)}</td>
                           <td className="num mono">{Math.floor(u.underlyingReserved).toLocaleString("en-US")}</td>
-                          <td className="num mono">{u.account ? short(u.account) : "linked at deploy"}</td>
+                          <td className="num mono col-acct">{u.account ? short(u.account) : "linked at deploy"}</td>
                         </tr>
                       ))}
                   </tbody>

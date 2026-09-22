@@ -68,9 +68,9 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
     <div>
       <div className="small" style={{ marginBottom: 14 }}><Link className="muted" href="/pre-ipo">PreStocks</Link> <span className="muted">/</span> {token.symbol}</div>
       <div className="page-head" style={{ alignItems: "flex-start" }}>
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-4 phead">
           <TokenMark t={token} size={52} />
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 style={{ margin: 0 }}>{token.symbol}</h1>
               <Badge tone="blue">PreStocks</Badge>
@@ -86,7 +86,7 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
             </div>
           </div>
         </div>
-        <div className="hstat" style={{ textAlign: "right" }}>
+        <div className="hstat pprice" style={{ textAlign: "right" }}>
           <span>token price</span>
           <b className="mono" style={{ fontSize: 28 }}>{token.tokenPrice === null ? "n/a" : `$${usd(token.tokenPrice)}`}</b>
           <span className={token.spreadPct === null ? "muted" : token.spreadPct >= 0 ? "up" : "down"}>{spreadLabel(token.spreadPct)} the mark of ${usd(token.markPrice ?? 0)}</span>

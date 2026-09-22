@@ -690,6 +690,10 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .seg button.on { background: var(--ink); color: var(--paper); }
 .mlist { overflow-x: auto; }
 .mlist .mtable thead th { position: sticky; top: 0; background: var(--paper); z-index: 1; }
+.mtable { min-width: 760px; }
+.mtable th.col-depth { min-width: 150px; }
+.mtable.compact { min-width: 600px; }
+.dtable { min-width: 760px; }
 .mtable td { padding: 11px 10px; }
 .mtable th { padding: 10px; }
 .depth { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
@@ -731,7 +735,7 @@ select.field { appearance: none; padding-right: 28px; background-image: linear-g
 .grid-2.split-right { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
 @media (max-width: 1023px) { .grid-2, .grid-2.split-left, .grid-2.split-right { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 809px) { .grid-3, .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 419px) { .grid-3, .grid-4 { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 419px) { .grid-3, .grid-4 { gap: 10px; } .stat .v { font-size: 24px; } }
 /* The payoff chart gives its labels less room on a phone. */
 @media (max-width: 559px) { .pchart-tag, .pchart-tip { font-size: 11px; } .pchart-tag.bottom { bottom: 2px; } .pchart-tag.top { top: 2px; } }
 
@@ -920,7 +924,7 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .bar.thin { height: 4px; border: 0; border-radius: 2px; margin-top: 6px; max-width: 220px; }
 .bar.thin span { background: var(--ink); border-radius: 2px; transition: width 600ms var(--ease); }
 @media (max-width: 1100px) { .rfigs { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rfig:nth-child(2) { border-right: 0; } .rfig:nth-child(-n+2) { border-bottom: 1px solid var(--line); } }
-@media (max-width: 559px) { .rfigs { grid-template-columns: minmax(0, 1fr); } .rfig { border-right: 0; border-bottom: 1px solid var(--line); } .rfig:last-child { border-bottom: 0; } }
+@media (max-width: 559px) { .rfig { padding: 14px 16px; } .rfig .v { font-size: 22px; } .rfig:nth-child(odd) { border-right: 1px solid var(--line); } .rfig:nth-child(even) { border-right: 0; } .rfig:nth-last-child(-n+2) { border-bottom: 0; } }
 
 /* Protected Buy: one ticket, one sketch of what the purchase is worth at expiry. */
 .pb-amount { position: relative; }
@@ -1064,7 +1068,7 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .rempty .mark::after { content: ""; position: absolute; inset: 6px 6px 6px 11px; background: var(--paper); border-radius: 1px; }
 .rempty b { font-weight: 500; color: var(--ink); }
 @media (max-width: 1100px) { .rfigs-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .rfigs-5 .rfig:nth-child(3) { border-right: 0; } .rfigs-5 .rfig:nth-child(-n+3) { border-bottom: 1px solid var(--line); } .rwriters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 767px) { .rfigs-5 { grid-template-columns: minmax(0, 1fr); } .rfigs-5 .rfig { border-right: 0; border-bottom: 1px solid var(--line); } .rwriters, .rvaults { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 767px) { .rfigs-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rfigs-5 .rfig { border-bottom: 1px solid var(--line); padding: 14px 16px; } .rfigs-5 .rfig .v { font-size: 22px; } .rfigs-5 .rfig:nth-child(odd) { border-right: 1px solid var(--line); } .rfigs-5 .rfig:nth-child(even) { border-right: 0; } .rfigs-5 .rfig:last-child { grid-column: 1 / -1; border-right: 0; border-bottom: 0; } .rwriters, .rvaults { grid-template-columns: minmax(0, 1fr); } }
 .pb-lbl { font-family: var(--mono); font-size: 9px; fill: var(--slate); }
 .pb-lbl.ink { fill: var(--ink); }
 .pb-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1110,7 +1114,7 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 .pfig .v { font-family: var(--display); font-weight: 500; font-size: 26px; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .pfig .s { font-size: 12px; color: var(--slate); }
 @media (max-width: 1100px) { .pfigs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 559px) { .pfigs { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 559px) { .pfigs { gap: 8px; } .pfig .v { font-size: 20px; } }
 .pdo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .pdo-card { display: grid; gap: 8px; align-content: start; padding: 18px; transition: border-color 150ms var(--ease), transform 150ms var(--ease); }
 .pdo-card:hover { border-color: var(--ink); transform: translateY(-1px); }
@@ -1140,3 +1144,48 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
   .act-grid .act-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -24px; padding: 0 24px 12px; }
   .act-grid .act-foot { flex: none; padding-top: 4px; }
 }
+
+/* Phones: the two term and market tables keep the columns a buyer decides on and drop the rest; the Act screen has them all. */
+@media (max-width: 640px) {
+  .mtable, .mtable.compact, .dtable { min-width: 0; width: 100%; }
+  .mtable th.col-chg, .mtable td.col-chg, .mtable th.col-tier, .mtable td.col-tier { display: none; }
+  .dtable th.col-be, .dtable td.col-be, .dtable th.col-move, .dtable td.col-move, .dtable th.col-fill, .dtable td.col-fill { display: none; }
+  .mtable td, .mtable th { padding: 10px 6px; }
+  .table td, .table th { padding-left: 6px; padding-right: 6px; }
+}
+.wshot { height: 400px; }
+@media (max-width: 809px) { .wshot { height: auto; aspect-ratio: 1040 / 780; } }
+@media (max-width: 640px) { th.col-acct, td.col-acct { display: none; } }
+.exp-inline { display: none; }
+@media (max-width: 640px) { th.col-exp, td.col-exp { display: none; } .exp-inline { display: block; } .nowrap { white-space: nowrap; } }
+@media (max-width: 640px) { .rtable td { padding: 10px 8px; } .rtable th.col-floor, .rtable td.col-floor { display: none; } .rtable .small.muted { display: none; } }
+@media (max-width: 640px) { .rterms th.col-wide, .rterms td.col-wide, .rterms th.col-esc, .rterms td.col-esc { display: none; } .rterms td { padding-left: 8px; padding-right: 8px; } }
+@media (max-width: 640px) { .uexplore { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-columns: auto; overflow: visible; } .utile .s { white-space: normal; } }
+@media (max-width: 640px) { .phead { flex-wrap: wrap; } .phead > div { flex: 1 1 100%; } .pprice { text-align: left !important; } .pprice b { font-size: 24px !important; } }
+@media (max-width: 640px) { .ask-row { grid-template-columns: minmax(0, 1fr); gap: 8px; } .ask-label { padding-top: 0; } .ask-pill { height: auto; min-height: 34px; padding: 6px 14px 6px 8px; text-align: left; line-height: 1.35; } }
+/* Phones: each vault is a card of labelled figures rather than a seven-column row. */
+@media (max-width: 640px) {
+  .vtable-list, .vtable-list tbody, .vtable-list tr, .vtable-list td { display: block; width: auto; }
+  .vtable-list thead { display: none; }
+  .vtable-list { min-width: 0; }
+  .vtable-list tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .vtable-list td, .vtable-list td:nth-child(n) { padding: 0; border: 0; text-align: left; width: auto; }
+  .vtable-list td .small { white-space: normal; }
+  .vtable-list td:first-child { grid-column: 1 / -1; margin-bottom: 6px; }
+  .vtable-list td[data-k]::before { content: attr(data-k); display: block; font-size: 11px; color: var(--slate); letter-spacing: 0.02em; text-transform: uppercase; margin-bottom: 2px; }
+  .vtable-list td.num { text-align: left; }
+}
+@media (max-width: 640px) { .pb-markets .utile { min-width: 0; } }
+@media (max-width: 640px) {
+  .mtable th.col-depth { min-width: 84px; }
+  .mtable.compact th.col-ask, .mtable.compact td.col-ask { display: none; }
+  .mtable .depth { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .mtable .depth .mono { order: -1; font-size: 13px; }
+  .mtable .depth-bar { width: 100%; }
+  .dtable td > div:first-child { white-space: nowrap !important; }
+  .dtable td > div.small { display: none; }
+  .dtable th.col-cost, .dtable td.col-cost { display: none; }
+  .mtable.compact td .small.muted { display: none; }
+  .mtable.compact td:first-child .flex { gap: 8px; }
+}
+@media (max-width: 809px) { .slidein { transform: none !important; } }

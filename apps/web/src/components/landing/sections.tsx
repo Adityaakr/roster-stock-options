@@ -135,7 +135,7 @@ export function Workflow() {
         <div className="wimages">
           <AnimatePresence initial={false} mode="wait">
             <motion.div key={i} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "linear" }} style={{ position: "relative" }}>
-              <Image src={IMG.workflow[i] ?? IMG.workflow[0]!} alt={steps[i]?.t ?? ""} width={1040} height={780} unoptimized style={{ width: "100%", height: 400, objectFit: "contain", objectPosition: "top left", background: "var(--paper)", display: "block" }} />
+              <Image src={IMG.workflow[i] ?? IMG.workflow[0]!} alt={steps[i]?.t ?? ""} width={1040} height={780} unoptimized className="wshot" style={{ width: "100%", objectFit: "contain", objectPosition: "top left", background: "var(--paper)", display: "block" }} />
             </motion.div>
           </AnimatePresence>
         </div>
@@ -161,7 +161,7 @@ export function Products() {
           <Reveal y={18} style={{ width: "100%" }}><p className="body" style={{ margin: 0, textAlign: "center", color: "var(--ink-2)" }}>What we sell</p></Reveal>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
             <ScrollColorText as="h2" text="Leverage or an exit, with a known worst case." className="h-section" style={{ maxWidth: 801, textAlign: "center" }} />
-            <Reveal y={18} delay={0.2}><p className="body" style={{ margin: 0, maxWidth: 658, textAlign: "center" }}>Underneath, fully collateralized contracts on NVDAx, physically settled in the token. On the button, one benefit: priced and funded before you click. One underlying, two expiries, three strikes a side.</p></Reveal>
+            <Reveal y={18} delay={0.2}><p className="body" style={{ margin: 0, maxWidth: 658, textAlign: "center" }}>Underneath, fully collateralized contracts on tokenized stocks and pre-IPO tokens, physically settled in the token. On the button, one benefit: priced and funded before you click.</p></Reveal>
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
@@ -230,7 +230,7 @@ export function Tiers({ data }: { data: RosterData }) {
   return (
     <Sec id="tiers" className="integration" ticks={false}>
       <div className="ibox">
-        <div style={{ padding: "80px 0 40px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+        <div style={{ padding: "80px 18px 40px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
           <ScrollColorText as="h2" text="Every stock, honestly tiered." className="h-section" style={{ textAlign: "center" }} />
           <Reveal y={18} delay={0.1}><p className="body" style={{ margin: 0, maxWidth: 640, textAlign: "center" }}>Every tokenized stock that can be escrowed safely is listed. Where our capital quotes is a published rule, not a promise, and a market moves up a tier by filling, not by asking.</p></Reveal>
         </div>

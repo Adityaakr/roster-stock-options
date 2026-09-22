@@ -181,13 +181,13 @@ function UnderwriteInner() {
         </div>
         <div className="card mlist" style={{ marginTop: 12 }}>
           <table className="table mtable ulist">
-            <thead><tr><th>Term</th><th>Expiry</th><th className="num">Premium per share</th><th className="num">On collateral</th><th className="num hide-sm">Bought</th><th className="num hide-sm">Fillable</th><th className="num hide-sm">Makers</th></tr></thead>
+            <thead><tr><th>Term</th><th className="col-exp">Expiry</th><th className="num">Premium per share</th><th className="num">On collateral</th><th className="num hide-sm">Bought</th><th className="num hide-sm">Fillable</th><th className="num hide-sm">Makers</th></tr></thead>
             <tbody>
               {listed.length === 0 ? <tr><td colSpan={7} className="muted" style={{ padding: 20 }}>Nothing quoted here right now.</td></tr> : null}
               {(showAll ? listed : listed.slice(0, 12)).map((i) => (
                 <tr key={i.id} className={`rowlink ${i.id === t.id ? "on" : ""}`} onClick={() => pick(i)} data-testid="idea-row">
-                  <td><div className="flex items-center gap-3">{marketOf(i.market) ? <MarketLogo m={marketOf(i.market)!} size={26} /> : null}<span><b style={{ fontWeight: 500 }}>{i.market}</b> <span className="muted">${usdK(i.strike)} {i.side === "put" ? "Floor" : "Gap"}</span></span></div></td>
-                  <td className="nowrap">{dayLabel(i.expiryTs)}</td>
+                  <td><div className="flex items-center gap-3">{marketOf(i.market) ? <MarketLogo m={marketOf(i.market)!} size={26} /> : null}<span><b style={{ fontWeight: 500 }}>{i.market}</b> <span className="muted">${usdK(i.strike)} {i.side === "put" ? "Floor" : "Gap"}</span><span className="small muted exp-inline">{dayLabel(i.expiryTs)}</span></span></div></td>
+                  <td className="nowrap col-exp">{dayLabel(i.expiryTs)}</td>
                   <td className="num mono">${usd(i.ask)}</td>
                   <td className="num mono">{i.onCollateral !== null ? `${(i.onCollateral * 100).toFixed(2)}%` : "n/a"}</td>
                   <td className="num mono hide-sm">{usdK(i.openInterest)}</td>

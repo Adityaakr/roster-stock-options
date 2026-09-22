@@ -60,18 +60,18 @@ export function MarketList({ markets, selected, compact = false, hrefFor, maxHei
         ) : null}
       </div>
       <div className="card mlist" style={maxHeight ? { maxHeight, overflowY: "auto" } : undefined}>
-        <table className="table mtable" style={{ minWidth: compact ? 600 : 760 }}>
+        <table className={`table mtable ${compact ? "compact" : ""}`}>
           <thead>
             <tr>
               <th>Market</th>
               <th className="num">Mark</th>
-              <th className="num" title="Over the marks recorded on this cluster, up to a day">Change</th>
+              <th className="num col-chg" title="Over the marks recorded on this cluster, up to a day">Change</th>
               {!compact ? <th className="col-spark">Recorded</th> : null}
-              <th className="num">Best ask</th>
-              <th style={{ minWidth: 150 }}>Executable depth</th>
+              <th className="num col-ask">Best ask</th>
+              <th className="col-depth">Executable depth</th>
               {!compact ? <th className="num col-vol">Volatility</th> : null}
               <th className="num col-basis">Basis</th>
-              <th>Tier</th>
+              <th className="col-tier">Tier</th>
             </tr>
           </thead>
           <tbody>
@@ -91,15 +91,15 @@ export function MarketList({ markets, selected, compact = false, hrefFor, maxHei
                   </div>
                 </td>
                 <td className="num">{m.mark === null ? <span className="muted">no feed</span> : `$${usd(m.mark)}`}</td>
-                <td className={`num ${m.changePct === null ? "muted" : m.changePct >= 0 ? "up" : "down"}`}>{m.changePct === null ? "–" : `${m.changePct >= 0 ? "+" : "−"}${Math.abs(m.changePct).toFixed(2)}%`}</td>
+                <td className={`num col-chg ${m.changePct === null ? "muted" : m.changePct >= 0 ? "up" : "down"}`}>{m.changePct === null ? "–" : `${m.changePct >= 0 ? "+" : "−"}${Math.abs(m.changePct).toFixed(2)}%`}</td>
                 {!compact ? <td className="col-spark"><Sparkline points={m.sparkline} /></td> : null}
-                <td className="num">{m.bestAsk === null ? <span className="muted">none</span> : `$${usd(m.bestAsk)}`}</td>
+                <td className="num col-ask">{m.bestAsk === null ? <span className="muted">none</span> : `$${usd(m.bestAsk)}`}</td>
                 <td>
                   <div className="depth"><span className="depth-bar"><i style={{ width: `${Math.max(2, (m.depthUsdc / maxDepth) * 100)}%` }} /></span><span className="mono">${usd0(m.depthUsdc)}</span></div>
                 </td>
                 {!compact ? <td className="num col-vol">{(m.vol * 100).toFixed(0)}% <span className="small muted">{m.volSource === "fixture" ? "fixture" : m.volSource.includes("floor") ? "floor" : "realised"}</span></td> : null}
                 <td className="num col-basis">{m.basisBps === null ? <span className="muted">n/a</span> : `${m.basisBps >= 0 ? "+" : ""}${m.basisBps} bps`}</td>
-                <td><Badge tone={m.tier === 1 ? "green" : m.tier === 2 ? "blue" : undefined}>{TIER_LABEL[m.tier]}</Badge></td>
+                <td className="col-tier"><Badge tone={m.tier === 1 ? "green" : m.tier === 2 ? "blue" : undefined}>{TIER_LABEL[m.tier]}</Badge></td>
               </tr>
             ))}
           </tbody>

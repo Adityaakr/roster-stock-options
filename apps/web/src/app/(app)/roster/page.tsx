@@ -92,7 +92,7 @@ function RosterInner() {
         </div>
         <div className="scroll-x">
           <table className="table rtable">
-            <thead><tr><th>Market</th><th>Depth</th><th className="num">Gap from</th><th className="num">Floor from</th><th className="num hide-sm">Series</th><th className="hide-sm">Tier</th><th aria-label="open"></th></tr></thead>
+            <thead><tr><th>Market</th><th>Depth</th><th className="num">Gap from</th><th className="num col-floor">Floor from</th><th className="num hide-sm">Series</th><th className="hide-sm">Tier</th><th aria-label="open"></th></tr></thead>
             <tbody>
               {[...data.markets].sort((a, b) => b.depthUsdc - a.depthUsdc).map((m) => {
                 const gap = bestOn(m.symbol, "call");
@@ -106,7 +106,7 @@ function RosterInner() {
                       <div className="bar thin" aria-hidden><span style={{ width: `${Math.max(2, (m.depthUsdc / Math.max(1, depthMax)) * 100)}%` }} /></div>
                     </td>
                     <td className="num mono">{gap === null ? <span className="muted">none</span> : `$${usd(gap)}`}</td>
-                    <td className="num mono">{floor === null ? <span className="muted">none</span> : `$${usd(floor)}`}</td>
+                    <td className="num mono col-floor">{floor === null ? <span className="muted">none</span> : `$${usd(floor)}`}</td>
                     <td className="num hide-sm"><span className="mono">{m.liveSeries}</span> <span className="small muted">/ {m.maxLiveSeries}</span></td>
                     <td className="hide-sm"><Badge tone={m.tier === 1 ? "green" : m.tier === 2 ? "blue" : undefined}>{TIER_LABEL[m.tier]}</Badge></td>
                     <td className="num muted" aria-hidden>→</td>
@@ -204,7 +204,7 @@ function Terms({ data, sym, cluster, onOpen }: { data: RosterData; sym: string; 
   return (
     <div className="scroll-x">
       <table className="table rterms">
-        <thead><tr><th>Term</th>{[10, 50, 200].map((n) => <th key={n} className="num">{n} {sym}</th>)}<th className="num">Fillable</th><th className="num">Open</th><th>Escrow</th></tr></thead>
+        <thead><tr><th>Term</th>{[10, 50, 200].map((n, i) => <th key={n} className={`num ${i > 0 ? "col-wide" : ""}`}>{n} {sym}</th>)}<th className="num col-wide">Fillable</th><th className="num col-wide">Open</th><th className="col-esc">Escrow</th></tr></thead>
         <tbody>
           {expiries.map((ex) => (
             <RowGroup key={ex} label={`${dayLabel(ex)} · in ${countdown(ex, data.nowTs)}`} rows={data.terms.filter((t) => t.expiryTs === ex).sort((a, b) => (a.side === b.side ? a.strike - b.strike : a.side === "call" ? -1 : 1))} cluster={cluster} onOpen={onOpen} />
@@ -222,10 +222,10 @@ function RowGroup({ label, rows, cluster, onOpen }: { label: string; rows: Term[
       {rows.map((t) => (
         <tr key={t.id} className="rowlink" onClick={() => onOpen(t)}>
           <td><div className="flex items-center gap-2"><Badge tone={t.side === "call" ? "green" : "blue"}>{productName(t.side)}</Badge><span className="mono">${usdK(t.strike)}</span>{t.halted ? <Badge tone="amber" dot>halted</Badge> : null}</div></td>
-          {t.ladder.map((r) => <td key={r.size} className="num mono">{r.ask === null ? <span className="muted">–</span> : <>${usd(r.ask)} <span className="small muted">×{r.underwriters}</span></>}</td>)}
-          <td className="num mono">{Math.floor(t.capacity)}</td>
-          <td className="num mono">{Math.floor(t.openInterest)}</td>
-          <td className="small" onClick={(e) => e.stopPropagation()}>{t.escrow ? <Address value={t.escrow.collateralVault} href={explorerUrl(cluster, "address", t.escrow.collateralVault)} /> : <span className="muted">linked at deploy</span>}</td>
+          {t.ladder.map((r, i) => <td key={r.size} className={`num mono ${i > 0 ? "col-wide" : ""}`}>{r.ask === null ? <span className="muted">–</span> : <>${usd(r.ask)} <span className="small muted">×{r.underwriters}</span></>}</td>)}
+          <td className="num mono col-wide">{Math.floor(t.capacity)}</td>
+          <td className="num mono col-wide">{Math.floor(t.openInterest)}</td>
+          <td className="small col-esc" onClick={(e) => e.stopPropagation()}>{t.escrow ? <Address value={t.escrow.collateralVault} href={explorerUrl(cluster, "address", t.escrow.collateralVault)} /> : <span className="muted">linked at deploy</span>}</td>
         </tr>
       ))}
     </>

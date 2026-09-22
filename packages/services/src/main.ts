@@ -30,7 +30,7 @@ const BIND = process.env.SERVICES_BIND ?? (process.env.PORT ? "0.0.0.0" : "127.0
 const TICK_MS = Number(process.env.SERVICES_TICK_MS ?? 15_000);
 /* Markets priced and cranked at once. A tick that walks four hundred markets one at a time is a tick that settles a
  * Friday's expiries minutes late; each market's accounts are disjoint, so the pass fans out. */
-const MARKET_CONCURRENCY = Number(process.env.SERVICES_MARKET_CONCURRENCY ?? 4);
+const MARKET_CONCURRENCY = Number(process.env.SERVICES_MARKET_CONCURRENCY ?? 2);
 
 /** A role's key from the environment on a host, or from .keys on a laptop; a missing one is named, never guessed. */
 function key(role: "DEPLOYER" | "KEEPER" | "QUOTER", fallbackPath: string): Keypair {

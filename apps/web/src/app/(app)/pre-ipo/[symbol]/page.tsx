@@ -12,7 +12,7 @@ import { useRoster } from "@/lib/use-roster";
 
 /*
  * One PreStocks token: where it trades and the issuer's mark on one chart, the spread between them, the valuations
- * both imply, the wrapper's facts read from the mint, the issuer's own terms, and the live Gap and Floor terms when
+ * both imply, the wrapper's facts read from the mint, the issuer's own terms, and the live Upside and Floor terms when
  * the token is listed here.
  */
 interface Prices { mark: Point[]; issuerMark?: Point[]; tradeDaily?: Point[]; tradeHourly?: Point[] }
@@ -160,7 +160,7 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
             {bestFloor ? <em className="mono">${usdK(bestFloor.strike)} through {dayLabel(bestFloor.expiryTs)} · ${usd(bestFloor.ask)} per token</em> : <em className="muted">no floor quoted right now</em>}
           </Link>
           <Link href={bestGap ? `/trade/${bestGap.id}` : `/markets/${token.symbol}`} className="card pdo-card">
-            <Badge tone="green">Gap</Badge>
+            <Badge tone="green">Upside</Badge>
             <b>The upside with the loss capped</b>
             <span>The right to buy {token.symbol} at the strike through the date. If it never gets there you lose the premium and nothing else.</span>
             {bestGap ? <em className="mono">${usdK(bestGap.strike)} through {dayLabel(bestGap.expiryTs)} · ${usd(bestGap.ask)} per token</em> : <em className="muted">no gap quoted right now</em>}
@@ -178,12 +178,12 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
         <div className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="h6">Every live term on {token.symbol}</div>
-            <div className="small muted" style={{ marginTop: 2 }}>{listed ? `${calls} Gap and ${puts} Floor terms quoted · $${usd0(token.market!.depthUsdc)} executable depth${token.market!.bestAsk !== null ? ` · best ask $${usd(token.market!.bestAsk)} per token` : ""}. A Floor is the funded exit: sell at the strike any time through the date, USDC already locked.` : "Not listed on this cluster. Tier 3 names can be quoted by any maker once their escrow is proven."}</div>
+            <div className="small muted" style={{ marginTop: 2 }}>{listed ? `${calls} Upside and ${puts} Floor terms quoted · $${usd0(token.market!.depthUsdc)} executable depth${token.market!.bestAsk !== null ? ` · best ask $${usd(token.market!.bestAsk)} per token` : ""}. A Floor is the funded exit: sell at the strike any time through the date, USDC already locked.` : "Not listed on this cluster. Tier 3 names can be quoted by any maker once their escrow is proven."}</div>
           </div>
           {listed ? <div className="flex items-center gap-2"><Link href={`/underwrite?m=${token.symbol}`} className="btn secondary sm">Earn on {token.symbol}</Link><Link href={`/vaults`} className="btn secondary sm">Vaults</Link></div> : null}
         </div>
         {listed && data ? <div style={{ padding: "14px 16px 6px" }}><DiscoverTable data={data} initialSide="put" /></div> : null}
-        {listed && token.feeBps ? <p className="small muted" style={{ padding: "0 20px 14px", margin: 0 }}>The mint&apos;s {(token.feeBps / 100).toFixed(2)}% fee is the holder&apos;s on both sides: a Gap delivers the tokens less the fee; a Floor has you deliver the fee on top so the writers receive every unit they are owed. The ticket states both in numbers.</p> : null}
+        {listed && token.feeBps ? <p className="small muted" style={{ padding: "0 20px 14px", margin: 0 }}>The mint&apos;s {(token.feeBps / 100).toFixed(2)}% fee is the holder&apos;s on both sides: an Upside delivers the tokens less the fee; a Floor has you deliver the fee on top so the writers receive every unit they are owed. The ticket states both in numbers.</p> : null}
       </div>
       <p className="small">Figures read now from prestocks.com/api; mint facts and the verdict from the registry run. PreStocks tokens have no Pyth feed: the token price prices these terms and auto-exercise is off on them.</p>
     </div>

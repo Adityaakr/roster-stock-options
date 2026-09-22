@@ -60,7 +60,7 @@ const TOOL = {
   type: "function",
   function: {
     name: "set_intent",
-    description: "Record what the person wants on Roster Finance. Never guess a market: use only symbols from the list. A question about the product, a market, a price or how something works is action question, with the question restated in note. Anything else that is not a Gap, a Floor or writing one is unclear, with why in note.",
+    description: "Record what the person wants on Roster Finance. Never guess a market: use only symbols from the list. A question about the product, a market, a price or how something works is action question, with the question restated in note. Anything else that is not an Upside, a Floor or writing one is unclear, with why in note.",
     parameters: {
       type: "object",
       additionalProperties: false,
@@ -196,7 +196,7 @@ export function horizonFromText(text: string, today = new Date()): Intent["horiz
 /** Step 1: the sentence to a structured intent. */
 export async function parseIntent(text: string, markets: { symbol: string; name: string; underlyingSymbol: string | null }[]): Promise<Intent> {
   const list = markets.map((m) => `${m.symbol}: ${m.name}${m.underlyingSymbol && m.underlyingSymbol !== m.symbol ? ` (${m.underlyingSymbol})` : ""}`).join("\n");
-  const system = `You turn a sentence into a trading intent on Roster Finance, a venue for fully paid contracts on tokenized stocks. A Gap is the right to buy at a strike through an expiry (leveraged upside, loss capped at the premium). A Floor is the right to sell at a strike through an expiry (a funded exit). Writing one means getting paid to take the other side. Only these markets exist:\n${list}\nMap company names to their symbol (Nvidia is NVDAx, SpaceX is SPACEX). Call set_intent exactly once. Do not invent a market. A question is action question, never unclear. Today is ${new Date().toISOString().slice(0, 10)}.`;
+  const system = `You turn a sentence into a trading intent on Roster Finance, a venue for fully paid contracts on tokenized stocks. An Upside is the right to buy at a strike through an expiry (leveraged upside, loss capped at the premium). A Floor is the right to sell at a strike through an expiry (a funded exit). Writing one means getting paid to take the other side. Only these markets exist:\n${list}\nMap company names to their symbol (Nvidia is NVDAx, SpaceX is SPACEX). Call set_intent exactly once. Do not invent a market. A question is action question, never unclear. Today is ${new Date().toISOString().slice(0, 10)}.`;
   const r = await chat({ messages: [{ role: "system", content: system }, { role: "user", content: text }], tools: [TOOL], tool_choice: { type: "function", function: { name: "set_intent" } }, max_tokens: 500 });
   const choice = (r.choices as { message?: { tool_calls?: { function?: { arguments?: string } }[] } }[] | undefined)?.[0];
   const args = choice?.message?.tool_calls?.[0]?.function?.arguments;
@@ -217,7 +217,7 @@ export async function parseIntent(text: string, markets: { symbol: string; name:
 /** Step 2: the intent to a term and a size, with the app's own arithmetic. */
 export async function resolveIntent(intent: Intent): Promise<Proposal | IntentFailure> {
   if (intent.action === "question") return { error: "question", intent };
-  if (intent.action === "unclear") return { error: intent.note || "I could not map that to a Gap, a Floor or writing one.", intent };
+  if (intent.action === "unclear") return { error: intent.note || "I could not map that to an Upside, a Floor or writing one.", intent };
   if (!intent.market) return { error: "Which market? Name a listed one, for example NVDAx or TSLAx.", intent };
   const data: RosterData = await rosterData(intent.market);
   const market = data.markets.find((m) => m.symbol === intent.market);
@@ -314,7 +314,7 @@ export async function phrase(p: Proposal): Promise<string> {
     ...(p.locked ? { premium_received: `$${usdSmart(p.premium)}`, locked: `${usdSmart(p.locked.amount)} ${p.locked.unit}`, effective_price: `$${usdSmart(p.breakEven)}` } : { premium: `$${usdSmart(p.premium)}`, fee: `$${usdSmart(p.fee)}`, total_paid: `$${usdSmart(p.total)}`, max_loss: `$${usdSmart(p.total)}`, break_even: `$${usdSmart(p.breakEven)}`, move_needed_pct: `${p.movePct >= 0 ? "+" : "−"}${Math.abs(p.movePct).toFixed(1)}%` })
   };
   try {
-    const system = "You write two short sentences, at most 45 words, in plain English for someone about to buy or write a fully paid contract on a tokenized stock. Use only the numbers given, written exactly as given. Sentence case. No em-dashes. Never say yield, option, call or put; say Gap or Floor. State the benefit and then the worst case: for a purchase the worst case is losing the total paid; for writing a Floor it is owning the shares at the strike with the locked USDC; for writing a Gap it is selling the shares at the strike and giving up anything above it. No advice, no adjectives like great or safe.";
+    const system = "You write two short sentences, at most 45 words, in plain English for someone about to buy or write a fully paid contract on a tokenized stock. Use only the numbers given, written exactly as given. Sentence case. No em-dashes. Never say yield, option, call or put; say Upside or Floor. State the benefit and then the worst case: for a purchase the worst case is losing the total paid; for writing a Floor it is owning the shares at the strike with the locked USDC; for writing an Upside it is selling the shares at the strike and giving up anything above it. No advice, no adjectives like great or safe.";
     const r = await chat({ messages: [{ role: "system", content: system }, { role: "user", content: JSON.stringify(facts) }], max_tokens: 120 }, 12_000);
     const text = String((r.choices as { message?: { content?: string } }[] | undefined)?.[0]?.message?.content ?? "").trim().replace(/\s+/g, " ");
     if (!text || text.includes("—") || /\byield\b/i.test(text)) { console.warn(`[intent] phrasing rejected on wording: ${text.slice(0, 160)}`); return p.explanation; }
@@ -334,10 +334,10 @@ export interface Answer { answer: string; intent: Intent; grounded: boolean }
 function factSheet(data: RosterData): Record<string, unknown> {
   return {
     product: {
-      gap: "A Gap is the right to buy the token at a strike through an expiry: leveraged upside, max loss the premium plus the 10 bps taker fee. A call, fully collateralized, settled in the token.",
+      gap: "An Upside is the right to buy the token at a strike through an expiry: leveraged upside, max loss the premium plus the 10 bps taker fee. A call, fully collateralized, settled in the token.",
       floor: "A Floor is the right to sell the token at a strike any time through an expiry: a funded exit, the USDC locked before it is sold. A put, fully collateralized, no oracle in the way.",
-      earn: "Earn is the write side: lock USDC to be paid to buy lower (write a Floor) or lock tokens to be paid to sell higher (write a Gap). Paid risk, never yield; assignment is pro rata of what you sold.",
-      vaults: "A Covered Call vault holds tokens and writes Gaps above the mark; a Cash-Secured Put vault holds USDC and writes Floors below it. Depositors receive the premiums the vault collects and carry the assignments: the vault is short volatility with no hedge and will have losing epochs. Its ask rises with utilisation (1 + 3u squared) and it stops at its cap. Epochs are weekly (daily on devnet); deposits enter and withdrawals leave at a roll; every epoch's result is published with its sign.",
+      earn: "Earn is the write side: lock USDC to be paid to buy lower (write a Floor) or lock tokens to be paid to sell higher (write an Upside). Paid risk, never yield; assignment is pro rata of what you sold.",
+      vaults: "A Covered Call vault holds tokens and writes Upsides above the mark; a Cash-Secured Put vault holds USDC and writes Floors below it. Depositors receive the premiums the vault collects and carry the assignments: the vault is short volatility with no hedge and will have losing epochs. Its ask rises with utilisation (1 + 3u squared) and it stops at its cap. Epochs are weekly (daily on devnet); deposits enter and withdrawals leave at a roll; every epoch's result is published with its sign.",
       exit: "A holder can exercise, let it expire, or sell back to the vault at its live bid without paying the strike.",
       prestocks: "PreStocks tokens are pre-IPO exposure; they are priced here off where the token trades, never the issuer's mark. The mint's transfer fee (100 bps on mainnet today, read from the mint) is the holder's on both sides and is in the price.",
       fees: "Taker fee 10 bps of the premium at purchase; nothing at exercise or settlement."
@@ -361,9 +361,9 @@ function factSheet(data: RosterData): Record<string, unknown> {
 /** A question answered from the fact sheet only; a number the model did not receive fails the check. */
 export async function answerQuestion(question: string, data: RosterData, intent: Intent): Promise<Answer> {
   const facts = factSheet(data);
-  const fallback = `I can answer from the live figures only. ${data.markets.length} markets are listed; the cheapest Gap right now is on ${cheapest(data, "call")} and the cheapest Floor on ${cheapest(data, "put")}. Ask for a ticket in a sentence, or open Markets.`;
+  const fallback = `I can answer from the live figures only. ${data.markets.length} markets are listed; the cheapest Upside right now is on ${cheapest(data, "call")} and the cheapest Floor on ${cheapest(data, "put")}. Ask for a ticket in a sentence, or open Markets.`;
   try {
-    const system = "You answer questions about Roster Finance for someone deciding what to do. Use only the facts given, with every number written exactly as given; if the facts do not cover it, say so in one sentence. At most 70 words, plain English, sentence case, no em-dashes, no bullet points, written once with no self-corrections. Never say yield, option, call or put; say Gap or Floor. No advice on whether to buy; describe what exists and what it costs. End with what they could ask for next, in a few words.";
+    const system = "You answer questions about Roster Finance for someone deciding what to do. Use only the facts given, with every number written exactly as given; if the facts do not cover it, say so in one sentence. At most 70 words, plain English, sentence case, no em-dashes, no bullet points, written once with no self-corrections. Never say yield, option, call or put; say Upside or Floor. No advice on whether to buy; describe what exists and what it costs. End with what they could ask for next, in a few words.";
     const r = await chat({ messages: [{ role: "system", content: system }, { role: "user", content: `Question: ${question}
 
 Facts: ${JSON.stringify(facts)}` }], max_tokens: 200 }, 15_000);

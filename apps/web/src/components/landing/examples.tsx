@@ -9,7 +9,7 @@ import { buyerPnl, commitMath, type RosterData } from "@/lib/model";
 
 /*
  * The instrument, centred in the frame the reference uses for its illustrations: three worked examples with real
- * numbers from the live quoter and a payoff sketch (CLAUDE.md 6, "What you can do here"). Gap on 10 NVDAx, Floor on
+ * numbers from the live quoter and a payoff sketch (CLAUDE.md 6, "What you can do here"). Upside on 10 NVDAx, Floor on
  * 20 NVDAx, Commit on the Floor's other side; the figures recompute from the nearest expiry's $180 terms.
  */
 export function Examples({ data }: { data: RosterData }) {
@@ -41,7 +41,7 @@ export function Examples({ data }: { data: RosterData }) {
           <div id="examples" style={{ maxWidth: 760, margin: "48px auto 0", textAlign: "left" }}>
             <div className="wc" style={{ border: "1px solid var(--line)", borderRadius: 4 }}>
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <Tabs value={tab} onChange={(v) => setTab(v as typeof tab)} items={[{ id: "gap", label: "Gap" }, { id: "floor", label: "Floor" }, { id: "commit", label: "Commit" }]} />
+                <Tabs value={tab} onChange={(v) => setTab(v as typeof tab)} items={[{ id: "gap", label: "Upside" }, { id: "floor", label: "Floor" }, { id: "commit", label: "Commit" }]} />
                 <span className="small">Mark <b className="mono ink">${usd(mark)}</b> · through Friday</span>
               </div>
               {tab === "gap" && call ? (

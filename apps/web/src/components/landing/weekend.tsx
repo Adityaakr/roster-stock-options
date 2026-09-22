@@ -7,9 +7,9 @@ import { Sec } from "./sec";
 
 /*
  * The problem, told plainly: one weekend, run twice, with a spine of stages between the two columns. On the left a
- * 10x perp on a tokenized stock; on the right a Gap on the same 10 NVDAx. The perp figures are arithmetic on a 10x
+ * 10x perp on a tokenized stock; on the right an Upside on the same 10 NVDAx. The perp figures are arithmetic on a 10x
  * position (a move of about 10% against it exhausts the margin, before maintenance requirements make it sooner);
- * the Gap figures come from the live quoter.
+ * the Upside figures come from the live quoter.
  */
 interface Stage {
   n: string;
@@ -34,7 +34,7 @@ export function Weekend({ data }: { data: RosterData }) {
     {
       n: "01", s: "Friday, 16:00 New York",
       beforeV: "The shares stop trading", before: "The exchange closes. The perp keeps a mark from a book that is now the only price in the world for 75 hours.", beforeFig: `10x long, ${shares} ${data.underlying.symbol} notional $${usd0(notional)}, margin $${usd0(margin)}`,
-      afterV: "The contract keeps its terms", after: "Strike, expiry and premium are fixed. There is no mark to defend and no margin to top up.", afterFig: call ? `Gap $${usd0(call.strike)} on ${shares} ${data.underlying.symbol}, premium $${usdSmart(prem)}` : null
+      afterV: "The contract keeps its terms", after: "Strike, expiry and premium are fixed. There is no mark to defend and no margin to top up.", afterFig: call ? `Upside $${usd0(call.strike)} on ${shares} ${data.underlying.symbol}, premium $${usdSmart(prem)}` : null
     },
     {
       n: "02", s: "Saturday, 03:10",
@@ -79,7 +79,7 @@ export function Weekend({ data }: { data: RosterData }) {
               <div className="ba-spine" aria-hidden />
               <div className="ba-title after">
                 <span className="ba-when">The same weekend</span>
-                <div className="h-item">A Gap over the weekend</div>
+                <div className="h-item">An Upside over the weekend</div>
                 <p className="note">The contract sees a strike and an expiry. Nothing else.</p>
               </div>
             </Reveal>
@@ -96,7 +96,7 @@ export function Weekend({ data }: { data: RosterData }) {
                   <span className="s">{st.s}</span>
                 </div>
                 <div className="ba-cell after">
-                  <span className="ba-when">A Gap</span>
+                  <span className="ba-when">An Upside</span>
                   <span className="ba-mark"><i aria-hidden>✓</i>{st.afterV}</span>
                   <p>{st.after}</p>
                   {st.afterFig ? <span className="ba-fig mono">{st.afterFig}</span> : null}
@@ -111,7 +111,7 @@ export function Weekend({ data }: { data: RosterData }) {
               <div className="ba-arrow" aria-hidden>→</div>
               <div className="ba-out after">
                 <div className="v num">−${usdSmart(prem)}</div>
-                <div className="note">the most a Gap on the same {shares} {data.underlying.symbol} can lose, whatever the wick does. Fees on top, disclosed on the ticket.</div>
+                <div className="note">the most an Upside on the same {shares} {data.underlying.symbol} can lose, whatever the wick does. Fees on top, disclosed on the ticket.</div>
               </div>
             </Reveal>
           </div>

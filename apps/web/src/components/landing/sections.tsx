@@ -148,11 +148,11 @@ export function Workflow() {
 /* 4. Products: what we sell, by product. Two large cards slide in from the centre, three below fade up. */
 export function Products() {
   const cards = [
-    { t: "Gap", d: "Leveraged upside with the loss capped at the premium. The right to buy a tokenized stock at a strike through an expiry. If it does not get there, you lost the premium and nothing else.", kind: "gap" as const, big: true },
+    { t: "Upside", d: "Leveraged upside with the loss capped at the premium. The right to buy a tokenized stock at a strike through an expiry. If it does not get there, you lost the premium and nothing else.", kind: "gap" as const, big: true },
     { t: "Floor", d: "A funded exit at a price you choose, exercisable any time until expiry. The USDC is locked before you buy. No equity venue sells a Saturday exit on Nvidia; this one does.", kind: "floor" as const, big: true },
     { t: "Commit", d: "Get paid to buy a stock cheaper or to sell it higher. Capital is locked until expiry or exercise. Paid risk, disclosed as such, never yield.", kind: "commit" as const, big: false },
-    { t: "Protected Buy", d: "Buy the token, or buy it with a floor through a date, in one transaction. Purchase cost, premium and protected proceeds shown together. Ships after Gap and Floor.", kind: "protected" as const, big: false },
-    { t: "First Print", d: "Gaps and Floors on PreStocks tokens, the stocks that have not listed yet. Priced off where the token trades, the mint's fee stated in numbers, the issuer's own terms on every ticket.", kind: "firstprint" as const, big: false }
+    { t: "Protected Buy", d: "Buy the token, or buy it with a floor through a date, in one transaction. Purchase cost, premium and protected proceeds shown together. Ships after Upside and Floor.", kind: "protected" as const, big: false },
+    { t: "First Print", d: "Upsides and Floors on PreStocks tokens, the stocks that have not listed yet. Priced off where the token trades, the mint's fee stated in numbers, the issuer's own terms on every ticket.", kind: "firstprint" as const, big: false }
   ];
   return (
     <Sec id="products" className="usecases-sec">
@@ -331,7 +331,7 @@ export function FirstPrint() {
   const fmt = (v: number | null) => (v === null ? "…" : `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
   const spread = (s: string) => { const v = live[s]?.spreadPct ?? null; return v === null ? "…" : `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}% ${v >= 0 ? "above" : "below"} the mark`; };
   const tokens = [
-    { t: "OPENAI", d: "The largest private name on chain. The token trades at a premium to the issuer's mark, the price of access; a Gap is that upside with the loss capped, a Floor is an exit at a price you chose.", sym: "OPENAI", cta: "A known price on OPENAI", items: ["Priced off where the token trades, never the mark", "Both figures on every ticket, the spread named", "Exercisable any time until expiry", "The mint's transfer fee stated in numbers", "No ownership, voting or dividend rights"] },
+    { t: "OPENAI", d: "The largest private name on chain. The token trades at a premium to the issuer's mark, the price of access; an Upside is that upside with the loss capped, a Floor is an exit at a price you chose.", sym: "OPENAI", cta: "A known price on OPENAI", items: ["Priced off where the token trades, never the mark", "Both figures on every ticket, the spread named", "Exercisable any time until expiry", "The mint's transfer fee stated in numbers", "No ownership, voting or dividend rights"] },
     { t: "SPACEX", d: "The largest float of the eight. The token has traded below the issuer's mark for the lack of an exit before a listing; a Floor is the exit that already has the USDC locked.", sym: "SPACEX", cta: "A funded exit on SPACEX", items: ["USDC locked before you buy", "Sell at the strike any time through the date", "Settles in the token itself, no oracle", "Fee delivered on top so writers are paid to the unit", "IPO and deal terms from the issuer on the ticket"], primary: true },
     { t: "NEURALINK", d: "The widest premium of the eight. Holders can be paid to sell it higher through a Covered Call vault, and buyers can hold the upside without holding the token.", sym: "NEURALINK", cta: "Every PreStocks token", items: ["Eight tokens from the issuer's API, live", "Implied valuation both ways", "Recent volatility measured, not assumed", "Listed as escrow is proven, tier by tier", "Paid risk, disclosed as such, never yield"] }
   ].map((p) => ({ ...p, price: fmt(live[p.sym]?.tokenPrice ?? null), unit: "token", sub: spread(p.sym), href: live[p.sym]?.listed ? `/pre-ipo/${p.sym}` : "/pre-ipo" }));

@@ -17,7 +17,7 @@ export async function GET() {
   const reg = new Map((readRegistry()?.entries ?? []).map((e) => [e.mint, e]));
   const here = new Map((readRegistry(registryPathFor(roster.cluster))?.entries ?? []).map((e) => [e.replicaOf ?? e.mint, e]));
   const live = new Map(roster.markets.map((m) => [m.replicaOf ?? m.mint, m]));
-  // The best live term on each side, from every market's resident asks: a Floor's strike nearest the price, a Gap's too.
+  // The best live term on each side, from every market's resident asks: a Floor's strike nearest the price, an Upside's too.
   const best = (symbol: string, side: "put" | "call") => {
     const xs = roster.ideas.filter((i) => i.market === symbol && i.side === side && i.capacity > 0);
     if (!xs.length) return null;

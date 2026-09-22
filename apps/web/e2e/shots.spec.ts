@@ -8,7 +8,7 @@ const pages = [
   { path: "/", heading: "Stock leverage without margin liquidation.", name: "landing", wait: "#terms table.table"},
   { path: "/markets", heading: "Markets", name: "trade", wait: "table.table"},
   { path: "/markets/NVDAx", heading: "NVDAx", name: "market", wait: "table.table"},
-  { path: "/trade/TERM", heading: /Gap at \$/, name: "act", wait: ".pchart svg"},
+  { path: "/trade/TERM", heading: /Upside at \$/, name: "act", wait: ".pchart svg"},
   { path: "/positions", heading: "Positions", name: "positions", wait: ".card"},
   { path: "/underwrite", heading: "Get paid to take the other side", name: "underwrite", wait: "table.table"},
   { path: "/roster", heading: "Roster", name: "roster", wait: "table.table"},

@@ -27,7 +27,7 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
   return (
     <div>
       <div className="flex items-center gap-3 flex-wrap" style={{ marginBottom: 14 }}>
-        <Tabs value={side} onChange={(v) => setSide(v as Side)} items={[{ id: "call", label: "Gap · upside" }, { id: "put", label: "Floor · exit" }]} />
+        <Tabs value={side} onChange={(v) => setSide(v as Side)} items={[{ id: "call", label: "Upside · leverage" }, { id: "put", label: "Floor · exit" }]} />
         {expiries.length > 1 ? <Tabs value={String(expiry)} onChange={(v) => setExpiry(Number(v))} items={expiries.map((e) => ({ id: String(e), label: dayLabel(e) }))} /> : null}
         <label className="flex items-center gap-2 small" style={{ marginLeft: "auto" }}>
           Size

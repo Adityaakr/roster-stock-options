@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 /*
  * Part 3 in a browser on devnet: a person funds a wallet, queues a deposit into the Covered Call vault and sees it in
- * the queue with the roll time; buys a Gap the vault wrote; sells it back to the vault at the vault's bid without
+ * the queue with the roll time; buys an Upside the vault wrote; sells it back to the vault at the vault's bid without
  * paying the strike. The roll itself happens on the calendar and is covered by the program tests.
  */
 test.describe.configure({ mode: "serial" });
@@ -48,11 +48,11 @@ test("devnet: deposit into the vault, buy from it, sell back to it", async ({ pa
   expect(await card.getByTestId("tx-failed").isVisible()).toBe(false);
   await expect(card.getByTestId("my-queued-deposit")).toContainText("2", { timeout: 60_000 });
 
-  // Buy a Gap the vault is asking on. In-app navigation: the burner lives in the page and a full load would replace it.
+  // Buy an Upside the vault is asking on. In-app navigation: the burner lives in the page and a full load would replace it.
   await page.getByRole("link", { name: "Markets" }).first().click();
   await page.getByRole("link", { name: /^NVDAx$/ }).first().click();
   await page.getByTestId("buy-gap").click();
-  await expect(page.getByRole("heading", { level: 1, name: /Gap at/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Upside at/ })).toBeVisible();
   await page.getByTestId("size").fill("1");
   await expect(page.getByTestId("total")).not.toHaveText("n/a");
   await page.getByTestId("buy").click();
@@ -62,7 +62,7 @@ test("devnet: deposit into the vault, buy from it, sell back to it", async ({ pa
   // Sell it back to the vault at the bid, once the quoter has posted one (it refreshes every tick).
   await page.getByRole("link", { name: "Positions" }).first().click();
   await expect(page.getByTestId("position").first()).toBeVisible({ timeout: 60_000 });
-  const gap = page.getByTestId("position").filter({ hasText: "Gap at" }).first();
+  const gap = page.getByTestId("position").filter({ hasText: "Upside at" }).first();
   await expect.poll(async () => {
     await page.getByTestId("refresh").click();
     await page.waitForTimeout(3_000);

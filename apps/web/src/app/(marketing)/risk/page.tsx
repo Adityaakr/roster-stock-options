@@ -8,10 +8,10 @@ export default function RiskPage() {
   return (
     <DocPage title="Risk" lead="Fully collateralized, American exercise, physical settlement. Contracts can expire worthless. This page says what that means before you sign anything." updated="September 17, 2026">
       <h2>What a contract is</h2>
-      <p>A Gap is the right to buy a fixed number of tokens at a fixed USDC price until a fixed time. A Floor is the right to sell. Every contract is backed by the full collateral in a program-owned vault from the moment it is sold: the tokens for a Gap, the USDC for a Floor. There is no margin, no borrowing, no funding payment and no liquidation. The most a buyer can lose is the premium plus the fee, paid once at purchase.</p>
+      <p>An Upside is the right to buy a fixed number of tokens at a fixed USDC price until a fixed time. A Floor is the right to sell. Every contract is backed by the full collateral in a program-owned vault from the moment it is sold: the tokens for an Upside, the USDC for a Floor. There is no margin, no borrowing, no funding payment and no liquidation. The most a buyer can lose is the premium plus the fee, paid once at purchase.</p>
       <h2>What is live and what is not</h2>
       <ul>
-        <li>Live on the mainnet fork: Gap and Floor on NVDAx, the roster, exercise, settlement and auto-exercise. Mainnet deployment is a separate, announced step.</li>
+        <li>Live on the mainnet fork: Upside and Floor on NVDAx, the roster, exercise, settlement and auto-exercise. Mainnet deployment is a separate, announced step.</li>
         <li>Not live: Protected Buy, First Print (pre-IPO tokens), Tier 2 and Tier 3 markets beyond the launch set. Pages for them describe the design and say so.</li>
       </ul>
       <h2>What a contract does not protect against</h2>
@@ -22,7 +22,7 @@ export default function RiskPage() {
         <li><b>Corporate actions.</b> Strikes are per token. Splits and dividends change the issuer&apos;s multiplier, which changes how many shares a token represents; the contract&apos;s token count and USDC strike do not move.</li>
         <li><b>Counterparty rights in the wrapper.</b> xStocks are tracker certificates with no voting rights. T-tokens are loan participation rights, not securities. PreStocks tokens confer no ownership, voting or dividend rights.</li>
       </ul>
-      <h2>Dividends during a Gap</h2>
+      <h2>Dividends during an Upside</h2>
       <p>Dividend reinvestment on an xStock accrues to the escrowed tokens through the issuer&apos;s multiplier. It is captured by whoever holds the tokens at exercise: the buyer if they exercise, the writer if the contract expires.</p>
       <h2>Auto-exercise</h2>
       <p>Auto-exercise is opt-in per position. When it is on, a keeper may exercise in the hour before expiry if the position is in the money by more than the keeper fee, using a Pyth price posted in the same transaction. The keeper fee is paid from the protocol&apos;s fee vault, never from the holder. If it is off, an in-the-money contract left unexercised at expiry is worth nothing.</p>

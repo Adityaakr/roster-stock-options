@@ -3,7 +3,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 
 /*
  * The same journey as the fork flow, on a real cluster with no cheatcodes: connect a wallet, take test funds from the
- * app's own faucet, buy a Gap, buy a Floor, write a Floor and exercise, with every transaction signed in the page and
+ * app's own faucet, buy an Upside, buy a Floor, write a Floor and exercise, with every transaction signed in the page and
  * submitted by the app. The release is not here because it needs an expiry to pass, and devnet's clock is the real
  * one; the fork flow covers that.
  *
@@ -25,7 +25,7 @@ async function waitDone(page: Page): Promise<string> {
 
 test.describe.configure({ mode: "serial" });
 
-test("devnet: fund a wallet from the faucet, buy a Gap, buy a Floor, write and exercise", async ({ page }) => {
+test("devnet: fund a wallet from the faucet, buy an Upside, buy a Floor, write and exercise", async ({ page }) => {
   test.setTimeout(600_000);
   const health = await fetch(`${process.env.SERVICES_URL ?? "http://127.0.0.1:8787"}/v1/health`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   test.skip(!health || (health as { cluster?: string }).cluster !== "devnet", "services are not on devnet");
@@ -53,9 +53,9 @@ test("devnet: fund a wallet from the faucet, buy a Gap, buy a Floor, write and e
   await page.keyboard.press("Escape");
   await page.mouse.click(5, 5);
 
-  // Act: a Gap at the nearest expiry.
+  // Act: an Upside at the nearest expiry.
   await quotedRow(page).click();
-  await expect(page.getByRole("heading", { level: 1, name: /Gap at/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Upside at/ })).toBeVisible();
   await page.getByTestId("size").fill("1");
   await expect(page.getByTestId("total")).not.toHaveText("n/a");
   await page.getByTestId("buy").click();
@@ -88,10 +88,10 @@ test("devnet: fund a wallet from the faucet, buy a Gap, buy a Floor, write and e
     return await page.getByTestId("my-slot").isVisible().catch(() => false);
   }, { timeout: 120_000, intervals: [5_000] }).toBe(true);
 
-  // Manage: exercise part of the Gap and see the receipt the indexer read back from the chain.
+  // Manage: exercise part of the Upside and see the receipt the indexer read back from the chain.
   await page.getByRole("link", { name: "Positions" }).first().click();
   await expect(page.getByTestId("position").first()).toBeVisible({ timeout: 60_000 });
-  const gap = page.getByTestId("position").filter({ hasText: "Gap at" }).first();
+  const gap = page.getByTestId("position").filter({ hasText: "Upside at" }).first();
   await gap.getByTestId("exercise").click();
   await gap.getByTestId("exercise-size").fill("0.5");
   await gap.getByTestId("exercise-confirm").click();

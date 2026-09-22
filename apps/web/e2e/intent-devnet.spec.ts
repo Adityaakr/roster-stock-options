@@ -15,9 +15,9 @@ test("intent: a sentence becomes a ticket on the Act screen", async ({ page }) =
   const result = page.getByTestId("intent-result");
   await expect(result.or(page.getByTestId("intent-error"))).toBeVisible({ timeout: 60_000 });
   await expect(result).toBeVisible();
-  await expect(result).toContainText("Buy a Gap on NVDAx");
+  await expect(result).toContainText("Buy an Upside on NVDAx");
   const size = (await result.locator(".intent-figs b").first().textContent())?.match(/\d+/)?.[0];
   await page.getByTestId("intent-review").click();
-  await expect(page.getByRole("heading", { level: 1, name: /Gap at \$/ })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("heading", { level: 1, name: /Upside at \$/ })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("size")).toHaveValue(size!);
 });

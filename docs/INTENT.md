@@ -4,7 +4,7 @@ A sentence in, a priced ticket out. Where a model helps in a venue whose whole p
 
 ## What it does
 
-On the Ask page (`/ask`, first in the Trade group; Markets links to it), a person types what they want: "$200 of Nvidia upside through Friday", "protect my 20 NVDAx through earnings", "get paid to buy Tesla 10% lower". The box answers with a ticket (market, Gap or Floor, strike, expiry, size, total, max loss, break-even) and two plain sentences, then a **Review** button that opens the Act screen (or Underwrite, for the write side) with that term and size filled in. Nothing is signed from the box.
+On the Ask page (`/ask`, first in the Trade group; Markets links to it), a person types what they want: "$200 of Nvidia upside through Friday", "protect my 20 NVDAx through earnings", "get paid to buy Tesla 10% lower". The box answers with a ticket (market, Upside or Floor, strike, expiry, size, total, max loss, break-even) and two plain sentences, then a **Review** button that opens the Act screen (or Underwrite, for the write side) with that term and size filled in. Nothing is signed from the box.
 
 ## Three steps, and the model is trusted with one
 
@@ -24,7 +24,7 @@ On the Ask page (`/ask`, first in the Trade group; Markets links to it), a perso
 - `apps/web/src/app/api/intent/route.ts`: `GET` says whether the box exists; `POST {text}` (one sentence, up to 300 characters) returns the proposal, or `422` with the reason and the parsed intent, or `502` when the model cannot be reached.
 - `apps/web/src/app/(app)/ask/page.tsx`: the page. A composer with the Roster mark, nine example sentences as pills carrying their market's logo in three rows (upside, protection, get paid), and, while the two round trips run, the mark turns and a line of plain language says what is happening (reading your sentence, finding the market you mean, walking the book, choosing the strike, adding the taker fee, checking every number): `stage: "resolve"` returns the ticket with the app's own sentence, `stage: "phrase"` returns the model's wording once it passes the number check, and the page swaps it in; the ticket with its four figures, the explanation, the payoff chart for a purchase and a five-price table of the result at expiry with what each one means; beside it, **what the model read** (the parsed intent, as returned, including its own note) and **what the app decided** (expiry, strike with its distance from the mark, size, how the price was formed, what is fillable, and every assumption the resolver made). A failed parse shows the reason and what was read. Test ids `intent`, `intent-text`, `intent-go`, `intent-result`, `intent-error`, `intent-review`.
 - `/trade/[term]?size=` and `/underwrite?m=&t=&size=` accept the handover.
-- `apps/web/e2e/intent-devnet.spec.ts`: the sentence above becomes a Gap on NVDAx and the Act screen opens on it with the same size; skipped when the key is absent.
+- `apps/web/e2e/intent-devnet.spec.ts`: the sentence above becomes an Upside on NVDAx and the Act screen opens on it with the same size; skipped when the key is absent.
 
 ## Cost
 
@@ -32,7 +32,7 @@ Two short calls per sentence, about 1,500 input tokens and under 200 output, at 
 
 ## Questions
 
-A sentence that is a question rather than an order ("what is a Floor", "which market is cheapest right now", "why does SPACEX trade below its mark") takes a second path: the model reads it as `question`, the app builds a fact sheet (the product in a few lines, every market's mark, best Gap and Floor ask, depth, volatility, fee, and for PreStocks the spread to the issuer's mark) and the model answers in at most 70 words from those facts alone. The same number check applies; a rejected answer is replaced by the app's own summary of the cheapest Gap and Floor. "Is it a good time to buy" gets what exists and what it costs, never advice. A notional amount ("$500 of protection") sizes by the price, a budget ("$200 of upside") by the premium; the page shows which it read.
+A sentence that is a question rather than an order ("what is a Floor", "which market is cheapest right now", "why does SPACEX trade below its mark") takes a second path: the model reads it as `question`, the app builds a fact sheet (the product in a few lines, every market's mark, best Upside and Floor ask, depth, volatility, fee, and for PreStocks the spread to the issuer's mark) and the model answers in at most 70 words from those facts alone. The same number check applies; a rejected answer is replaced by the app's own summary of the cheapest Upside and Floor. "Is it a good time to buy" gets what exists and what it costs, never advice. A notional amount ("$500 of protection") sizes by the price, a budget ("$200 of upside") by the premium; the page shows which it read.
 
 ## Not done
 

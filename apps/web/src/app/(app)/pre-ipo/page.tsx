@@ -48,7 +48,7 @@ export default function PreIpoPage() {
       <div className="page-head">
         <div>
           <h1>PreStocks</h1>
-          <p>The stocks that have not listed yet, priced two ways: the issuer&apos;s mark for the share and where the token trades. A Gap or a Floor on each, backed before you buy, settled in the token itself.</p>
+          <p>The stocks that have not listed yet, priced two ways: the issuer&apos;s mark for the share and where the token trades. An Upside or a Floor on each, backed before you buy, settled in the token itself.</p>
         </div>
       </div>
       <div className="pstats">
@@ -114,7 +114,7 @@ export default function PreIpoPage() {
         </div>
         <div className="card pad">
           <div className="h6">What a contract here is</div>
-          <p className="body-sm" style={{ margin: "6px 0 0" }}>A Gap is the right to buy the token at a strike through a date; a Floor the right to sell it. Both are backed in full from the moment they are sold and settle in the token itself, with no oracle in the way of an exit. The mint takes its {tokens[0]?.feeBps ? `${(tokens[0].feeBps / 100).toFixed(2)}%` : "transfer"} fee on every move, so a Gap delivers the shares less the fee and a Floor has you deliver the fee on top; the ticket states both in numbers. Prices come from where the token trades, never from the mark: the mark is what the issuer says a share is worth, and no one will pay it for the token.</p>
+          <p className="body-sm" style={{ margin: "6px 0 0" }}>An Upside is the right to buy the token at a strike through a date; a Floor the right to sell it. Both are backed in full from the moment they are sold and settle in the token itself, with no oracle in the way of an exit. The mint takes its {tokens[0]?.feeBps ? `${(tokens[0].feeBps / 100).toFixed(2)}%` : "transfer"} fee on every move, so an Upside delivers the shares less the fee and a Floor has you deliver the fee on top; the ticket states both in numbers. Prices come from where the token trades, never from the mark: the mark is what the issuer says a share is worth, and no one will pay it for the token.</p>
           <p className="body-sm" style={{ margin: "8px 0 0" }}>The spread between the two is shown as a premium or a discount. It is not a basis anyone can close, because nothing converts one into the other before a listing.</p>
           <div className="ask-rows" style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
             <div><span>Priced from</span><b style={{ fontWeight: 400 }}>the token&apos;s trades, never the issuer&apos;s mark</b></div>
@@ -151,7 +151,7 @@ function WhatRosterAdds({ tokens }: { tokens: PreIpoTokenView[] }) {
           <i>{floors} of {tokens.length} tokens have a floor quoted now</i>
         </Link>
         <Link href={g?.market?.bestGap ? `/trade/${g.market.bestGap.id}` : "/markets"} className="wadd-item">
-          <Badge tone="green">Gap</Badge>
+          <Badge tone="green">Upside</Badge>
           <b>The upside with the loss capped</b>
           <span>The right to buy at the strike through the date. No borrowing, no funding, no liquidation; the premium is the whole loss.</span>
           <em className="mono">{g?.market?.bestGap ? `${g.symbol}: buy at $${usdK(g.market.bestGap.strike)} through ${dayLabel(g.market.bestGap.expiryTs)} for $${usd(g.market.bestGap.ask)} a token` : "quoting"}</em>

@@ -9,7 +9,7 @@ import { MarketLogo } from "@/components/market-list";
 import { PayoffChart } from "@/components/payoff-chart";
 import { Badge } from "@/components/ui";
 import { usd, usdSmart, dayLabel } from "@/lib/format";
-import { productName, type Side } from "@/lib/model";
+import { aProduct, productName, type Side } from "@/lib/model";
 import { useIntentEnabled, type Answer, type Proposal } from "@/lib/use-intent";
 import { useRoster } from "@/lib/use-roster";
 
@@ -21,7 +21,7 @@ import { useRoster } from "@/lib/use-roster";
 const EXAMPLES: { group: string; items: { m: string; q: string }[] }[] = [
   { group: "Upside", items: [{ m: "NVDAx", q: "$200 of Nvidia upside through Friday" }, { m: "TSLAx", q: "50 TSLAx of upside for two weeks, the cheap strike" }, { m: "SPYx", q: "SPYx upside through the weekend" }] },
   { group: "Protection", items: [{ m: "NVDAx", q: "protect my 20 NVDAx through earnings" }, { m: "SPYx", q: "a floor under 10 SPYx 5% below the price" }, { m: "SPACEX", q: "a funded exit on my 5 SPACEX through next Friday" }] },
-  { group: "Ask anything", items: [{ m: "NVDAx", q: "what is a Floor and what does one cost on NVDAx right now" }, { m: "SPACEX", q: "why does SPACEX trade below its mark" }, { m: "OPENAI", q: "which market has the cheapest Gap today" }] },
+  { group: "Ask anything", items: [{ m: "NVDAx", q: "what is a Floor and what does one cost on NVDAx right now" }, { m: "SPACEX", q: "why does SPACEX trade below its mark" }, { m: "OPENAI", q: "which market has the cheapest Upside today" }] },
   { group: "Get paid", items: [{ m: "TSLAx", q: "get paid to buy Tesla 10% lower" }, { m: "GOOGLx", q: "sell the upside on my 25 GOOGLx above $360" }, { m: "OPENAI", q: "get paid to sell my 2 OPENAI above the price" }] }
 ];
 type Stage = "idle" | "reading" | "pricing" | "writing" | "done";
@@ -194,7 +194,7 @@ function Result({ p, phrased, onReset }: { p: Proposal; phrased: boolean; onRese
           <div className="flex items-center gap-3">
             <MarketLogo m={{ symbol: p.market.symbol, logo: p.market.logo }} size={40} />
             <div>
-              <div className="flex items-center gap-2 h5" style={{ margin: 0 }}>{buying ? "Buy" : "Write"} a {name} on {p.market.symbol} <Badge tone={side === "call" ? "green" : "blue"}>{name} ${usdSmart(p.term.strike)}</Badge></div>
+              <div className="flex items-center gap-2 h5" style={{ margin: 0 }}>{buying ? "Buy" : "Write"} {aProduct(side)} on {p.market.symbol} <Badge tone={side === "call" ? "green" : "blue"}>{name} ${usdSmart(p.term.strike)}</Badge></div>
               <div className="small muted">{p.market.name} · mark <span className="mono">${usd(p.market.mark)}</span> · through {dayLabel(p.term.expiryTs)}</div>
             </div>
           </div>
@@ -249,7 +249,7 @@ function Result({ p, phrased, onReset }: { p: Proposal; phrased: boolean; onRese
 function IntentRead({ intent }: { intent: Proposal["intent"] }) {
   const h = intent.horizon;
   const horizon = h.kind === "nearest" ? "the nearest expiry" : h.kind === "furthest" ? "the furthest expiry" : h.kind === "days" ? `${h.days} days` : `by ${h.iso}`;
-  const action = { buy_gap: "buy a Gap", buy_floor: "buy a Floor", write_floor: "write a Floor", write_gap: "write a Gap", question: "a question", unclear: "unclear" }[intent.action];
+  const action = { buy_gap: "buy an Upside", buy_floor: "buy a Floor", write_floor: "write a Floor", write_gap: "write an Upside", question: "a question", unclear: "unclear" }[intent.action];
   return (
     <div className="card pad">
       <div className="h6">What the model read</div>

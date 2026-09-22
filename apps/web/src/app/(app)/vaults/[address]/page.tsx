@@ -156,7 +156,7 @@ function Positions({ x, terms, nowTs }: { x: VaultView; terms: ReturnType<typeof
             const asks = t.asks.filter((a) => a.writerSlot === s.slot);
             return (
               <tr key={t.id}>
-                <td><Link href={`/trade/${t.id}`}>{t.side === "call" ? "Gap" : "Floor"} ${usdK(t.strike)}</Link></td>
+                <td><Link href={`/trade/${t.id}`}>{t.side === "call" ? "Upside" : "Floor"} ${usdK(t.strike)}</Link></td>
                 <td className="nowrap">{dayLabel(t.expiryTs)} · {t.expiryTs > nowTs ? countdown(t.expiryTs, nowTs) : "expired"}</td>
                 <td className="num mono">{usdK(s.deposited - s.withdrawn)}</td>
                 <td className="num mono">{usdK(s.sold)}</td>

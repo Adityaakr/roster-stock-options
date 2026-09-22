@@ -92,7 +92,7 @@ function RosterInner() {
         </div>
         <div className="scroll-x">
           <table className="table rtable">
-            <thead><tr><th>Market</th><th>Depth</th><th className="num">Gap from</th><th className="num col-floor">Floor from</th><th className="num hide-sm">Series</th><th className="hide-sm">Tier</th><th aria-label="open"></th></tr></thead>
+            <thead><tr><th>Market</th><th>Depth</th><th className="num">Upside from</th><th className="num col-floor">Floor from</th><th className="num hide-sm">Series</th><th className="hide-sm">Tier</th><th aria-label="open"></th></tr></thead>
             <tbody>
               {[...data.markets].sort((a, b) => b.depthUsdc - a.depthUsdc).map((m) => {
                 const gap = bestOn(m.symbol, "call");
@@ -146,7 +146,7 @@ function RosterInner() {
             <div className="rcap">
               <div className="flex items-center justify-between small"><span>Capacity used</span><span className="mono">{Math.floor(oi)} of {Math.floor(oi + capacity)} {sym}</span></div>
               <div className="bar thin" style={{ maxWidth: "none", marginTop: 6 }} role="img" aria-label={`Capacity used: ${Math.floor(oi)} of ${Math.floor(oi + capacity)}`}><span style={{ width: `${(oi / Math.max(1, oi + capacity)) * 100}%` }} /></div>
-              <div className="small muted" style={{ marginTop: 6 }}>USDC reserved backs Floors; {sym} reserved backs Gaps. Every figure is the writer&apos;s own deposit in the series vault.</div>
+              <div className="small muted" style={{ marginTop: 6 }}>USDC reserved backs Floors; {sym} reserved backs Upsides. Every figure is the writer&apos;s own deposit in the series vault.</div>
             </div>
             {data.underwriters.length === 0 ? <p className="muted" style={{ padding: "16px 20px" }}>No maker has quoted this market yet.</p> : (
               <div className="rwriters">
@@ -238,7 +238,7 @@ function RowGroup({ label, rows, cluster, onOpen }: { label: string; rows: Term[
  * them is the one that keeps its depositors when they come.
  */
 function VaultLedger({ vaults, nowTs, decimals, sym }: { vaults: ServicesVault[]; nowTs: number; decimals: number; sym: string }) {
-  if (!vaults.length) return <div className="rempty"><i className="mark" aria-hidden /><div><b>No vault on {sym} yet.</b><div className="small muted">A Covered Call vault writes Gaps above the mark; a Cash-Secured Put vault writes Floors below it.</div></div></div>;
+  if (!vaults.length) return <div className="rempty"><i className="mark" aria-hidden /><div><b>No vault on {sym} yet.</b><div className="small muted">A Covered Call vault writes Upsides above the mark; a Cash-Secured Put vault writes Floors below it.</div></div></div>;
   const rows = vaults.flatMap((v) => v.epochs.map((e) => ({ v, e }))).sort((a, b) => b.e.rolledAt - a.e.rolledAt);
   const next = Math.min(...vaults.map((v) => v.nextRollTs));
   return (
@@ -250,7 +250,7 @@ function VaultLedger({ vaults, nowTs, decimals, sym }: { vaults: ServicesVault[]
           return (
             <Link key={v.address} href={`/vaults/${v.address}`} className="rvault">
               <div className="flex items-center justify-between gap-2"><b>{cc ? "Covered Call" : "Cash-Secured Put"}</b><Badge tone={v.halted ? "amber" : "green"} dot>{v.halted ? "halted" : "quoting"}</Badge></div>
-              <div className="small muted">{cc ? `writes Gaps above the mark, holds ${sym}` : "writes Floors below the mark, holds USDC"}</div>
+              <div className="small muted">{cc ? `writes Upsides above the mark, holds ${sym}` : "writes Floors below the mark, holds USDC"}</div>
               <div className="rwriter-figs">
                 <div><span>Premium in</span><b className="mono">${usd(Number(v.epochPremiumIn) / 1e6)}</b></div>
                 <div><span>Epochs</span><b className="mono">{v.epochs.length} <span className={`small ${losing ? "down" : "muted"}`}>{losing} losing</span></b></div>

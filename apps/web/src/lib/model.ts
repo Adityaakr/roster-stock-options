@@ -21,7 +21,7 @@ export interface Market {
   listed: boolean;
   paused: boolean;
   wrapperTier: string;
-  /** Transfer fee on the mint in basis points; a Gap on such a mint delivers the raw amount less this on exercise. */
+  /** Transfer fee on the mint in basis points; an Upside on such a mint delivers the raw amount less this on exercise. */
   feeBps: number;
   hasTransferFee: boolean;
   hasPermanentDelegate: boolean;
@@ -73,7 +73,7 @@ export interface WriteIdea {
   expiryTs: number;
   /** Best ask, premium per share. */
   ask: number;
-  /** Premium per share over the collateral per share (the strike for a Floor, the mark for a Gap), to expiry. A ratio for this term's life, never annualised. */
+  /** Premium per share over the collateral per share (the strike for a Floor, the mark for an Upside), to expiry. A ratio for this term's life, never annualised. */
   onCollateral: number | null;
   /** Shares bought so far and shares still fillable. */
   openInterest: number;
@@ -229,8 +229,12 @@ export const TIER_RULE: Record<Tier, string> = {
 };
 
 /** The product name the button carries; the instrument name belongs in the docs. */
-export function productName(side: Side): "Gap" | "Floor" {
-  return side === "call" ? "Gap" : "Floor";
+export function productName(side: Side): "Upside" | "Floor" {
+  return side === "call" ? "Upside" : "Floor";
+}
+/** The name with its article: "an Upside", "a Floor". */
+export function aProduct(side: Side): string {
+  return side === "call" ? "an Upside" : "a Floor";
 }
 
 /* ---------- Sessions and expiries (New York clock) ---------- */
@@ -317,7 +321,7 @@ export function inTheMoney(side: Side, strike: number, mark: number): boolean {
 
 /** What exercising requires, in plain words, for `shares` of a term. */
 /**
- * What exercising requires, in plain words. On a transfer-fee mint the fee is the holder's on both sides: a Gap
+ * What exercising requires, in plain words. On a transfer-fee mint the fee is the holder's on both sides: an Upside
  * delivers the shares less the fee, and a Floor has the holder deliver gross so that exactly the shares arrive.
  */
 export function exerciseWords(side: Side, strike: number, shares: number, symbol: string, fmt: (v: number) => string, feeBps = 0): string {

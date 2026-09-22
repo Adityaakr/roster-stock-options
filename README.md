@@ -62,10 +62,10 @@ Underneath, these are fully collateralized, American-exercise, physically settle
 
 | Screen | What it does | For whom |
 | --- | --- | --- |
-| **Gap** | The upside with the loss capped. The right to buy at a strike through an expiry; if it never gets there, the premium is the whole loss. | A trader with a bullish view and a fixed risk budget |
+| **Upside** | Leveraged exposure with the loss capped. The right to buy at a strike through an expiry; if it never gets there, the premium is the whole loss. | A trader with a bullish view and a fixed risk budget |
 | **Floor** | An exit at a known price on a known date. The right to sell at a strike any time through the expiry; the USDC is locked before you buy. | A holder through an earnings print or a weekend |
 | **Earn** | Get paid to take the other side: lock USDC to be paid to buy lower, or lock tokens to be paid to sell higher. Paid risk, disclosed as such, never called yield. | Anyone with USDC or the token |
-| **Vaults** | Deposit and let a vault write for you. A Covered Call vault sells Gaps above the mark; a Cash-Secured Put vault sells Floors below it. Every epoch's result is published with its sign. | Depositors who want the premium without the terminal |
+| **Vaults** | Deposit and let a vault write for you. A Covered Call vault sells Upsides above the mark; a Cash-Secured Put vault sells Floors below it. Every epoch's result is published with its sign. | Depositors who want the premium without the terminal |
 | **Sell back** | Every vault posts a bid on what it has sold, so a winning position can be taken off without paying the strike. | Every holder |
 | **Roster** | Every quote's collateral by account, every exercise by signature, every vault epoch, protocol-wide. | Anyone who wants to check rather than trust |
 | **Ask** | Say what you want in a sentence and get the ticket; ask a question and get an answer from the live figures. The model parses, the app computes, every number is checked ([how](docs/INTENT.md)). | Someone who does not want to learn the instrument first |
@@ -76,7 +76,7 @@ Eight [PreStocks](https://prestocks.com/products) tokens (OpenAI, SpaceX, Anthro
 
 - **Priced off where the token trades, never the issuer's mark.** The spread between the two is shown as a premium or a discount; both exist today (OpenAI above its mark, SpaceX below), and neither is called a mispricing, because nothing converts one into the other before a listing.
 - **Real trade history** from each token's most-traded USDC pool on [GeckoTerminal](https://www.geckoterminal.com): the chart over 24h, 7d, 30d or all, the day and week changes, liquidity, volume, and the volatility the quoter prices from.
-- **The mint's transfer fee is in the price** and is the holder's on both sides: a Gap delivers the tokens less the fee; a Floor has the holder deliver gross so writers are paid every unit they are owed. Reconciled to the unit in the program's tests ([`fee_floor.rs`](programs/roster_finance/tests/fee_floor.rs)) and on the real OpenAI mint ([`p4-first-print.test.ts`](tests/e2e/p4-first-print.test.ts)).
+- **The mint's transfer fee is in the price** and is the holder's on both sides: an Upside delivers the tokens less the fee; a Floor has the holder deliver gross so writers are paid every unit they are owed. Reconciled to the unit in the program's tests ([`fee_floor.rs`](programs/roster_finance/tests/fee_floor.rs)) and on the real OpenAI mint ([`p4-first-print.test.ts`](tests/e2e/p4-first-print.test.ts)).
 - **The issuer's own terms on every ticket**, from the [PreStocks FAQ](https://prestocks.com/faq): on-chain exit at any time, the post-IPO conversion window after which tokens expire worthless, what happens in a deal, and the rights the token does not carry.
 
 Why PreStocks, and what the desk adds that the token alone cannot: [`docs/03-prestocks-decision.md`](docs/03-prestocks-decision.md).
@@ -187,7 +187,7 @@ sequenceDiagram
     alt Floor, a put
         H->>SV: deliver tokens, gross so exactly lots x raw arrive on a fee mint
         CV->>H: strike x lots in USDC
-    else Gap, a call
+    else Upside, a call
         H->>SV: strike x lots in USDC
         CV->>H: lots x raw tokens, less the mint's fee on a fee mint
     end
@@ -279,7 +279,7 @@ Every step is a real transaction on the Solana cluster the header names, with a 
 | The program: pooled series, bounded ask book, pooled assignment, oracle-free exercise, the halt rule, two vaults, `sell_to_vault`, fee-inclusive Floors | [`programs/roster_finance`](programs/roster_finance) | `cargo test --release -p roster_finance`: `47` tests, including a covered-call vault on a fee mint settling to zero locked and rolling, and a Floor with three prime-sized writers reconciled to the unit |
 | Fourteen markets listed and escrow-proven, all eight PreStocks tokens among them | [the registry](fixtures/registry/registry.devnet.json) | each entry's `escrowProof` is two signatures: a lot into the series vault and back |
 | Six vaults quoting, four of them on PreStocks tokens | `/vaults` in the app, `GET /v1/vaults` | epoch records with P&L per share, signed |
-| The whole journey in a browser with no terminal: funds, buy a Gap, buy a Floor, write, exercise, receipt | [the browser journey](apps/web/e2e/devnet.spec.ts) | `pnpm test:browser` |
+| The whole journey in a browser with no terminal: funds, buy an Upside, buy a Floor, write, exercise, receipt | [the browser journey](apps/web/e2e/devnet.spec.ts) | `pnpm test:browser` |
 | The supply side in a browser: deposit, buy from the vault, sell back to it | [the vault journey](apps/web/e2e/vault.spec.ts) | same command |
 | PreStocks in a browser: the desk, OPENAI, buy a Floor, exercise with the fee delivered on top | [the PreStocks journey](apps/web/e2e/prestocks-devnet.spec.ts) | same command |
 | Ask: a sentence becomes a ticket, and a question gets an answer from the live figures | [the Ask journey](apps/web/e2e/intent-devnet.spec.ts), [`docs/INTENT.md`](docs/INTENT.md) | same command |

@@ -4,7 +4,7 @@ import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { FORK_URL, USDC_MINT, clockUnix, forkReachable, fundSol, fundTokenFor, resolveXstockMint, servicesWarm, timeTravelTo } from "../../../scripts/fork-lib";
 
 /*
- * M4 done-criterion (docs/02-roadmap.md): a person buys a Gap, buys a Floor, writes a Floor, exercises, and sees the
+ * M4 done-criterion (docs/02-roadmap.md): a person buys an Upside, buys a Floor, writes a Floor, exercises, and sees the
  * release, in a browser with no terminal. The burner wallet the app offers on the fork is funded through the fork's
  * cheatcodes; every other step is the UI. Needs the fork, the program, the services (:8787) and next dev (:3000).
  */
@@ -43,7 +43,7 @@ async function waitDone(page: Page): Promise<string> {
 
 test.describe.configure({ mode: "serial" });
 
-test("buy a Gap, buy a Floor, write a Floor, exercise, see the release", async ({ page }) => {
+test("buy an Upside, buy a Floor, write a Floor, exercise, see the release", async ({ page }) => {
   test.setTimeout(600_000);
   const up = await forkReachable();
   const services = await servicesWarm();
@@ -51,16 +51,16 @@ test("buy a Gap, buy a Floor, write a Floor, exercise, see the release", async (
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
 
-  // Discover: the market list, then the Gap grid of NVDAx.
+  // Discover: the market list, then the Upside grid of NVDAx.
   await page.goto("/markets/NVDAx");
   await expect(page.getByRole("heading", { level: 1, name: "NVDAx" })).toBeVisible();
   await expect(page.getByTestId("term-row").first()).toBeVisible({ timeout: 30_000 });
   const wallet = await connectBurner(page);
   await fund(wallet);
 
-  // Act: a Gap at the nearest expiry, size 2, one transaction.
+  // Act: an Upside at the nearest expiry, size 2, one transaction.
   await quotedRow(page).click();
-  await expect(page.getByRole("heading", { level: 1, name: /Gap at/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Upside at/ })).toBeVisible();
   await page.getByTestId("size").fill("2");
   await expect(page.getByTestId("total")).not.toHaveText("n/a");
   await page.getByTestId("buy").click();
@@ -89,10 +89,10 @@ test("buy a Gap, buy a Floor, write a Floor, exercise, see the release", async (
   await expect(page.getByTestId("my-slot")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("my-slot")).toContainText("3 NVDAx in 1 ask");
 
-  // Manage: both positions are there; exercise one share of the Gap, restating the exchange.
+  // Manage: both positions are there; exercise one share of the Upside, restating the exchange.
   await page.getByRole("link", { name: "Positions" }).first().click();
   await expect(page.getByTestId("position").first()).toBeVisible({ timeout: 30_000 });
-  const gap = page.getByTestId("position").filter({ hasText: "Gap at" }).first();
+  const gap = page.getByTestId("position").filter({ hasText: "Upside at" }).first();
   await expect(gap).toContainText("pay $");
   await gap.getByTestId("exercise").click();
   await gap.getByTestId("exercise-size").fill("1");

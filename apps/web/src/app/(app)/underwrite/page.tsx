@@ -139,7 +139,7 @@ function UnderwriteInner() {
                 <span className="rank">{n + 1}</span>
                 {marketOf(i.market) ? <MarketLogo m={marketOf(i.market)!} size={36} /> : null}
                 <span style={{ minWidth: 0 }}>
-                  <span className="name"><b>{i.market}</b> <span className="muted">${usdK(i.strike)} {i.side === "put" ? "Floor" : "Gap"}</span></span>
+                  <span className="name"><b>{i.market}</b> <span className="muted">${usdK(i.strike)} {i.side === "put" ? "Floor" : "Upside"}</span></span>
                   <span className="sub"><span className="up">{usdK(i.openInterest)} bought</span> · {dayLabel(i.expiryTs)} · ${usd(i.ask)}</span>
                 </span>
               </button>
@@ -156,7 +156,7 @@ function UnderwriteInner() {
               <button key={i.id} className="card ufeat-card" onClick={() => pick(i)} data-testid="featured-term">
                 <div className="flex items-center justify-between">
                   {marketOf(i.market) ? <MarketLogo m={marketOf(i.market)!} size={36} /> : <span />}
-                  <Badge tone={i.side === "put" ? "blue" : "green"}>{i.side === "put" ? "Floor" : "Gap"}</Badge>
+                  <Badge tone={i.side === "put" ? "blue" : "green"}>{i.side === "put" ? "Floor" : "Upside"}</Badge>
                 </div>
                 <div className="name" style={{ marginTop: 18 }}><b>{i.market}</b> <span className="muted">${usdK(i.strike)}</span></div>
                 <div className="small muted">{dayLabel(i.expiryTs)} · {i.side === "put" ? "get paid to buy lower" : "get paid to sell higher"}</div>
@@ -176,7 +176,7 @@ function UnderwriteInner() {
         <div className="uexplore">
           <button className={`utile ${explore === "all" ? "on" : ""}`} onClick={() => { setExplore("all"); setShowAll(false); }}><span className="t">All terms</span><span className="s">{ideas.length} quoted</span></button>
           <button className={`utile ${explore === "put" ? "on" : ""}`} onClick={() => { setExplore("put"); setShowAll(false); }}><span className="t">Floors</span><span className="s">get paid to buy lower</span></button>
-          <button className={`utile ${explore === "call" ? "on" : ""}`} onClick={() => { setExplore("call"); setShowAll(false); }}><span className="t">Gaps</span><span className="s">get paid to sell higher</span></button>
+          <button className={`utile ${explore === "call" ? "on" : ""}`} onClick={() => { setExplore("call"); setShowAll(false); }}><span className="t">Upsides</span><span className="s">get paid to sell higher</span></button>
           {marketsWithIdeas.map((mk) => <button key={mk} className={`utile ${explore === mk ? "on" : ""}`} onClick={() => { setExplore(mk); setShowAll(false); }}><span className="t flex items-center gap-2">{marketOf(mk) ? <MarketLogo m={marketOf(mk)!} size={18} /> : null}{mk}</span><span className="s">{ideas.filter((i) => i.market === mk).length} terms</span></button>)}
         </div>
         <div className="card mlist" style={{ marginTop: 12 }}>
@@ -186,7 +186,7 @@ function UnderwriteInner() {
               {listed.length === 0 ? <tr><td colSpan={7} className="muted" style={{ padding: 20 }}>Nothing quoted here right now.</td></tr> : null}
               {(showAll ? listed : listed.slice(0, 12)).map((i) => (
                 <tr key={i.id} className={`rowlink ${i.id === t.id ? "on" : ""}`} onClick={() => pick(i)} data-testid="idea-row">
-                  <td><div className="flex items-center gap-3">{marketOf(i.market) ? <MarketLogo m={marketOf(i.market)!} size={26} /> : null}<span><b style={{ fontWeight: 500 }}>{i.market}</b> <span className="muted">${usdK(i.strike)} {i.side === "put" ? "Floor" : "Gap"}</span><span className="small muted exp-inline">{dayLabel(i.expiryTs)}</span></span></div></td>
+                  <td><div className="flex items-center gap-3">{marketOf(i.market) ? <MarketLogo m={marketOf(i.market)!} size={26} /> : null}<span><b style={{ fontWeight: 500 }}>{i.market}</b> <span className="muted">${usdK(i.strike)} {i.side === "put" ? "Floor" : "Upside"}</span><span className="small muted exp-inline">{dayLabel(i.expiryTs)}</span></span></div></td>
                   <td className="nowrap col-exp">{dayLabel(i.expiryTs)}</td>
                   <td className="num mono">${usd(i.ask)}</td>
                   <td className="num mono">{i.onCollateral !== null ? `${(i.onCollateral * 100).toFixed(2)}%` : "n/a"}</td>
@@ -208,12 +208,12 @@ function UnderwriteInner() {
           <div className="flex items-center gap-3">
             <MarketLogo m={market} size={40} />
             <div>
-              <div className="flex items-center gap-2 flex-wrap"><h2 className="h5" style={{ margin: 0 }}>Write on {sym}</h2><Badge tone={side === "put" ? "blue" : "green"}>{side === "put" ? "Floor" : "Gap"} ${usdK(t.strike)}</Badge></div>
+              <div className="flex items-center gap-2 flex-wrap"><h2 className="h5" style={{ margin: 0 }}>Write on {sym}</h2><Badge tone={side === "put" ? "blue" : "green"}>{side === "put" ? "Floor" : "Upside"} ${usdK(t.strike)}</Badge></div>
               <div className="small muted">{market.name} · mark <span className="mono ink">${usd(u.mark)}</span> · <Link href={`/markets/${sym}`}>market page</Link>{marketsWithIdeas.length > 1 ? <> · or pick another market above</> : null}</div>
             </div>
           </div>
           <div className="wside" role="tablist">
-            {([["put", "Floors", "get paid to buy lower"], ["call", "Gaps", "get paid to sell higher"]] as [Side, string, string][]).map(([id, label, sub]) => (
+            {([["put", "Floors", "get paid to buy lower"], ["call", "Upsides", "get paid to sell higher"]] as [Side, string, string][]).map(([id, label, sub]) => (
               <button key={id} role="tab" aria-selected={side === id} className={side === id ? "on" : ""} onClick={() => { setSide(id); setTermId(null); setAsk(null); tx.reset(); }}><b>{label}</b><span>{sub}</span></button>
             ))}
           </div>

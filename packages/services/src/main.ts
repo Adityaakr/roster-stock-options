@@ -16,7 +16,7 @@ import { Hermes, HermesError, estimateVol, readMultiplier, sessionAt, volFromRec
 import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
 import { Quoter, DEFAULT_QUOTER, VaultQuoter, DEFAULT_VAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
-import { loadSecretKey, mapLimit } from "@roster/core";
+import { loadSecretKey, mapLimit, nextExpiries } from "@roster/core";
 import { issuerMark, jupiterPrice, launchSet, refreshSnapshots, snapshotOf, snapshotPrice, xstocksQuote, preipoTokens } from "./registry";
 import { changePct, tokenHistory, type Candle, type Pool } from "@roster/registry";
 
@@ -309,7 +309,10 @@ async function main() {
       const state: MarketLive = { trade, change24hPct: trade?.change24hPct ?? snap?.change24hPct ?? null, holders: snap?.holders ?? null, replicaOf: l.replicaOf, logo: l.logo ?? snap?.logo ?? null, wrappersOfUnderlying: l.wrappersOfUnderlying, underlyingSymbol: l.underlyingSymbol, market, meta: meta.get(l.mint.toBase58())!, price, priceAt, priceSource, wrapper: l.wrapper, feeBps: l.feeBps, equityPrice, basisBps, issuerMarkPrice, markSpreadBps, multiplier: mult.onChain, pendingDividendMultiplier: mult.pendingMultiplier !== null && mult.pendingIsDividend && mult.pendingAt !== null && market.allowedExpiries.some((e) => e > BigInt(mult.pendingAt!)) ? mult.pendingMultiplier : null, pendingActivationTs: mult.pendingAt, inActivationWindow: mult.inWindow, vol: vol.blended, volSource: vol.source, session, paused };
       live.set(l.symbol, state);
       if (!flag("--no-keeper")) {
-        await keeper.rollGrid(market, nowTs, (process.env.EXTRA_EXPIRIES ?? "").split(",").filter(Boolean).map(BigInt));
+        // Devnet keeps the next two Fridays on the grid beside its daily expiries, so "through Friday" is always a
+        // quoted term and a weekend is always in reach; mainnet's grid is Fridays already.
+        const fridays = cluster === "devnet" ? nextExpiries(nowTs, 2, [5]).map(BigInt) : [];
+        await keeper.rollGrid(market, nowTs, [...(process.env.EXTRA_EXPIRIES ?? "").split(",").filter(Boolean).map(BigInt), ...fridays]);
         await keeper.cycle(await reader.fetchMarket(l.mint) ?? market, nowTs, paused);
       }
       // The quoter prices only off Hermes, or off the issuer quote on the fork; a real cluster without a key does not

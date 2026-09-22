@@ -120,14 +120,16 @@ async function main() {
     }
   }
   // QUOTER_LOTS_PER_SERIES caps the treasury's ask per series (docs/SEEDING.md sets it for the first mainnet week).
-  const quoter = new Quoter(quoterClient, { ...DEFAULT_QUOTER, lotsPerSeries: BigInt(Math.round(Number(process.env.QUOTER_LOTS_PER_SERIES ?? 50) * 1e6)) });
+  // Devnet money is minted, so its book runs deep enough that a $200 ticket fills at one price; the fork keeps 50.
+  const lotsPerSeries = BigInt(Math.round(Number(process.env.QUOTER_LOTS_PER_SERIES ?? (cluster === "devnet" ? 250 : 50)) * 1e6));
+  const quoter = new Quoter(quoterClient, { ...DEFAULT_QUOTER, lotsPerSeries });
   // The expiry calendar. Mainnet expires on Fridays at 16:00 New York. Devnet runs a compressed calendar, an expiry
   // every day at 16:00 New York, so a whole cycle (quote, fill, exercise, settle, vault roll, published P&L) happens
   // daily and a week of judging shows a week of epochs. `KEEPER_EXPIRY_WEEKDAYS` overrides either.
   const weekdays = process.env.KEEPER_EXPIRY_WEEKDAYS ? process.env.KEEPER_EXPIRY_WEEKDAYS.split(",").map(Number).filter((d) => d >= 0 && d <= 6) : isDevnet ? [0, 1, 2, 3, 4, 5, 6] : DEFAULT_KEEPER.expiryWeekdays;
   const keeper = new Keeper(keeperClient, deployer.publicKey, { ...DEFAULT_KEEPER, expiryWeekdays: weekdays });
   // Part 3: the vault's leg of the quoter, signed by the vault's manager (the quoter wallet; the deployer on devnet).
-  const vaultQuoter = new VaultQuoter(quoterClient, { ...DEFAULT_QUOTER, lotsPerSeries: BigInt(Math.round(Number(process.env.QUOTER_LOTS_PER_SERIES ?? 50) * 1e6)) }, DEFAULT_VAULT_QUOTER);
+  const vaultQuoter = new VaultQuoter(quoterClient, { ...DEFAULT_QUOTER, lotsPerSeries }, DEFAULT_VAULT_QUOTER);
   /** The vaults seen on the last tick, by market, for the REST. */
   const vaultsLive = new Map<string, VaultState[]>();
   let vaultsAnswer: { at: number; body: unknown[] } | null = null;

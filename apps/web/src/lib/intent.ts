@@ -150,6 +150,49 @@ export function matchMarket(name: string, markets: { symbol: string; name: strin
   return null;
 }
 
+const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+
+/** The next `weekday` on or after `from` (UTC calendar), plus a week when `next` is set. */
+function nextWeekday(from: Date, weekday: number, next: boolean): string {
+  const d = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()));
+  let ahead = (weekday - d.getUTCDay() + 7) % 7;
+  if (next && ahead === 0) ahead = 7;
+  if (next) ahead += 7;
+  d.setUTCDate(d.getUTCDate() + ahead);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * A horizon read straight from the sentence: a weekday ("through Friday", "next Friday", "by Wednesday"), "the
+ * weekend" (through the coming Monday, the first print after it), or a date ("Oct 2", "2 October", "2026-10-02").
+ * Null when the sentence names none, so the model's reading stands.
+ */
+export function horizonFromText(text: string, today = new Date()): Intent["horizon"] | null {
+  const t = text.toLowerCase();
+  const iso = t.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  if (iso) return { kind: "date", iso: iso[0] };
+  const wd = t.match(/\b(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)\b/);
+  if (wd) {
+    const idx = WEEKDAYS.findIndex((w) => w.startsWith(wd[2]!.slice(0, 3)));
+    return { kind: "date", iso: nextWeekday(today, idx, !!wd[1]) };
+  }
+  if (/\bweekend\b/.test(t)) return { kind: "date", iso: nextWeekday(today, 1, false) };
+  const md = t.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b/) ?? t.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\b/);
+  if (md) {
+    const [a, b] = /^\d/.test(md[1]!) ? [md[2]!, md[1]!] : [md[1]!, md[2]!];
+    const month = MONTHS.findIndex((m) => m.startsWith(a.slice(0, 3)));
+    const day = Number(b);
+    if (month >= 0 && day >= 1 && day <= 31) {
+      let year = today.getUTCFullYear();
+      const candidate = new Date(Date.UTC(year, month, day));
+      if (candidate.getTime() < Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())) year += 1;
+      return { kind: "date", iso: new Date(Date.UTC(year, month, day)).toISOString().slice(0, 10) };
+    }
+  }
+  return null;
+}
+
 /** Step 1: the sentence to a structured intent. */
 export async function parseIntent(text: string, markets: { symbol: string; name: string; underlyingSymbol: string | null }[]): Promise<Intent> {
   const list = markets.map((m) => `${m.symbol}: ${m.name}${m.underlyingSymbol && m.underlyingSymbol !== m.symbol ? ` (${m.underlyingSymbol})` : ""}`).join("\n");
@@ -161,7 +204,10 @@ export async function parseIntent(text: string, markets: { symbol: string; name:
   let parsed: unknown;
   try { parsed = JSON.parse(args); } catch { throw new Error(`the model returned malformed arguments: ${args.slice(0, 240)}`); }
   const j = parsed as { action: IntentAction; market: string | null; size_shares: number | null; budget_usdc: number | null; notional_usdc: number | null; horizon: string; horizon_days: number | null; horizon_date: string | null; strike: Intent["strike"]; strike_pct_from_mark: number | null; note: string };
-  const horizon: Intent["horizon"] = j.horizon === "days" && j.horizon_days ? { kind: "days", days: Math.max(0, j.horizon_days) } : j.horizon === "date" && j.horizon_date && /^\d{4}-\d{2}-\d{2}$/.test(j.horizon_date) ? { kind: "date", iso: j.horizon_date } : j.horizon === "furthest" ? { kind: "furthest" } : { kind: "nearest" };
+  const modelHorizon: Intent["horizon"] = j.horizon === "days" && j.horizon_days ? { kind: "days", days: Math.max(0, j.horizon_days) } : j.horizon === "date" && j.horizon_date && /^\d{4}-\d{2}-\d{2}$/.test(j.horizon_date) ? { kind: "date", iso: j.horizon_date } : j.horizon === "furthest" ? { kind: "furthest" } : { kind: "nearest" };
+  // A weekday or a date in the sentence is the horizon, whatever the model made of it: "through Friday" has to land on
+  // Friday, and the model has read it as "this week, so nearest" more than once.
+  const horizon = horizonFromText(text) ?? modelHorizon;
   // The model is told to answer with a symbol, but "Nvidia", "NVDA", "nvidia xstock" and "Space X" all arrive in
   // practice; and when it gives nothing, the sentence itself is scanned for a listed name before giving up.
   const symbol = (j.market ? matchMarket(String(j.market), markets) : null) ?? matchMarket(text, markets, true);
@@ -184,12 +230,22 @@ export async function resolveIntent(intent: Intent): Promise<Proposal | IntentFa
 
   // Expiry: the nearest one that lasts as long as asked; if none does, the furthest, and say so.
   const now = data.nowTs;
-  const want = intent.horizon.kind === "days" ? now + intent.horizon.days * 86_400 : intent.horizon.kind === "date" ? Math.floor(new Date(intent.horizon.iso + "T20:00:00Z").getTime() / 1000) : null;
   const expiries = [...new Set(live.map((t) => t.expiryTs))].sort((a, b) => a - b);
   let expiry: number;
   if (intent.horizon.kind === "furthest") expiry = expiries[expiries.length - 1]!;
-  else if (want === null) expiry = expiries[0]!;
-  else {
+  else if (intent.horizon.kind === "nearest") expiry = expiries[0]!;
+  else if (intent.horizon.kind === "date") {
+    // The expiry on that calendar day if one exists (a Friday expiry prints at 16:00 New York, 20:00 or 21:00 UTC);
+    // else the first one after the day begins; else the furthest, said plainly.
+    const dayStart = Math.floor(Date.parse(intent.horizon.iso + "T00:00:00Z") / 1000);
+    const dayEnd = dayStart + 86_400 + 4 * 3600;
+    const sameDay = expiries.find((e) => e >= dayStart && e < dayEnd);
+    const after = expiries.find((e) => e >= dayStart);
+    if (sameDay !== undefined) expiry = sameDay;
+    else if (after !== undefined) { expiry = after; caveats.push(`Nothing expires on ${dayLabel(dayStart + 12 * 3600)}; the next expiry, ${dayLabel(after)}, is used.`); }
+    else { expiry = expiries[expiries.length - 1]!; caveats.push(`Nothing runs as long as asked; the furthest expiry, ${dayLabel(expiry)}, is used.`); }
+  } else {
+    const want = now + intent.horizon.days * 86_400;
     const ok = expiries.filter((e) => e >= want);
     if (ok.length) expiry = ok[0]!;
     else { expiry = expiries[expiries.length - 1]!; caveats.push(`Nothing runs as long as asked; the furthest expiry, ${dayLabel(expiry)}, is used.`); }

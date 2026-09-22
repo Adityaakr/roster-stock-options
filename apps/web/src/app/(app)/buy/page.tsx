@@ -113,7 +113,7 @@ function BuyInner() {
       <div className="page-head">
         <div>
           <div className="flex items-center gap-2"><h1 style={{ margin: 0 }}>Protected Buy</h1>{noRoute ? <Badge tone="amber">coming soon on this cluster</Badge> : null}</div>
-          <p>Buy the token, or buy it with a floor through a date, in one transaction: a Jupiter swap and a Floor on what the swap delivers. The floor is bought before the tokens land, so nothing is ever uncovered.{noRoute ? " A devnet replica has no swap route, so the swap leg runs on the mainnet fork and on mainnet; the floor below is priced live and the ticket shows what the transaction will do." : ""}</p>
+          <p>Buy the token, or buy it with a floor through a date, in one transaction: a Jupiter swap and a Floor on what the swap delivers. The floor is bought before the tokens land, so nothing is ever uncovered.{noRoute ? " A replica token has no swap route, so the swap leg needs mainnet; the floor below is priced live and the ticket shows what the transaction will do." : ""}</p>
         </div>
         <div className="flex items-center gap-3">
           {market ? <MarketLogo m={market} size={36} /> : null}

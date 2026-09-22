@@ -283,7 +283,7 @@ Every step is a real transaction on the Solana cluster the header names, with a 
 | The supply side in a browser: deposit, buy from the vault, sell back to it | [the vault journey](apps/web/e2e/vault.spec.ts) | same command |
 | PreStocks in a browser: the desk, OPENAI, buy a Floor, exercise with the fee delivered on top | [the PreStocks journey](apps/web/e2e/prestocks-devnet.spec.ts) | same command |
 | Ask: a sentence becomes a ticket, and a question gets an answer from the live figures | [the Ask journey](apps/web/e2e/intent-devnet.spec.ts), [`docs/INTENT.md`](docs/INTENT.md) | same command |
-| The same lifecycle on the real NVDAx and OpenAI mints, with expiry, settlement and release by time travel | [`tests/e2e`](tests/e2e) on a mainnet fork ([Surfpool](https://docs.surfpool.run)) | `pnpm fork` then `pnpm test:fork`: `17` tests |
+| The same lifecycle on the real NVDAx and OpenAI mints, with expiry, settlement and release by time travel | [`tests/e2e`](tests/e2e) against the real mints on a [Surfpool](https://docs.surfpool.run) fork | `pnpm fork` then `pnpm test:fork`: `17` tests |
 | Real marks with no Pyth subscription; real trade history for every PreStocks token | [`packages/services`](packages/services), [`geckoterminal.ts`](packages/registry/src/geckoterminal.ts) | every market page names which source priced it and which pool the chart reads |
 
 **Deployment.** The program is deployed and upgradeable, and the app's header names the cluster it is on, on every screen. Each market trades a replica of its mainnet mint with the same Token-2022 extensions, priced from the mainnet token. Mainnet is a documented stop-and-ask step ([`docs/DEPLOY.md`](docs/DEPLOY.md), [`docs/SEEDING.md`](docs/SEEDING.md)): the code path is identical; the difference is program rent and seed capital.
@@ -389,7 +389,7 @@ pnpm services                              # quoter, keeper, indexer, REST on :8
 pnpm dev                                   # the app on http://localhost:3000
 ```
 
-Every variable, where to get it and what it unlocks: [`docs/OPERATOR.md`](docs/OPERATOR.md). For the mainnet fork ([Surfpool](https://docs.surfpool.run)): `pnpm fork`, `pnpm anchor:deploy`, `pnpm registry && pnpm list-markets && pnpm seed`, then the same two.
+Every variable, where to get it and what it unlocks: [`docs/OPERATOR.md`](docs/OPERATOR.md). For a local fork of the real mints ([Surfpool](https://docs.surfpool.run)): `pnpm fork`, `pnpm anchor:deploy`, `pnpm registry && pnpm list-markets && pnpm seed`, then the same two.
 
 ```
 programs/roster_finance   Anchor program: series, book, exercise, settlement, vaults

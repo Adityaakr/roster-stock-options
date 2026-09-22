@@ -142,10 +142,13 @@ export class Quoter {
       const current = myAsks[0];
       if (current) {
         const off = Math.abs(Number(current.askPerLot) - Number(d.askPerLot)) / Number(d.askPerLot);
+        // A premium of a few cents swings by a large fraction on every tick of the mark; repricing it each time is
+        // churn the RPC pays for and no buyer notices. Under a dollar a lot the tolerance is a fifth, not a twentieth.
+        const tolerance = Number(d.askPerLot) < 1_000_000 ? Math.max(this.cfg.repriceTolerance, 0.2) : this.cfg.repriceTolerance;
         // A resident ask at the right price is kept while at least half its target size is still on the book; once
         // fills have eaten more than that, or the configured size has grown, it is reposted at full size.
         const remaining = myAsks.reduce((a, x) => a + x.remainingLots6, 0n);
-        if (off <= this.cfg.repriceTolerance && remaining * 2n >= this.cfg.lotsPerSeries) {
+        if (off <= tolerance && remaining * 2n >= this.cfg.lotsPerSeries) {
           this.say({ at, market: mk, series: s.address.toBase58(), action: "keep", detail: `${Number(current.askPerLot) / 1e6} vs model ${Number(d.askPerLot) / 1e6} · ${Number(remaining) / 1e6} of ${Number(this.cfg.lotsPerSeries) / 1e6} lots resident` });
           continue;
         }

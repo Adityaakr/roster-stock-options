@@ -70,13 +70,15 @@ function UnderwriteInner() {
   }, [wanted, data]);
 
   const ideas = useMemo(() => data?.ideas ?? [], [data]);
-  // Trending: the most-bought term on each of three different markets, so the strip reads across the product, not
-  // three strikes of one name; filled from the rest only when fewer than three markets have any buying.
+  // Trending: one term per market, three markets. Markets with buying come first, by what was bought; the rest of
+  // the strip is the deepest quoted term on markets nobody has bought on yet, and each card says which it is, so the
+  // strip reads across the product without pretending a quote is a fill.
   const trending = useMemo(() => {
-    const byOi = [...ideas].filter((i) => i.openInterest > 0).sort((a, b) => b.openInterest - a.openInterest);
     const seen = new Set<string>();
-    const distinct = byOi.filter((i) => (seen.has(i.market) ? false : (seen.add(i.market), true)));
-    return [...distinct, ...byOi.filter((i) => !distinct.includes(i))].slice(0, 3);
+    const distinct = (xs: WriteIdea[]) => xs.filter((i) => (seen.has(i.market) ? false : (seen.add(i.market), true)));
+    const bought = distinct([...ideas].filter((i) => i.openInterest > 0).sort((a, b) => b.openInterest - a.openInterest));
+    const quoted = distinct([...ideas].filter((i) => i.capacity > 0).sort((a, b) => b.capacity * b.strike - a.capacity * a.strike));
+    return [...bought.map((i) => ({ i, why: "bought" as const })), ...quoted.map((i) => ({ i, why: "quoted" as const }))].slice(0, 3);
   }, [ideas]);
   const featured = useMemo(() => [...ideas].filter((i) => i.onCollateral !== null && i.capacity > 0).sort((a, b) => (b.onCollateral ?? 0) - (a.onCollateral ?? 0)).slice(0, 4), [ideas]);
   const marketsWithIdeas = useMemo(() => [...new Set(ideas.map((i) => i.market))], [ideas]);
@@ -134,13 +136,13 @@ function UnderwriteInner() {
         <section className="usec">
           <div className="h5">Trending</div>
           <div className="card utrend">
-            {trending.map((i, n) => (
+            {trending.map(({ i, why }, n) => (
               <button key={i.id} className="utrend-item" onClick={() => pick(i)}>
                 <span className="rank">{n + 1}</span>
                 {marketOf(i.market) ? <MarketLogo m={marketOf(i.market)!} size={36} /> : null}
                 <span style={{ minWidth: 0 }}>
                   <span className="name"><b>{i.market}</b> <span className="muted">${usdK(i.strike)} {i.side === "put" ? "Floor" : "Upside"}</span></span>
-                  <span className="sub"><span className="up">{usdK(i.openInterest)} bought</span> · {dayLabel(i.expiryTs)} · ${usd(i.ask)}</span>
+                  <span className="sub">{why === "bought" ? <span className="up">{usdK(i.openInterest)} bought</span> : <span>${usd0(i.capacity * i.strike)} quoted</span>} · {dayLabel(i.expiryTs)} · ${usd(i.ask)}</span>
                 </span>
               </button>
             ))}

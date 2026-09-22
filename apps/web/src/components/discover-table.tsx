@@ -31,7 +31,7 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
         {expiries.length > 1 ? <Tabs value={String(expiry)} onChange={(v) => setExpiry(Number(v))} items={expiries.map((e) => ({ id: String(e), label: dayLabel(e) }))} /> : null}
         <label className="flex items-center gap-2 small" style={{ marginLeft: "auto" }}>
           Size
-          <input className="field mono" type="number" min={1} step={1} value={size} onChange={(e) => setSize(Math.max(1, Math.floor(Number(e.target.value) || 1)))} style={{ width: 88, height: 34 }} aria-label="Size in NVDAx" />
+          <input className="field mono" type="number" min={1} step={1} value={size} onChange={(e) => setSize(Math.max(1, Math.floor(Number(e.target.value) || 1)))} style={{ width: 88, height: 34 }} aria-label={`Size in ${u.symbol}`} />
           <span className="mono">{u.symbol}</span>
         </label>
       </div>

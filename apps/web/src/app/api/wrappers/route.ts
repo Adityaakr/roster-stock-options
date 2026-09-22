@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const want = req.nextUrl.searchParams.get("underlying")?.toUpperCase() ?? null;
   const [reg, roster] = await Promise.all([readRegistry(), rosterData()]);
-  const live = new Map(roster.markets.map((m) => [m.mint, m]));
+  // A market on this cluster may trade a replica of the registry's mint; it is the same listing.
+  const live = new Map(roster.markets.flatMap((m) => [[m.mint, m] as const, ...(m.replicaOf ? [[m.replicaOf, m] as const] : [])]));
   const groups = new Map<string, unknown[]>();
   for (const e of reg?.entries ?? []) {
     const u = e.underlyingSymbol?.toUpperCase();

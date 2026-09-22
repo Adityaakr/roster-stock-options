@@ -180,7 +180,7 @@ async function fromServices(r: ServicesRoster, selected: string | undefined, fre
   // History covers the market's expired series too: an exercise on a term that has since expired still happened.
   const allOfMarket = pick ? termsByMarket.find((x) => x.m.symbol === pick.symbol)?.terms ?? [] : [];
   const cluster = r.cluster === "fork" ? "fork" : r.cluster === "devnet" ? "devnet" : "mainnet";
-  const label = cluster === "fork" ? "Mainnet fork" : cluster === "devnet" ? "Devnet" : "Mainnet";
+  const label = cluster === "fork" ? "Fork" : cluster === "devnet" ? "Devnet" : "Mainnet";
   const exercises = pick ? await liveExercises(allOfMarket).catch(() => []) : [];
   return {
     cluster,
@@ -216,7 +216,7 @@ async function fromServices(r: ServicesRoster, selected: string | undefined, fre
  * renders its empty state with one line saying the figures are reconnecting. The old test fixtures that stood in
  * here put a fictional market on the screen, which is worse than an empty one.
  */
-const LABEL: Record<RosterData["cluster"], string> = { fixture: "Offline", fork: "Mainnet fork", devnet: "Devnet", mainnet: "Mainnet" };
+const LABEL: Record<RosterData["cluster"], string> = { fixture: "Offline", fork: "Fork", devnet: "Devnet", mainnet: "Mainnet" };
 export const RECONNECTING = "Market data is reconnecting. Figures refresh automatically.";
 
 function offline(): RosterData {

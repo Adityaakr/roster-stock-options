@@ -12,7 +12,7 @@ export interface ClusterInfo {
 }
 
 const Ctx = createContext<ClusterInfo | null>(null);
-const LABEL: Record<ClusterInfo["cluster"], string> = { fixture: "Fixture", fork: "Mainnet fork", devnet: "Devnet", mainnet: "Mainnet" };
+const LABEL: Record<ClusterInfo["cluster"], string> = { fixture: "Fixture", fork: "Fork", devnet: "Devnet", mainnet: "Mainnet" };
 /*
  * The first paint knows the cluster from the build, so the header never flashes "Fixture" and "program not deployed"
  * on a live deployment while `/api/cluster` is still in flight. What the server reports then replaces it.

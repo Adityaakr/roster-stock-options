@@ -1071,6 +1071,7 @@ a.chip:hover { border-color: var(--line-strong); color: var(--ink); }
 @media (max-width: 767px) { .rfigs-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rfigs-5 .rfig { border-bottom: 1px solid var(--line); padding: 14px 16px; } .rfigs-5 .rfig .v { font-size: 22px; } .rfigs-5 .rfig:nth-child(odd) { border-right: 1px solid var(--line); } .rfigs-5 .rfig:nth-child(even) { border-right: 0; } .rfigs-5 .rfig:last-child { grid-column: 1 / -1; border-right: 0; border-bottom: 0; } .rwriters, .rvaults { grid-template-columns: minmax(0, 1fr); } }
 .pb-lbl { font-family: var(--mono); font-size: 9px; fill: var(--slate); }
 .pb-lbl.ink { fill: var(--ink); }
+.pb-lbl.halo { paint-order: stroke; stroke: var(--paper); stroke-width: 3px; stroke-linejoin: round; }
 .pb-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .pb-figs b { font-size: 17px; }
 .sans { font-family: var(--sans); }

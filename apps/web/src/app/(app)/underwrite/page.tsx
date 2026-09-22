@@ -314,18 +314,23 @@ function WriterSketch({ side, strike, premium, size, mark, sym }: { side: Side; 
   const Y = (v: number) => H - PAD - ((v - yMin) / Math.max(1e-9, yMax - yMin)) * (H - 2 * PAD);
   const d = pts.map((p, i) => `${i ? "L" : "M"}${X(p).toFixed(1)},${Y(pnl(p)).toFixed(1)}`).join(" ");
   const be = side === "put" ? strike - premium / size : strike + premium / size;
+  // The mark and break-even lines sit close together, so their labels take two rows and each one
+  // points away from the other; every label carries a halo so it reads over the curve.
+  const markLeft = mark <= be;
+  const lossLeft = side === "put";
   return (
     <div className="wsketch">
       <svg viewBox={`0 0 ${W} ${H}`} className="pb-sketch" role="img" aria-label="The writer's result at expiry across prices">
-        <rect x={side === "put" ? X(lo) : X(strike)} y={PAD} width={side === "put" ? X(strike) - X(lo) : X(hi) - X(strike)} height={H - 2 * PAD} fill="var(--surface)" />
+        <rect x={lossLeft ? X(lo) : X(strike)} y={PAD} width={lossLeft ? X(strike) - X(lo) : X(hi) - X(strike)} height={H - 2 * PAD} fill="var(--surface)" />
         <line x1={PAD} x2={W - PAD} y1={Y(0)} y2={Y(0)} stroke="var(--line)" />
         <line x1={X(mark)} x2={X(mark)} y1={PAD} y2={H - PAD} stroke="var(--line)" strokeDasharray="3 3" />
-        <text x={X(mark) + 4} y={H - PAD - 4} className="pb-lbl">mark ${usdK(mark)}</text>
         <line x1={X(strike)} x2={X(strike)} y1={PAD} y2={H - PAD} stroke="var(--ink)" strokeDasharray="3 3" />
-        <text x={X(strike) + (side === "put" ? 4 : -4)} y={PAD + 10} textAnchor={side === "put" ? "start" : "end"} className="pb-lbl ink">strike ${usdK(strike)}</text>
         <motion.path key={`${side}-${strike}-${premium}-${size}`} d={d} fill="none" stroke="var(--ink)" strokeWidth="2" initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.8, ease: [0.2, 0, 0, 1] }} />
-        <text x={side === "put" ? W - PAD : PAD} y={Y(premium) + 12} textAnchor={side === "put" ? "end" : "start"} className="pb-lbl ink">premium kept ${usdK(premium)}</text>
-        <text x={X(be) + (side === "put" ? -4 : 4)} y={H - PAD - 4} textAnchor={side === "put" ? "end" : "start"} className="pb-lbl">break-even ${usdK(be)}</text>
+        <line x1={X(be)} x2={X(be)} y1={H - PAD - 14} y2={H - PAD} stroke="var(--ink)" />
+        <text x={X(strike) + (lossLeft ? -4 : 4)} y={PAD + 10} textAnchor={lossLeft ? "end" : "start"} className="pb-lbl ink halo">strike ${usdK(strike)}</text>
+        <text x={lossLeft ? W - PAD : PAD} y={Y(premium) + 12} textAnchor={lossLeft ? "end" : "start"} className="pb-lbl ink halo">premium kept ${usdK(premium)}</text>
+        <text x={X(mark) + (markLeft ? -4 : 4)} y={H - PAD - 16} textAnchor={markLeft ? "end" : "start"} className="pb-lbl halo">mark ${usdK(mark)}</text>
+        <text x={X(be) + (markLeft ? 4 : -4)} y={H - PAD - 4} textAnchor={markLeft ? "start" : "end"} className="pb-lbl ink halo">break-even ${usdK(be)}</text>
       </svg>
       <div className="flex items-center justify-between small muted mono"><span>${usdK(lo)}</span><span>{sym} at expiry</span><span>${usdK(hi)}</span></div>
     </div>

@@ -318,6 +318,8 @@ function WriterSketch({ side, strike, premium, size, mark, sym }: { side: Side; 
   // points away from the other; every label carries a halo so it reads over the curve.
   const markLeft = mark <= be;
   const lossLeft = side === "put";
+  // A large premium can put break-even outside the plotted band; its tick and label then sit at the edge.
+  const xBe = Math.min(W - PAD, Math.max(PAD, X(be)));
   return (
     <div className="wsketch">
       <svg viewBox={`0 0 ${W} ${H}`} className="pb-sketch" role="img" aria-label="The writer's result at expiry across prices">
@@ -326,11 +328,11 @@ function WriterSketch({ side, strike, premium, size, mark, sym }: { side: Side; 
         <line x1={X(mark)} x2={X(mark)} y1={PAD} y2={H - PAD} stroke="var(--line)" strokeDasharray="3 3" />
         <line x1={X(strike)} x2={X(strike)} y1={PAD} y2={H - PAD} stroke="var(--ink)" strokeDasharray="3 3" />
         <motion.path key={`${side}-${strike}-${premium}-${size}`} d={d} fill="none" stroke="var(--ink)" strokeWidth="2" initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.8, ease: [0.2, 0, 0, 1] }} />
-        <line x1={X(be)} x2={X(be)} y1={H - PAD - 14} y2={H - PAD} stroke="var(--ink)" />
+        <line x1={xBe} x2={xBe} y1={H - PAD - 14} y2={H - PAD} stroke="var(--ink)" />
         <text x={X(strike) + (lossLeft ? -4 : 4)} y={PAD + 10} textAnchor={lossLeft ? "end" : "start"} className="pb-lbl ink halo">strike ${usdK(strike)}</text>
         <text x={lossLeft ? W - PAD : PAD} y={Y(premium) + 12} textAnchor={lossLeft ? "end" : "start"} className="pb-lbl ink halo">premium kept ${usdK(premium)}</text>
         <text x={X(mark) + (markLeft ? -4 : 4)} y={H - PAD - 16} textAnchor={markLeft ? "end" : "start"} className="pb-lbl halo">mark ${usdK(mark)}</text>
-        <text x={X(be) + (markLeft ? 4 : -4)} y={H - PAD - 4} textAnchor={markLeft ? "start" : "end"} className="pb-lbl ink halo">break-even ${usdK(be)}</text>
+        <text x={xBe + (markLeft ? 4 : -4)} y={H - PAD - 4} textAnchor={markLeft ? "start" : "end"} className="pb-lbl ink halo">break-even ${usdK(be)}</text>
       </svg>
       <div className="flex items-center justify-between small muted mono"><span>${usdK(lo)}</span><span>{sym} at expiry</span><span>${usdK(hi)}</span></div>
     </div>

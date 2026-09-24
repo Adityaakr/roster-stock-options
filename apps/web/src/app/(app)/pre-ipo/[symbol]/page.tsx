@@ -89,20 +89,20 @@ export default function PreIpoTokenPage({ params }: { params: Promise<{ symbol: 
         <div className="pprice">
           <span>Token price</span>
           <b className="mono">{token.tokenPrice === null ? "n/a" : `$${usd(token.tokenPrice)}`}</b>
-          <span className={token.spreadPct === null || Math.abs(token.spreadPct) < 0.05 ? "muted" : token.spreadPct >= 0 ? "up" : "down"}>{spreadLabel(token.spreadPct) === "at the mark" ? `at the mark of $${usd(token.markPrice ?? 0)}` : `${spreadLabel(token.spreadPct)} the mark of $${usd(token.markPrice ?? 0)}`}</span>
+          <span className={token.spreadPct === null || Math.abs(token.spreadPct) < 0.05 ? "muted" : token.spreadPct >= 0 ? "up" : "down"}>{spreadLabel(token.spreadPct) === "at the mark" ? `at the issuer mark of $${usd(token.markPrice ?? 0)}` : `${spreadLabel(token.spreadPct)} the issuer mark of $${usd(token.markPrice ?? 0)}`}</span>
         </div>
       </div>
 
       <div className="pfigs" style={{ marginBottom: 16 }}>
-        <Fig k="Token price" v={token.tokenPrice === null ? "n/a" : `$${usd(token.tokenPrice)}`} s="where the token trades, per the issuer's API" />
+        <Fig k="Token price" v={token.tokenPrice === null ? "n/a" : `$${usd(token.tokenPrice)}`} s="where the token trades; the mark every contract here is priced off" />
         <Fig k="Implied valuation" v={token.impliedValuation === null ? "n/a" : `$${short(token.impliedValuation)}`} s="the company, at the token price" />
         {(() => {
           const sp = token.spreadPct;
           const flat = sp !== null && Math.abs(sp) < 0.05;
           return <Fig k={flat ? "Against the mark" : sp !== null && sp < 0 ? "Discount to the mark" : "Premium to the mark"} v={sp === null ? "n/a" : flat ? "at the mark" : `${sp >= 0 ? "+" : "−"}${Math.abs(sp).toFixed(1)}%`} s={sp === null ? "" : flat ? "the token trades where the issuer marks the share" : sp >= 0 ? "the token costs more than the share it tracks" : "the token costs less than the share it tracks"} tone={sp === null || flat ? undefined : sp >= 0 ? "up" : "down"} />;
         })()}
-        <Fig k="Mark price" v={token.markPrice === null ? "n/a" : `$${usd(token.markPrice)}`} s="the gross price per share, per the issuer" />
-        <Fig k="Mark valuation" v={token.markValuation === null ? "n/a" : `$${short(token.markValuation)}`} s="the company, at the mark" />
+        <Fig k="Issuer mark" v={token.markPrice === null ? "n/a" : `$${usd(token.markPrice)}`} s="the issuer's gross price per share, not where the token trades" />
+        <Fig k="Issuer valuation" v={token.markValuation === null ? "n/a" : `$${short(token.markValuation)}`} s="the company, at the issuer mark" />
         <Fig k="Market cap" v={token.tokenPrice && token.supply ? `$${short(token.tokenPrice * token.supply)}` : "n/a"} s={token.supply ? `${usdK(token.supply)} tokens at the token price` : "supply not published"} />
         <Fig k="24h" v={tr?.change24hPct === null || tr?.change24hPct === undefined ? "…" : `${tr.change24hPct >= 0 ? "+" : "−"}${Math.abs(tr.change24hPct).toFixed(1)}%`} s="from the reference pool's trades" tone={tr?.change24hPct === null || tr?.change24hPct === undefined ? undefined : tr.change24hPct >= 0 ? "up" : "down"} />
         <Fig k="7 days" v={tr?.change7dPct === null || tr?.change7dPct === undefined ? "…" : `${tr.change7dPct >= 0 ? "+" : "−"}${Math.abs(tr.change7dPct).toFixed(1)}%`} s={tr ? `${tr.days} days of trades recorded` : "reading the pool"} tone={tr?.change7dPct === null || tr?.change7dPct === undefined ? undefined : tr.change7dPct >= 0 ? "up" : "down"} />

@@ -12,10 +12,11 @@ export const SOURCES = {
   prestocksApi: "https://prestocks.com/api/prestocks",
   surfpool: "https://docs.surfpool.run",
   tokensApi: "https://docs.tokens.xyz",
-  // Cited in CLAUDE.md 6 by publisher and month; the article URLs were not in the brief and are not guessed.
-  coingecko: null as string | null,
+  // Cited in CLAUDE.md 6 by publisher and month. Each URL below was opened on 2026-09-25 and the quoted figure or
+  // sentence found on the page; the one still null was not found at a primary address and stays unlinked.
+  coingecko: "https://www.coingecko.com/en/api/reports/tokenized-equities-sep-2026" as string | null,
   decentralised: null as string | null,
-  theblock: null as string | null,
-  pantera: null as string | null,
-  alpaca: null as string | null
+  theblock: "https://www.theblock.co/newsletters/the-funding/2026-05-17-spacex-ipo-pre-ipo-perps-crypto-401570" as string | null,
+  pantera: "https://panteracapital.com/blockchain-letter/the-always-on-economy/" as string | null,
+  alpaca: "https://docs.alpaca.markets/us/docs/orders-at-alpaca" as string | null
 };

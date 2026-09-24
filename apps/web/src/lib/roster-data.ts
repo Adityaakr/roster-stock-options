@@ -42,7 +42,7 @@ function liveTerm(m: ServicesMarket, s: ServicesSeries): Term {
   });
   const capacityLots6 = asks.reduce((a, x) => a + x.remainingLots6, 0n);
   const openLots6 = BigInt(s.total_sold_lots6) - BigInt(s.total_exercised_lots6);
-  const writers = s.writers.map((w, slot) => ({ account: w.writer, live: !w.settled && asks.some((a) => a.writerSlot === slot), askLots: sharesOf(asks.filter((a) => a.writerSlot === slot).reduce((a, x) => a + x.remainingLots6, 0n), mult) }));
+  const writers = s.writers.map((w, slot) => ({ slot, account: w.writer, live: !w.settled && asks.some((a) => a.writerSlot === slot), askLots: sharesOf(asks.filter((a) => a.writerSlot === slot).reduce((a, x) => a + x.remainingLots6, 0n), mult) }));
   return {
     id: termId(m.symbol, s.side, Number(s.strike_usdc_per_lot) / 1e6, s.expiry_ts),
     market: m.symbol,

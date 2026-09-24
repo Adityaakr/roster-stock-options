@@ -25,9 +25,13 @@ export async function GET() {
     const t = xs.sort((a, b) => Math.abs(a.strike - mk) - Math.abs(b.strike - mk))[0]!;
     return { id: t.id, strike: t.strike, expiryTs: t.expiryTs, ask: t.ask, capacity: t.capacity };
   };
-  const tokens = prestocks.map((t) => {
-    const e = reg.get(t.mint);
-    const m = live.get(t.mint);
+  const tokens = prestocks.map((t0) => {
+    const e = reg.get(t0.mint);
+    const m = live.get(t0.mint);
+    // One price per token on every screen: where a market is live here, the token price and the issuer's mark are the
+    // services' reading, the same one the markets list, the ticket and the quoter use; the issuer's API is read
+    // directly only for tokens with no market.
+    const t = m && m.priceSource === "prestocks" && m.mark !== null && m.mark > 0 ? { ...t0, tokenPrice: m.mark, markPrice: m.issuerMarkPrice ?? t0.markPrice } : t0;
     return {
       symbol: t.symbol, name: t.name, issuer: t.issuer, mint: t.mint, markPrice: t.markPrice, tokenPrice: t.tokenPrice, markValuation: t.markValuation, impliedValuation: t.impliedValuation, supply: t.supply, holders: t.holders, sector: t.sector, description: t.description, logo: t.logo, external: t.external,
       /** Token price against the mark, percent, signed: negative below the mark. */

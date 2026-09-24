@@ -302,7 +302,7 @@ export function SaidOutLoud() {
                   <p className="evq">{e.d}</p>
                   <div className="evrow">
                     <span><i className="yes">✓</i>dated</span>
-                    <span><i className={e.links[0]?.href ? "yes" : "no"}>{e.links[0]?.href ? "✓" : "–"}</i>{e.links[0]?.href ? "source linked" : "link pending verification"}</span>
+                    {e.links[0]?.href ? <span><i className="yes">✓</i>source linked</span> : null}
                     <span><i className={e.interp ? "no" : "yes"}>{e.interp ? "–" : "✓"}</i>{e.interp ? "our interpretation" : "applies as stated"}</span>
                   </div>
                   <div className="btnrow" style={{ marginTop: 18 }}>

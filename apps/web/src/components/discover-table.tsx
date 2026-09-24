@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge, Tabs } from "@/components/ui";
-import { breakEven, costOf, DEFAULT_SIZE, maxLoss, moveNeeded, productName, SESSION_LABEL, type RosterData, type Side } from "@/lib/model";
+import { allInPerShare, breakEven, costOf, DEFAULT_SIZE, maxLoss, moveNeeded, productName, SESSION_LABEL, type RosterData, type Side } from "@/lib/model";
 import { dayLabel, countdown, usd, usdSmart } from "@/lib/format";
 
 /*
@@ -75,14 +75,15 @@ export function DiscoverTable({ data, compact = false, initialSide = "call" }: {
                   </tr>
                 );
               }
-              const be = breakEven(t.side, t.strike, q.ask);
-              const mv = moveNeeded(t.side, t.strike, q.ask, u.mark);
               const ml = maxLoss(q.ask, size, data.feeBps);
+              const allIn = allInPerShare(q.ask, size, data.feeBps);
+              const be = breakEven(t.side, t.strike, allIn);
+              const mv = moveNeeded(t.side, t.strike, allIn, u.mark);
               return (
                 <tr key={t.id} className="row-link" data-testid="term-row" onClick={() => router.push(`/trade/${t.id}`)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/trade/${t.id}`); }}>
                   <td>
                     <div className="d-strike"><b className="mono">${usd(t.strike)}</b><span className="muted">per share</span></div>
-                    <div className="small muted" style={{ whiteSpace: "nowrap" }}>{t.side === "call" ? "right to buy" : "right to sell"} through {dayLabel(t.expiryTs)}{q.underwriters > 1 ? ` · ${q.underwriters} makers` : ""}</div>
+                    <div className="small muted" style={{ whiteSpace: "nowrap" }}>{t.side === "call" ? "right to buy" : "right to sell"} through {dayLabel(t.expiryTs)}{q.underwriters > 1 ? ` · fills across ${q.underwriters} makers` : ""}</div>
                   </td>
                   <td className="num"><b className="d-prem mono">${usd(q.ask)}</b></td>
                   <td className="num col-cost mono">${usdSmart(q.ask * size)}</td>

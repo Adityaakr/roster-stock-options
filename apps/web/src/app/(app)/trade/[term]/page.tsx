@@ -11,7 +11,7 @@ import { TxStatus } from "@/components/tx-status";
 import { Address, Badge, ErrorState, KV, Loading } from "@/components/ui";
 import { useCluster, explorerUrl } from "@/lib/cluster";
 import { usd, usdK, usdSmart, dayLabel, countdown } from "@/lib/format";
-import { breakEven, costOf, DEFAULT_SIZE, maxLoss, moveNeeded, parseTermId, productName } from "@/lib/model";
+import { breakEven, costOf, DEFAULT_SIZE, moveNeeded, parseTermId, productName } from "@/lib/model";
 import { useTransaction } from "@/lib/tx";
 import { useRoster } from "@/lib/use-roster";
 
@@ -50,8 +50,11 @@ function ActInner({ id }: { id: string }) {
   const market = data.markets.find((m) => m.symbol === u.symbol);
   const c = costOf(t, size, u.multiplier, data.feeBps);
   const ask = c.fillable ? c.premium / size : null;
-  const be = ask === null ? null : breakEven(t.side, t.strike, ask);
-  const mv = ask === null ? null : moveNeeded(t.side, t.strike, ask, u.mark);
+  // Break-even, the move needed and the payoff curve are all measured from the all-in cost, premium plus fee, which
+  // is the one max-loss figure on this ticket.
+  const allIn = c.fillable ? c.total / size : null;
+  const be = allIn === null ? null : breakEven(t.side, t.strike, allIn);
+  const mv = allIn === null ? null : moveNeeded(t.side, t.strike, allIn, u.mark);
   const ex = expected ?? Math.round(u.mark * (t.side === "call" ? 1.08 : 0.92));
   const name = productName(t.side);
   const live = t.writers.filter((w) => w.live);
@@ -74,7 +77,7 @@ function ActInner({ id }: { id: string }) {
             <Badge dot tone={t.halted ? "amber" : c.fillable ? "green" : "amber"}>{t.halted ? "halted" : c.fillable ? "executable" : "not fillable at this size"}</Badge>
             <Badge>{u.wrapperTier}</Badge>
           </div>
-          <p className="body-sm">{t.side === "call" ? `The right to buy ${u.symbol} at $${usdK(t.strike)} per share, any time until expiry.` : `The right to sell ${u.symbol} at $${usdK(t.strike)} per share, any time until expiry.`} Expires in {countdown(t.expiryTs, data.nowTs)}. {Math.floor(t.capacity)} {u.symbol} fillable now from {live.length} maker{live.length === 1 ? "" : "s"}.</p>
+          <p className="body-sm">{t.side === "call" ? `The right to buy ${u.symbol} at $${usdK(t.strike)} per share, any time until expiry.` : `The right to sell ${u.symbol} at $${usdK(t.strike)} per share, any time until expiry.`} Expires in {countdown(t.expiryTs, data.nowTs)}. {Math.floor(t.capacity)} {u.symbol} fillable now; {live.length} maker{live.length === 1 ? "" : "s"} live on this term.</p>
         </div>
       </div>
 
@@ -88,14 +91,14 @@ function ActInner({ id }: { id: string }) {
             <span className="small">Mark <b className="mono ink">${usd(u.mark)}</b></span>
           </div>
           <div style={{ padding: "16px 12px 8px" }}>
-            <PayoffChart side={t.side} strike={t.strike} premium={ask ?? t.ask} shares={size} mark={u.mark} expected={ex} />
+            <PayoffChart side={t.side} strike={t.strike} premium={ask ?? t.ask} shares={size} mark={u.mark} expected={ex} cost={c.fillable ? c.total : undefined} />
             <Slider value={ex} min={Math.round(u.mark * 0.8)} max={Math.round(u.mark * 1.2)} onChange={setExpected} label="Expected price at expiry" />
           </div>
           <div style={{ padding: "0 20px 20px" }}>
             <div className="grid-3">
               <div className="inset" style={{ padding: 12 }}><div className="small">Break-even</div><div className="h4 num">{be === null ? "n/a" : `$${usd(be)}`}</div></div>
               <div className="inset" style={{ padding: 12 }}><div className="small">Move needed</div><div className={`h4 num ${mv !== null && mv <= 0 ? "up" : ""}`}>{mv === null ? "n/a" : `${mv >= 0 ? "+" : "−"}${Math.abs(mv).toFixed(1)}%`}</div></div>
-              <div className="inset" style={{ padding: 12 }}><div className="small">Maximum loss</div><div className="h4 num down">{ask === null ? "n/a" : `−$${usdSmart(maxLoss(ask, size, data.feeBps))}`}</div></div>
+              <div className="inset" style={{ padding: 12 }}><div className="small">Maximum loss</div><div className="h4 num down">{c.fillable ? `−$${usdSmart(c.total)}` : "n/a"}</div></div>
             </div>
           </div>
         </div>
@@ -112,7 +115,7 @@ function ActInner({ id }: { id: string }) {
                 { k: `Fee, ${data.feeBps} bps`, v: <span className="mono">{c.fillable ? `$${usd(c.fee)}` : "n/a"}</span> },
                 { k: "Total", v: <span className="mono ink" style={{ fontWeight: 500 }} data-testid="total">{c.fillable ? `$${usdSmart(c.total)}` : "n/a"}</span> },
                 { k: "Cost as a share of the mark", v: <span className="mono">{ask === null || u.mark <= 0 ? "n/a" : `${((ask / u.mark) * 100).toFixed(2)}%`}</span> },
-                { k: "Backed by", v: c.fillable ? `${c.writers} maker${c.writers > 1 ? "s" : ""}, collateral locked` : `${Math.floor(t.capacity)} ${u.symbol} available` },
+                { k: "Backed by", v: c.fillable ? `${c.writers} of ${live.length} live maker${live.length === 1 ? "" : "s"} at this size, collateral locked` : `${Math.floor(t.capacity)} ${u.symbol} available` },
                 { k: "Fillable on this term", v: <span className="mono">{Math.floor(t.capacity)} {u.symbol}</span> },
                 { k: "Referrer", v: "none" }
               ]} />
@@ -129,7 +132,7 @@ function ActInner({ id }: { id: string }) {
                 { k: "Exercise", v: "any time until expiry, no oracle" },
                 { k: "Exercising means", v: <span className="mono">{t.side === "call" ? `pay $${usdSmart(t.strike * size)}, receive ${market && market.feeBps > 0 ? (size * (1 - market.feeBps / 10_000)).toFixed(4) : size} ${u.symbol}` : `deliver ${market && market.feeBps > 0 ? (size / (1 - market.feeBps / 10_000)).toFixed(4) : size} ${u.symbol}, receive $${usdSmart(t.strike * size)}`}</span> },
                 ...(market && market.feeBps > 0 ? [{ k: "Mint transfer fee", v: <span className="mono">{(market.feeBps / 100).toFixed(2)}%, the holder&apos;s, priced in</span> }] : []),
-                { k: "Max loss", v: <span className="mono down">{ask === null ? "n/a" : `−$${usdSmart(maxLoss(ask, size, data.feeBps))}`}</span> },
+                { k: "Max loss", v: <span className="mono down">{c.fillable ? `−$${usdSmart(c.total)}` : "n/a"}</span> },
                 { k: "Settles in", v: t.side === "call" ? `${u.symbol}, delivered to your wallet` : "USDC, from the locked collateral" }
               ]} />
             </div>
@@ -141,7 +144,7 @@ function ActInner({ id }: { id: string }) {
                   <div className="flex items-center justify-between gap-3 small"><span>Collateral vault</span><Address value={t.escrow.collateralVault} href={explorerUrl(cluster, "address", t.escrow.collateralVault)} /></div>
                   <div className="flex items-center justify-between gap-3 small"><span>Settlement vault</span><Address value={t.escrow.settlementVault} href={explorerUrl(cluster, "address", t.escrow.settlementVault)} /></div>
                   <div className="flex items-center justify-between gap-3 small"><span>Series</span><Address value={t.series ?? ""} href={t.series ? explorerUrl(cluster, "address", t.series) : null} /></div>
-                  {live.map((w) => <div key={w.account} className="flex items-center justify-between gap-3 small"><span>Maker · {w.askLots} lots quoted</span><Address value={w.account} href={explorerUrl(cluster, "address", w.account)} /></div>)}
+                  {live.map((w) => <div key={w.account} className="flex items-center justify-between gap-3 small"><span>Maker · {w.askLots} lots quoted · {c.fillable && c.writerSlots.includes(w.slot) ? "fills this order" : "not in this fill"}</span><Address value={w.account} href={explorerUrl(cluster, "address", w.account)} /></div>)}
                 </>
               ) : <div className="small muted">Accounts appear once the program is deployed; none are invented.</div>}
             </div>

@@ -109,8 +109,8 @@ export interface Term {
   asks: { askPerLot: string; remainingLots6: string; writerSlot: number; seq: string }[];
   /** The escrow that backs a fill on this term; null on the fixture cluster. */
   escrow: { collateralVault: string; settlementVault: string; quoteVault: string; collateralBalance: string; settlementBalance: string } | null;
-  /** Writers with live asks on this term. */
-  writers: { account: string; live: boolean; askLots: number }[];
+  /** Every writer slot on this term with whether it has a resident ask; `slot` matches `asks[].writerSlot`. */
+  writers: { slot: number; account: string; live: boolean; askLots: number }[];
   /** Every writer slot in the series, in slot order, in shares (lots x multiplier) and USD. */
   slots: { slot: number; account: string; deposited: number; withdrawn: number; sold: number; open: number; assigned: number; premiumClaimable: number; settled: boolean }[];
   halted: boolean;
@@ -310,9 +310,15 @@ export function moveNeeded(side: Side, strike: number, premium: number, mark: nu
   return ((breakEven(side, strike, premium) - mark) / mark) * 100;
 }
 
+/** Premium plus the taker fee, the fee rounded up to the micro-USDC as the program rounds it: the one max-loss figure. */
 export function maxLoss(premium: number, shares: number, feeBps: number): number {
-  const prem = premium * shares;
-  return prem + (prem * feeBps) / 10_000;
+  const premMicro = Math.round(premium * shares * 1e6);
+  return (premMicro + Number(feeCeil(BigInt(premMicro), feeBps))) / 1e6;
+}
+
+/** The all-in cost per share (premium plus fee), which is what break-even and the move needed are measured from. */
+export function allInPerShare(premium: number, shares: number, feeBps: number): number {
+  return shares > 0 ? maxLoss(premium, shares, feeBps) / shares : premium;
 }
 
 export function inTheMoney(side: Side, strike: number, mark: number): boolean {
@@ -352,7 +358,7 @@ export function askAtSize(term: Term, shares: number): { ask: number | null; und
  * Walk the asks for `lots` lots, cheapest first, the way `buy` does on-chain (CLAUDE.md addendum D): total premium in
  * USDC micro, the number of writers touched, and whether the size is fillable at all.
  */
-export function walkAsks(asks: { askPerLot: bigint | string; remainingLots6: bigint | string; writerSlot: number }[], lots6: bigint, maxAsks = 8): { premium: bigint; writers: number; filled: bigint; fillable: boolean } {
+export function walkAsks(asks: { askPerLot: bigint | string; remainingLots6: bigint | string; writerSlot: number }[], lots6: bigint, maxAsks = 8): { premium: bigint; writers: number; writerSlots: number[]; filled: bigint; fillable: boolean } {
   const sorted = asks.map((a) => ({ askPerLot: BigInt(a.askPerLot), remainingLots6: BigInt(a.remainingLots6), writerSlot: a.writerSlot })).sort((a, b) => (a.askPerLot < b.askPerLot ? -1 : a.askPerLot > b.askPerLot ? 1 : 0));
   let left = lots6;
   let premium = 0n;
@@ -364,7 +370,7 @@ export function walkAsks(asks: { askPerLot: bigint | string; remainingLots6: big
     touched.add(a.writerSlot);
     left -= take;
   }
-  return { premium, writers: touched.size, filled: lots6 - left, fillable: left === 0n };
+  return { premium, writers: touched.size, writerSlots: [...touched], filled: lots6 - left, fillable: left === 0n };
 }
 
 /** Taker fee in USDC micro, rounded up as the program does. */
@@ -383,10 +389,10 @@ export function lots6ForShares(shares: number, multiplier: number): bigint {
 }
 
 /** The exact cost of `shares` on a term the way `buy` computes it: premium, fee, total, writers touched. USD numbers for display. */
-export function costOf(term: Term, shares: number, multiplier: number, feeBps: number): { lots6: bigint; premium: number; fee: number; total: number; writers: number; fillable: boolean; maxPremiumPerLot: bigint } {
+export function costOf(term: Term, shares: number, multiplier: number, feeBps: number): { lots6: bigint; premium: number; fee: number; total: number; writers: number; writerSlots: number[]; fillable: boolean; maxPremiumPerLot: bigint } {
   const lots6 = lots6ForShares(shares, multiplier);
   const w = walkAsks(term.asks, lots6);
   const fee = feeCeil(w.premium, feeBps);
   const worst = term.asks.reduce((a, x) => (BigInt(x.askPerLot) > a ? BigInt(x.askPerLot) : a), 0n);
-  return { lots6, premium: Number(w.premium) / 1e6, fee: Number(fee) / 1e6, total: Number(w.premium + fee) / 1e6, writers: w.writers, fillable: w.fillable, maxPremiumPerLot: worst };
+  return { lots6, premium: Number(w.premium) / 1e6, fee: Number(fee) / 1e6, total: Number(w.premium + fee) / 1e6, writers: w.writers, writerSlots: w.writerSlots, fillable: w.fillable, maxPremiumPerLot: worst };
 }

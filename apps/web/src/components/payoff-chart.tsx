@@ -12,8 +12,10 @@ import { usd, usdSmart } from "@/lib/format";
  * Every label is drawn inside the plot with a paper chip behind it and clamped to the box, so nothing overlaps the
  * line, the dashed floor or the card's edge at any width.
  */
-export function PayoffChart({ side, strike, premium, shares, mark, expected, height = 260 }: { side: Side; strike: number; premium: number; shares: number; mark: number; expected: number; height?: number }) {
+export function PayoffChart({ side, strike, premium: premiumIn, shares, mark, expected, cost, height = 260 }: { side: Side; strike: number; premium: number; shares: number; mark: number; expected: number; /** The all-in cost of the position (premium plus fee); when given it is the max loss and sets break-even. */ cost?: number; height?: number }) {
   const W = 800;
+  const premium = cost !== undefined && shares > 0 ? cost / shares : premiumIn;
+  const loss = cost ?? premium * shares;
   const H = height;
   const pad = { l: 14, r: 14, t: 34, b: 30 };
   const model = useMemo(() => {
@@ -38,7 +40,7 @@ export function PayoffChart({ side, strike, premium, shares, mark, expected, hei
   const exPnl = buyerPnl(side, strike, premium, shares, ex);
   const exX = model.sx(ex);
   const exY = model.sy(exPnl);
-  const floor = model.sy(-premium * shares);
+  const floor = model.sy(-loss);
   const pct = (v: number, total: number) => `${(v / total) * 100}%`;
   // The readout follows the point but never leaves the plot: it flips side past the middle and sits below a high point.
   const tipLeft = Math.min(W - pad.r - 4, Math.max(pad.l + 4, exX));
@@ -47,7 +49,7 @@ export function PayoffChart({ side, strike, premium, shares, mark, expected, hei
 
   return (
     <div className="pchart">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`Payoff at expiry for ${shares} shares: max loss ${usd(premium * shares)}, break-even ${usd(model.be)}`} style={{ width: "100%", height: H, display: "block" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`Payoff at expiry for ${shares} shares: max loss ${usd(loss)}, break-even ${usd(model.be)}`} style={{ width: "100%", height: H, display: "block" }}>
         <defs>
           <linearGradient id="pfill" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="var(--green)" stopOpacity="0.2" />
@@ -67,7 +69,7 @@ export function PayoffChart({ side, strike, premium, shares, mark, expected, hei
       {/* Labels ride above the plot in HTML so they keep the site's type at any width. */}
       <span className="pchart-tag top" style={{ left: pct(model.sx(model.be), W), transform: labelShift(model.sx(model.be), W) }}>break-even <b className="num">${usd(model.be)}</b></span>
       <span className="pchart-tag bottom" style={{ left: pct(model.sx(mark), W), transform: labelShift(model.sx(mark), W) }}>mark <b className="num">${usd(mark)}</b></span>
-      <span className="pchart-tag floor" style={{ top: pct(floor, H) }}>max loss <b className="num">−${usdSmart(premium * shares)}</b></span>
+      <span className="pchart-tag floor" style={{ top: pct(floor, H) }}>max loss <b className="num">−${usdSmart(loss)}</b></span>
       <span className={`pchart-tip ${tipAbove ? "above" : "below"} ${tipAnchor}`} style={{ left: pct(tipLeft, W), top: pct(exY, H) }}>
         <b className={`num ${exPnl >= 0 ? "up" : "down"}`}>{exPnl >= 0 ? "+" : "−"}${usdSmart(Math.abs(exPnl))}</b>
         <span className="muted num">at ${usd(ex)}</span>

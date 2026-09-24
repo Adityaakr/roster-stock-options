@@ -45,7 +45,7 @@ export function RosterProof({ data }: { data: RosterData }) {
                 <div className="pf-title">Quotes at size</div>
                 <div className="pf-sub">{call ? `Upside $${usd0(call.strike)} through ${dayLabel(call.expiryTs)}` : "no live term"}</div>
                 <table className="pf-table">
-                  <thead><tr><th>Size</th><th className="num">Per share</th><th className="num">Cost</th><th className="num">Makers</th></tr></thead>
+                  <thead><tr><th>Size</th><th className="num">Per share</th><th className="num">Cost</th><th className="num">Makers in fill</th></tr></thead>
                   <tbody>
                       {(call?.ladder ?? []).map((r) => (
                         <tr key={r.size}>

@@ -282,13 +282,14 @@ export async function resolveIntent(intent: Intent): Promise<Proposal | IntentFa
   if (size > term.capacity) { caveats.push(`Only ${Math.floor(term.capacity)} shares are fillable on this term right now; the size is capped there.`); size = Math.max(1, Math.floor(term.capacity)); }
   const c = costOf(term, size, data.underlying.multiplier, data.feeBps);
   if (!c.fillable) return { error: `${size} shares are not fillable on ${market.symbol} ${productName(side)} $${usdSmart(term.strike)} right now.`, intent };
-  const askPerShare = c.premium / size;
-  const be = breakEven(side, term.strike, askPerShare);
+  // Break-even and the move are measured from the all-in cost per share, premium plus fee, as on the ticket.
+  const allIn = c.total / size;
+  const be = breakEven(side, term.strike, allIn);
   const proposal: Proposal = {
     action: intent.action,
     market: { symbol: market.symbol, name: market.name, logo: market.logo ?? null, mark },
     term: { id: term.id, side, strike: term.strike, expiryTs: term.expiryTs, capacity: term.capacity },
-    size, premium: c.premium, fee: c.fee, total: c.total, breakEven: be, movePct: moveNeeded(side, term.strike, askPerShare, mark),
+    size, premium: c.premium, fee: c.fee, total: c.total, breakEven: be, movePct: moveNeeded(side, term.strike, allIn, mark),
     locked: buying ? null : side === "put" ? { amount: term.strike * size, unit: "USDC" } : { amount: size, unit: market.symbol },
     href: buying ? `/trade/${term.id}?size=${size}` : `/underwrite?m=${market.symbol}&t=${term.id}&size=${size}`,
     explanation: "", caveats, intent

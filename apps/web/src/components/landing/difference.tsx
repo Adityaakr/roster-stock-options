@@ -88,6 +88,7 @@ const ROWS: [string, string, string, string, string][] = [
   ["Funding or interest", "Yes", "Yes", "No", "No"],
   ["Open on Saturday", "Yes, synthetic mark", "Yes", "No", "Yes"],
   ["Settles into your wallet", "No", "No", "No", "Yes, the token itself"],
+  ["Oracle-free settlement", "No, the oracle mark closes you out", "No, the oracle mark closes you out", "Yes for stock options", "Yes, exercise reads no price"],
   ["Can liquidate you", "Yes", "Yes", "No", "No"]
 ];
 const HEADS: [string, string][] = [["Perps", "Hyperliquid, CEX stock perps, Wasabi"], ["Loops", "Kamino, Loopscale"], ["Listed options", "CBOE"], ["Roster Finance", "fully collateralized, on Solana"]];

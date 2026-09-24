@@ -55,6 +55,7 @@ The share     ██      ██      ██      ██      ██            
 | Funding or interest | Yes | Yes | No | **No** |
 | Open on Saturday | Yes, synthetic mark | Yes | No | **Yes** |
 | Settles into your wallet | No | No | No | **Yes, the token itself** |
+| Oracle-free settlement | No, the oracle mark closes you out | No, the oracle mark closes you out | Yes for stock options | **Yes, exercise reads no price** |
 | Can liquidate you | Yes | Yes | No | **No** |
 | Coverage | A few names | A few names | US-listed only | **`14` markets, including pre-IPO** |
 

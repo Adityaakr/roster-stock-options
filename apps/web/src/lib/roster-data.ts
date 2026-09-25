@@ -248,12 +248,11 @@ function offline(): RosterData {
 /* ---------- entry points ---------- */
 
 export async function rosterData(selected?: string, fresh = false): Promise<RosterData> {
-  if (await servicesReachable()) {
-    try {
-      return await fromServices(await services.roster(), selected, fresh);
-    } catch (e) {
-      console.warn(`[web] services roster failed; showing the reconnecting state: ${(e as Error).message}`);
-    }
+  // One round trip: a roster that answers is the reachability check, so no separate health probe runs first.
+  try {
+    return await fromServices(await services.roster(), selected, fresh);
+  } catch (e) {
+    console.warn(`[web] services roster failed; showing the reconnecting state: ${(e as Error).message}`);
   }
   return offline();
 }

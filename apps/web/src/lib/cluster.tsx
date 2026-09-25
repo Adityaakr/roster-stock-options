@@ -1,5 +1,6 @@
 "use client";
 
+import { fetchJson } from "@/lib/fetch-json";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 /** The active cluster, shown in the header on every screen (CLAUDE.md 4.4). The wallet's own network setting never matters. */
@@ -23,10 +24,7 @@ const fallback: ClusterInfo = { cluster: built, label: LABEL[built] ?? "Fixture"
 export function ClusterProvider({ children }: { children: ReactNode }) {
   const [info, setInfo] = useState<ClusterInfo>(fallback);
   useEffect(() => {
-    fetch("/api/cluster")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: ClusterInfo | null) => j && setInfo(j))
-      .catch(() => undefined);
+    fetchJson<ClusterInfo>("/api/cluster").then((j) => setInfo(j)).catch(() => undefined);
   }, []);
   return <Ctx.Provider value={info}>{children}</Ctx.Provider>;
 }

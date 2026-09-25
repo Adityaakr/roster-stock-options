@@ -1,5 +1,6 @@
 "use client";
 
+import { fetchJson } from "@/lib/fetch-json";
 import { useCallback, useEffect, useState } from "react";
 import type { RosterData } from "./model";
 
@@ -12,14 +13,16 @@ export function useRoster(market?: string | null): { data: RosterData | null; er
     const q = new URLSearchParams();
     if (market) q.set("m", market);
     if (fresh) q.set("fresh", "1");
-    fetch(q.size ? `/api/roster?${q.toString()}` : "/api/roster", { cache: "no-store" })
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return (await r.json()) as RosterData;
-      })
+    // Retries on a failed or still-reconnecting answer; the last good data stays on screen through a slow moment.
+    fetchJson<RosterData>(q.size ? `/api/roster?${q.toString()}` : "/api/roster", { settled: (d) => d.markets.length > 0 || !/reconnecting/i.test(d.source ?? "") })
       .then((j) => { setData(j); setError(null); })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, [market]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    // Quotes move once a tick; refresh in the background while the tab is visible so figures never go stale.
+    const h = setInterval(() => { if (document.visibilityState === "visible") load(); }, 20_000);
+    return () => clearInterval(h);
+  }, [load]);
   return { data, error, reload: load };
 }

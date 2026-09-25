@@ -1,5 +1,6 @@
 "use client";
 
+import { fetchJson } from "@/lib/fetch-json";
 import { useCallback, useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { Position, Receipt } from "./model";
@@ -17,11 +18,7 @@ export function usePositions(): { positions: Position[] | null; history: Receipt
       Promise.resolve().then(() => { setPositions([]); setHistory([]); });
       return;
     }
-    fetch(`/api/positions/${wallet}`, { cache: "no-store" })
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return (await r.json()) as { positions: Position[]; history: Receipt[] };
-      })
+    fetchJson<{ positions: Position[]; history: Receipt[] }>(`/api/positions/${wallet}`)
       .then((j) => { setPositions(j.positions); setHistory(j.history ?? []); setError(null); })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, [wallet]);

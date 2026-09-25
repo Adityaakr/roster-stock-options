@@ -56,11 +56,32 @@ async function get<T>(path: string, timeoutMs = TIMEOUT_MS): Promise<T> {
   return (await res.json()) as T;
 }
 
+/*
+ * A small stale-while-revalidate memo per warm instance. Inside `ttl` every caller shares one answer; between `ttl`
+ * and `stale` the last good answer goes out at once while one refresh runs behind it; concurrent misses share one
+ * request. The services rebuild these answers once a tick, so a few seconds of reuse costs nothing and a slow tick
+ * no longer holds a page.
+ */
+const memoStore = new Map<string, { at: number; value: unknown; inflight: Promise<unknown> | null }>();
+async function memo<T>(key: string, ttlMs: number, staleMs: number, fn: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const e = memoStore.get(key);
+  if (e && e.value !== undefined && now - e.at < ttlMs) return e.value as T;
+  if (e?.inflight) {
+    if (e.value !== undefined && now - e.at < staleMs) return e.value as T;
+    return e.inflight as Promise<T>;
+  }
+  const p = fn().then((v) => { memoStore.set(key, { at: Date.now(), value: v, inflight: null }); return v; }, (err: unknown) => { const cur = memoStore.get(key); if (cur) cur.inflight = null; throw err; });
+  memoStore.set(key, { at: e?.at ?? 0, value: e?.value, inflight: p });
+  if (e && e.value !== undefined && now - e.at < staleMs) { void p.catch(() => undefined); return e.value as T; }
+  return p;
+}
+
 export const services = {
-  health: () => get<ServicesHealth>("/v1/health"),
-  roster: () => get<ServicesRoster>("/v1/roster"),
+  health: () => memo("health", 5_000, 30_000, () => get<ServicesHealth>("/v1/health")),
+  roster: () => memo("roster", 4_000, 60_000, () => get<ServicesRoster>("/v1/roster")),
   positions: (wallet: string) => get<ServicesPositions>(`/v1/positions/${wallet}`, 15_000),
-  vaults: () => get<ServicesVault[]>("/v1/vaults", 15_000),
+  vaults: () => memo("vaults", 5_000, 60_000, () => get<ServicesVault[]>("/v1/vaults", 15_000)),
   vaultBid: (vault: string, series: string) => get<ServicesVaultBid | null>(`/v1/vaults/${vault}/bid/${series}`),
   vaultPosition: (vault: string, wallet: string) => get<ServicesVaultPosition>(`/v1/vaults/${vault}/position/${wallet}`),
   prices: (mint: string, sinceUnix: number) => get<ServicesPrices>(`/v1/prices/${mint}?since=${sinceUnix}`),
@@ -70,7 +91,7 @@ export const services = {
     if (q.series) p.set("series", q.series);
     if (q.wallet) p.set("wallet", q.wallet);
     if (q.limit) p.set("limit", String(q.limit));
-    return get<ServicesEvent[]>(`/v1/events?${p.toString()}`);
+    return memo(`events:${p.toString()}`, 5_000, 60_000, () => get<ServicesEvent[]>(`/v1/events?${p.toString()}`));
   }
 };
 

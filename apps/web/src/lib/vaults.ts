@@ -1,5 +1,6 @@
 "use client";
 
+import { fetchJson } from "@/lib/fetch-json";
 import { useCallback, useEffect, useState } from "react";
 import type { ServicesVault } from "./services";
 import type { Market } from "./model";
@@ -14,8 +15,7 @@ export function useVaults(): { vaults: ServicesVault[] | null; error: string | n
   const [vaults, setVaults] = useState<ServicesVault[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const reload = useCallback(() => {
-    fetch("/api/vaults", { cache: "no-store" })
-      .then(async (r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return (await r.json()) as ServicesVault[] | { error: string }; })
+    fetchJson<ServicesVault[] | { error: string }>("/api/vaults")
       .then((j) => { if (Array.isArray(j)) { setVaults(j); setError(null); } else setError(j.error); })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, []);

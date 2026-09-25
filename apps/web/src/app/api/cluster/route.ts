@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rosterData } from "@/lib/roster-data";
+import { services } from "@/lib/services";
 
 export const dynamic = "force-dynamic";
 
@@ -9,8 +9,20 @@ const EXPLORER: Record<string, string | null> = {
   fork: null,
   fixture: null
 };
+const LABEL: Record<string, string> = { fixture: "Offline", fork: "Fork", devnet: "Devnet", mainnet: "Mainnet" };
 
+/** Which cluster the app is reading, from the services' health answer alone: a page never waits on the roster for this. */
 export async function GET() {
-  const d = await rosterData();
-  return NextResponse.json({ cluster: d.cluster, label: d.clusterLabel, programDeployed: d.programDeployed, rpcReachable: d.cluster !== "fixture", explorer: EXPLORER[d.cluster] ?? null, blocked: d.blocked });
+  const built = process.env.NEXT_PUBLIC_CLUSTER ?? "fixture";
+  try {
+    const h = await services.health();
+    const cluster = h.cluster === "fork" ? "fork" : h.cluster === "devnet" ? "devnet" : "mainnet";
+    return NextResponse.json(
+      { cluster, label: LABEL[cluster], programDeployed: !!h.program, rpcReachable: true, explorer: EXPLORER[cluster] ?? null, blocked: h.blocked },
+      { headers: { "cache-control": "public, s-maxage=10, stale-while-revalidate=60" } }
+    );
+  } catch {
+    const cluster = built in LABEL ? built : "fixture";
+    return NextResponse.json({ cluster, label: LABEL[cluster], programDeployed: cluster !== "fixture", rpcReachable: false, explorer: EXPLORER[cluster] ?? null, blocked: null }, { headers: { "cache-control": "no-store" } });
+  }
 }

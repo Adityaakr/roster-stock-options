@@ -14,7 +14,9 @@ import { rosterData } from "@/lib/roster-data";
  * hero's primary element. Every figure comes from rosterData() at request time; the motion catalogue is documented at
  * the top of components/landing/sections.tsx.
  */
-export const dynamic = "force-dynamic";
+// Rendered at most once every fifteen seconds and served from the edge; every fetch inside is cached on the same clock.
+export const revalidate = 15;
+export const fetchCache = "force-cache";
 
 const SOCIAL = "Trade the upside of tokenized stocks on Solana with a fully paid contract. Know your maximum loss before you buy. No borrowing, no funding, no margin calls.";
 export const metadata: Metadata = {

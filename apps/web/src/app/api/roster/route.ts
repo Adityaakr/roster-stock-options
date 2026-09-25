@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { rosterData } from "@/lib/roster-data";
+import { RECONNECTING, rosterData } from "@/lib/roster-data";
 
 export const dynamic = "force-dynamic";
 
@@ -7,5 +7,9 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const m = req.nextUrl.searchParams.get("m") ?? undefined;
   const fresh = req.nextUrl.searchParams.get("fresh") === "1";
-  return NextResponse.json(await rosterData(m, fresh), { headers: { "cache-control": "no-store" } });
+  const d = await rosterData(m, fresh);
+  // The roster changes once a tick, so the edge may serve one answer for five seconds and a stale one while it
+  // refreshes; a read right after a transaction and an offline answer are never cached.
+  const cacheable = !fresh && d.source !== RECONNECTING;
+  return NextResponse.json(d, { headers: { "cache-control": cacheable ? "public, s-maxage=5, stale-while-revalidate=30" : "no-store" } });
 }

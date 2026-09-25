@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   if (!(await servicesReachable())) return NextResponse.json([]);
   try {
-    return NextResponse.json(await services.vaults());
+    return NextResponse.json(await services.vaults(), { headers: { "cache-control": "public, s-maxage=10, stale-while-revalidate=60" } });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 502 });
   }

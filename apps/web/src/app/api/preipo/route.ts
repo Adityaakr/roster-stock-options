@@ -42,5 +42,5 @@ export async function GET() {
       rights: PREIPO_RIGHTS[t.issuer]
     };
   });
-  return NextResponse.json({ cluster: roster.cluster, generatedAt: readRegistry()?.generatedAt ?? null, tokens }, { headers: { "cache-control": "no-store" } });
+  return NextResponse.json({ cluster: roster.cluster, generatedAt: readRegistry()?.generatedAt ?? null, tokens }, { headers: { "cache-control": "public, s-maxage=10, stale-while-revalidate=60" } });
 }

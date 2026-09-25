@@ -9,6 +9,7 @@ import "../../../scripts/env-load";
  * test. On any other cluster the quoter stays blocked on the key. Real data only outside test fixtures (CLAUDE.md 0).
  */
 import { createServer } from "node:http";
+import { gzipSync } from "node:zlib";
 import { Connection, Keypair, PublicKey, type AccountInfo } from "@solana/web3.js";
 import * as anchorNs from "@anchor-lang/core";
 import { RosterClient, ROSTER_PROGRAM_ID, type MarketState, type VaultState, type VaultKind } from "@roster/sdk";
@@ -137,6 +138,12 @@ async function main() {
   let vaultsAnswer: { at: number; body: unknown[] } | null = null;
   const live = new Map<string, MarketLive>();
   let lastTick = 0;
+  // The roster answer never waits on the RPC: the tick keeps the chain clock offset and the protocol account fresh,
+  // and the serialized answer is reused for five seconds, so a slow endpoint cannot make a page wait.
+  let clockOffset = 0;
+  let protocolCache: Awaited<ReturnType<RosterClient["fetchProtocol"]>> | null = null;
+  let rosterAnswer: { at: number; body: string } | null = null;
+  let vaultsRefreshing: Promise<unknown[]> | null = null;
   let blocked: string | null = null;
   // Realised vol per symbol, refreshed hourly: Benchmarks is a slow, keyed endpoint and vol does not move per tick.
   const volCache = new Map<string, { at: number; v: Awaited<ReturnType<typeof estimateVol>> }>();
@@ -244,7 +251,9 @@ async function main() {
   }
 
   async function tick(): Promise<void> {
-    const nowTs = await clockUnix(connection);
+    const nowTs = await clockUnix(connection).catch(() => Math.floor(Date.now() / 1000) + clockOffset);
+    clockOffset = nowTs - Math.floor(Date.now() / 1000);
+    protocolCache = await reader.fetchProtocol().catch(() => protocolCache);
     // On the public endpoint every read is paced; one market at a time keeps a tick inside the pace.
     const concurrency = rpcState.degraded ? 1 : MARKET_CONCURRENCY;
     // One batched snapshot call for every market, cached for a minute inside the registry module.
@@ -378,20 +387,31 @@ async function main() {
     });
     await pullEvents();
     lastTick = Date.now();
+    rosterAnswer = null;
     if (blocked) console.warn(`[services] blocked on ${blocked}: the quoter cannot price (docs/OPERATOR.md)`);
   }
 
   const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://x");
-    const json = (code: number, body: unknown) => { res.writeHead(code, { "content-type": "application/json", "access-control-allow-origin": "*" }); res.end(JSON.stringify(body, (_k, v) => (typeof v === "bigint" ? v.toString() : v))); };
+    const stringify = (body: unknown) => JSON.stringify(body, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
+    // Answers above a kilobyte go out gzipped when the caller accepts it: the roster is a few hundred KB of JSON.
+    const gzipOk = /\bgzip\b/.test(String(req.headers["accept-encoding"] ?? ""));
+    const send = (code: number, text: string) => {
+      if (gzipOk && text.length > 1024) { res.writeHead(code, { "content-type": "application/json", "access-control-allow-origin": "*", "content-encoding": "gzip", vary: "accept-encoding" }); res.end(gzipSync(text)); }
+      else { res.writeHead(code, { "content-type": "application/json", "access-control-allow-origin": "*" }); res.end(text); }
+    };
+    const json = (code: number, body: unknown) => send(code, stringify(body));
     try {
       if (url.pathname === "/v1/health") return json(200, { ok: true, cluster, lastTick, blocked, tickMs: TICK_MS, program: ROSTER_PROGRAM_ID.toBase58(), hermesKeyed: hermes.keyed });
       if (url.pathname === "/v1/roster") {
-        const nowTs = await clockUnix(connection);
+        if (rosterAnswer && Date.now() - rosterAnswer.at < 5_000) return send(200, rosterAnswer.body);
+        const nowTs = Math.floor(Date.now() / 1000) + clockOffset;
         const wall = Math.floor(Date.now() / 1000);
-        const markets = [...live.values()].map((m) => ({ symbol: m.meta.symbol, name: m.meta.name, wrapper: m.wrapper, feeBps: m.feeBps, mint: m.market.mint.toBase58(), sparkline: store.priceHistory(`mark:${m.market.mint.toBase58()}`, wall - 86_400).map((p) => [p.publish_time, p.price] as [number, number]).filter((_, i, a) => i % Math.max(1, Math.floor(a.length / 120)) === 0), market: m.market.address.toBase58(), decimals: m.market.decimals, tier: m.market.tier, listed: m.market.listed, paused: m.market.paused || m.paused, hasTransferFee: m.market.hasTransferFee, hasPermanentDelegate: m.market.hasPermanentDelegate, pausable: m.market.pausable, hookProgram: m.market.hookProgram.toBase58(), allowedExpiries: m.market.allowedExpiries.map(String), strikeStep: m.market.strikeStep.toString(), minLots6: m.market.minLots6.toString(), maxLots6: m.market.maxLots6.toString(), maxLiveSeries: m.market.maxLiveSeries, liveSeries: m.market.liveSeries, price: m.price, priceAt: m.priceAt, priceSource: m.priceSource, change24hPct: m.change24hPct, holders: m.holders, replicaOf: m.replicaOf, logo: m.logo, wrappersOfUnderlying: m.wrappersOfUnderlying, underlyingSymbol: m.underlyingSymbol, equityPrice: m.equityPrice, basisBps: m.basisBps, issuerMarkPrice: m.issuerMarkPrice, markSpreadBps: m.markSpreadBps, trade: m.trade, markSparkline: m.issuerMarkPrice !== null ? store.priceHistory(`issuer_mark:${m.market.mint.toBase58()}`, wall - 86_400).map((p) => [p.publish_time, p.price] as [number, number]).filter((_, i, a) => i % Math.max(1, Math.floor(a.length / 120)) === 0) : undefined, multiplier: m.multiplier, pendingActivationTs: m.pendingActivationTs, inActivationWindow: m.inActivationWindow, vol: m.vol, volSource: m.volSource, series: store.series(m.market.address.toBase58()).map((s) => ({ ...s, asks: JSON.parse(s.asks_json), writers: JSON.parse(s.writers_json), asks_json: undefined, writers_json: undefined })) }));
-        const protocol = await reader.fetchProtocol().catch(() => null);
-        return json(200, { cluster, programDeployed: true, program: ROSTER_PROGRAM_ID.toBase58(), nowTs, session: sessionAt(nowTs), feeBps: protocol?.feeBps ?? null, keeperFeeUsdc: protocol?.keeperFeeUsdc.toString() ?? null, graceSecs: protocol?.graceSecs.toString() ?? null, treasury: protocol?.treasury.toBase58() ?? null, quoter: quoterClient.wallet.toBase58(), blocked, hermesKeyed: hermes.keyed, markets, quoterLog: quoter.log.slice(-40), keeperLog: keeper.log.slice(-40) });
+        const markets = [...live.values()].map((m) => ({ symbol: m.meta.symbol, name: m.meta.name, wrapper: m.wrapper, feeBps: m.feeBps, mint: m.market.mint.toBase58(), sparkline: store.priceHistory(`mark:${m.market.mint.toBase58()}`, wall - 86_400).map((p) => [p.publish_time, Number(p.price.toPrecision(6))] as [number, number]).filter((_, i, a) => i % Math.max(1, Math.floor(a.length / 96)) === 0), market: m.market.address.toBase58(), decimals: m.market.decimals, tier: m.market.tier, listed: m.market.listed, paused: m.market.paused || m.paused, hasTransferFee: m.market.hasTransferFee, hasPermanentDelegate: m.market.hasPermanentDelegate, pausable: m.market.pausable, hookProgram: m.market.hookProgram.toBase58(), allowedExpiries: m.market.allowedExpiries.map(String), strikeStep: m.market.strikeStep.toString(), minLots6: m.market.minLots6.toString(), maxLots6: m.market.maxLots6.toString(), maxLiveSeries: m.market.maxLiveSeries, liveSeries: m.market.liveSeries, price: m.price, priceAt: m.priceAt, priceSource: m.priceSource, change24hPct: m.change24hPct, holders: m.holders, replicaOf: m.replicaOf, logo: m.logo, wrappersOfUnderlying: m.wrappersOfUnderlying, underlyingSymbol: m.underlyingSymbol, equityPrice: m.equityPrice, basisBps: m.basisBps, issuerMarkPrice: m.issuerMarkPrice, markSpreadBps: m.markSpreadBps, trade: m.trade, markSparkline: m.issuerMarkPrice !== null ? store.priceHistory(`issuer_mark:${m.market.mint.toBase58()}`, wall - 86_400).map((p) => [p.publish_time, Number(p.price.toPrecision(6))] as [number, number]).filter((_, i, a) => i % Math.max(1, Math.floor(a.length / 96)) === 0) : undefined, multiplier: m.multiplier, pendingActivationTs: m.pendingActivationTs, inActivationWindow: m.inActivationWindow, vol: m.vol, volSource: m.volSource, series: store.series(m.market.address.toBase58()).map((s) => ({ ...s, asks: JSON.parse(s.asks_json), writers: JSON.parse(s.writers_json), asks_json: undefined, writers_json: undefined })) }));
+        const protocol = protocolCache;
+        const text = stringify({ cluster, programDeployed: true, program: ROSTER_PROGRAM_ID.toBase58(), nowTs, session: sessionAt(nowTs), feeBps: protocol?.feeBps ?? null, keeperFeeUsdc: protocol?.keeperFeeUsdc.toString() ?? null, graceSecs: protocol?.graceSecs.toString() ?? null, treasury: protocol?.treasury.toBase58() ?? null, quoter: quoterClient.wallet.toBase58(), blocked, hermesKeyed: hermes.keyed, markets, quoterLog: quoter.log.slice(-40), keeperLog: keeper.log.slice(-40) });
+        rosterAnswer = { at: Date.now(), body: text };
+        return send(200, text);
       }
       const prot = url.pathname.match(/^\/v1\/protection\/([1-9A-HJ-NP-Za-km-z]+)$/);
       if (prot) {
@@ -453,27 +473,33 @@ async function main() {
       if (url.pathname === "/v1/vaults") {
         // Every vault's balances and epoch records are live reads; one answer serves every page open for ten seconds,
         // and the vaults are read side by side rather than one after another.
+        const readVaults = async (): Promise<unknown[]> => {
+          const all = [...vaultsLive].flatMap(([symbol, vs]) => vs.map((v) => ({ symbol, v })));
+          const out = await Promise.all(all.map(async ({ symbol, v }) => {
+            {
+              const epochs = v.epoch > 0 ? await reader.fetchEpochRecords(v.address, Array.from({ length: Math.min(v.epoch, 30) }, (_, i) => v.epoch - 1 - i)).catch(() => []) : [];
+              const [collateral, other] = await Promise.all([connection.getAccountInfo(v.collateralAta, "confirmed"), connection.getAccountInfo(v.otherAta, "confirmed")]);
+              return ({
+                symbol, address: v.address.toBase58(), kind: v.kind, halted: v.halted, manager: v.manager.toBase58(), shareMint: v.shareMint.toBase58(),
+                collateralMint: v.collateralMint.toBase58(), otherMint: v.otherMint.toBase58(), collateralAta: v.collateralAta.toBase58(), otherAta: v.otherAta.toBase58(),
+                collateralBalance: collateral ? collateral.data.readBigUInt64LE(64).toString() : "0", otherBalance: other ? other.data.readBigUInt64LE(64).toString() : "0",
+                epoch: v.epoch, epochStartTs: Number(v.epochStartTs), nextRollTs: Number(v.nextRollTs), rollIntervalSecs: Number(v.rollIntervalSecs),
+                totalShares: v.totalShares.toString(), lockedRaw: v.lockedRaw.toString(), pendingDepositRaw: v.pendingDepositRaw.toString(), pendingWithdrawShares: v.pendingWithdrawShares.toString(),
+                reservedCollateralRaw: v.reservedCollateralRaw.toString(), reservedOther: v.reservedOther.toString(), capPerSeriesLots6: v.capPerSeriesLots6.toString(), spreadBps: v.spreadBps,
+                lastMarkUsdcPerLot: v.lastMarkUsdcPerLot.toString(), markBandBps: v.markBandBps, epochPremiumIn: v.epochPremiumIn.toString(), epochBuybackOut: v.epochBuybackOut.toString(), epochAssignedLots6: v.epochAssignedLots6.toString(),
+                navPerShare1e6: v.navPerShare1e6.toString(), epochPnlPerShare1e6: v.epochPnlPerShare1e6.toString(),
+                epochs: epochs.sort((a, b) => a.epoch - b.epoch).map((r) => ({ epoch: r.epoch, rolledAt: Number(r.rolledAt), navCollateralRaw: r.navCollateralRaw.toString(), navOther: r.navOther.toString(), markUsdcPerLot: r.markUsdcPerLot.toString(), totalSharesAfter: r.totalSharesAfter.toString(), premiumIn: r.premiumIn.toString(), buybackOut: r.buybackOut.toString(), assignedLots6: r.assignedLots6.toString(), pnlPerShare1e6: r.pnlPerShare1e6.toString(), sharesPerRaw1e12: r.sharesPerRaw1e12.toString(), collateralPerShare1e12: r.collateralPerShare1e12.toString(), otherPerShare1e12: r.otherPerShare1e12.toString() })),
+              });
+            }
+          }));
+          vaultsAnswer = { at: Date.now(), body: out };
+          return out;
+        };
         if (vaultsAnswer && Date.now() - vaultsAnswer.at < 10_000) return json(200, vaultsAnswer.body);
-        const all = [...vaultsLive].flatMap(([symbol, vs]) => vs.map((v) => ({ symbol, v })));
-        const out = await Promise.all(all.map(async ({ symbol, v }) => {
-          {
-            const epochs = v.epoch > 0 ? await reader.fetchEpochRecords(v.address, Array.from({ length: Math.min(v.epoch, 30) }, (_, i) => v.epoch - 1 - i)).catch(() => []) : [];
-            const [collateral, other] = await Promise.all([connection.getAccountInfo(v.collateralAta, "confirmed"), connection.getAccountInfo(v.otherAta, "confirmed")]);
-            return ({
-              symbol, address: v.address.toBase58(), kind: v.kind, halted: v.halted, manager: v.manager.toBase58(), shareMint: v.shareMint.toBase58(),
-              collateralMint: v.collateralMint.toBase58(), otherMint: v.otherMint.toBase58(), collateralAta: v.collateralAta.toBase58(), otherAta: v.otherAta.toBase58(),
-              collateralBalance: collateral ? collateral.data.readBigUInt64LE(64).toString() : "0", otherBalance: other ? other.data.readBigUInt64LE(64).toString() : "0",
-              epoch: v.epoch, epochStartTs: Number(v.epochStartTs), nextRollTs: Number(v.nextRollTs), rollIntervalSecs: Number(v.rollIntervalSecs),
-              totalShares: v.totalShares.toString(), lockedRaw: v.lockedRaw.toString(), pendingDepositRaw: v.pendingDepositRaw.toString(), pendingWithdrawShares: v.pendingWithdrawShares.toString(),
-              reservedCollateralRaw: v.reservedCollateralRaw.toString(), reservedOther: v.reservedOther.toString(), capPerSeriesLots6: v.capPerSeriesLots6.toString(), spreadBps: v.spreadBps,
-              lastMarkUsdcPerLot: v.lastMarkUsdcPerLot.toString(), markBandBps: v.markBandBps, epochPremiumIn: v.epochPremiumIn.toString(), epochBuybackOut: v.epochBuybackOut.toString(), epochAssignedLots6: v.epochAssignedLots6.toString(),
-              navPerShare1e6: v.navPerShare1e6.toString(), epochPnlPerShare1e6: v.epochPnlPerShare1e6.toString(),
-              epochs: epochs.sort((a, b) => a.epoch - b.epoch).map((r) => ({ epoch: r.epoch, rolledAt: Number(r.rolledAt), navCollateralRaw: r.navCollateralRaw.toString(), navOther: r.navOther.toString(), markUsdcPerLot: r.markUsdcPerLot.toString(), totalSharesAfter: r.totalSharesAfter.toString(), premiumIn: r.premiumIn.toString(), buybackOut: r.buybackOut.toString(), assignedLots6: r.assignedLots6.toString(), pnlPerShare1e6: r.pnlPerShare1e6.toString(), sharesPerRaw1e12: r.sharesPerRaw1e12.toString(), collateralPerShare1e12: r.collateralPerShare1e12.toString(), otherPerShare1e12: r.otherPerShare1e12.toString() })),
-            });
-          }
-        }));
-        vaultsAnswer = { at: Date.now(), body: out };
-        return json(200, out);
+        // A stale answer goes out at once while one refresh runs behind it; only the very first call waits on the RPC.
+        if (!vaultsRefreshing) vaultsRefreshing = readVaults().finally(() => { vaultsRefreshing = null; });
+        if (vaultsAnswer) { void vaultsRefreshing.catch(() => undefined); return json(200, vaultsAnswer.body); }
+        return json(200, await vaultsRefreshing);
       }
       const vbid = url.pathname.match(/^\/v1\/vaults\/([1-9A-HJ-NP-Za-km-z]+)\/bid\/([1-9A-HJ-NP-Za-km-z]+)$/);
       if (vbid) {

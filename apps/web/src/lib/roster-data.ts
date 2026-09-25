@@ -204,7 +204,7 @@ async function fromServices(r: ServicesRoster, selected: string | undefined, fre
     exercises,
     feeBps: r.feeBps ?? 0,
     keeperFeeUsd: r.keeperFeeUsdc ? Number(r.keeperFeeUsdc) / 1e6 : 0,
-    source: `${label}. Program ${r.program}. Marks from ${pick?.priceSource === "hermes" ? "Pyth Hermes" : pick?.priceSource === "reference" ? "a fork-only reference price" : pick?.priceSource === "xstocks" ? "the xStocks API quote (no Pyth entitlement; display only off the fork)" : pick?.priceSource === "jupiter" ? "Jupiter\u2019s routed price (no Pyth entitlement and no issuer quote; display only off the fork)" : pick?.priceSource === "prestocks" ? "the PreStocks token price, where the token trades (no Pyth feed exists; the issuer's mark is shown beside it)" : "no feed"}; asks, reserves and positions read from the program's accounts by the indexer.${r.blocked ? ` The quoter is blocked on ${r.blocked}.` : ""}`
+    source: `${label}. Program ${r.program}. Marks from ${pick?.priceSource === "hermes" ? "Pyth Hermes" : pick?.priceSource === "reference" ? "a fork-only reference price" : pick?.priceSource === "xstocks" ? "the xStocks API quote (no Pyth entitlement; display only off the fork)" : pick?.priceSource === "jupiter" ? "Jupiter\u2019s routed price (no Pyth entitlement and no issuer quote; display only off the fork)" : pick?.priceSource === "prestocks" ? "the PreStocks token price, where the token trades (no Pyth feed exists; the issuer's mark is shown beside it)" : pick?.priceSource === "tokens.xyz" ? "the Tokens API market snapshot (the Pyth key is not entitled to these feeds)" : "no feed"}; asks, reserves and positions read from the program's accounts by the indexer.${r.blocked ? ` The quoter is blocked on ${r.blocked}.` : ""}`
   };
 }
 

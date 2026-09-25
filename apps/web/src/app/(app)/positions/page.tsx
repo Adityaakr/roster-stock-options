@@ -1,5 +1,6 @@
 "use client";
 
+import { fetchJson } from "@/lib/fetch-json";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -49,7 +50,11 @@ export default function PositionsPage() {
             <Stat k="Open positions" v={String(list.filter((p) => !p.expired).length)} s={list.some((p) => p.expired) ? `${list.filter((p) => p.expired).length} expired` : undefined} />
             <Stat k="Premium paid" v={`$${usdSmart(list.reduce((a, p) => a + p.premiumPaid, 0))}`} s="the most these can lose, plus fees" />
             <Stat k="In the money" v={String(list.filter((p) => { const m = markets.get(p.market); return m?.mark !== null && m?.mark !== undefined && inTheMoney(p.side, p.strike, m.mark); }).length)} s={`of ${list.length}, at the current marks`} />
-            <Stat k="Auto-exercise on" v={String(list.filter((p) => p.autoExercise).length)} s="positions with the delegate enabled" />
+            {data.autoExerciseLive ? <Stat k="Auto-exercise on" v={String(list.filter((p) => p.autoExercise).length)} s="positions with the delegate enabled" /> : (() => {
+              const open = list.filter((p) => !p.expired).sort((a, b) => a.expiryTs - b.expiryTs);
+              const next = open[0];
+              return <Stat k="Next expiry" v={next ? countdown(next.expiryTs, data.nowTs) : "none"} s={next ? `${next.market} ${productName(next.side)}, exercise before then` : "no open positions"} />;
+            })()}
           </div>
           <div className="card">
             {list.map((p) => <PositionRow key={p.id} p={p} market={markets.get(p.market)} nowTs={data.nowTs} keeperFeeUsd={data.keeperFeeUsd} programDeployed={cluster.programDeployed} autoExerciseLive={data.autoExerciseLive} onChange={reload} />)}
@@ -96,8 +101,7 @@ function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExer
   useEffect(() => {
     if (!p.series || !market?.address) return;
     let live = true;
-    fetch("/api/vaults", { cache: "no-store" })
-      .then((r) => (r.ok ? (r.json() as Promise<{ address: string; symbol: string; kind: string }[]>) : []))
+    fetchJson<{ address: string; symbol: string; kind: string }[]>("/api/vaults").catch(() => [])
       .then(async (vaults) => {
         const v = Array.isArray(vaults) ? vaults.find((x) => x.symbol === p.market && x.kind === (p.side === "call" ? "covered_call" : "cash_secured_put")) : undefined;
         if (!v) return null;
@@ -146,15 +150,15 @@ function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExer
       <div style={{ minWidth: 0, flex: "1 1 360px" }}>
         <div className="flex items-center gap-2 flex-wrap">
           <Link href={`/trade/${p.termId}`} className="h6">{symbol} {productName(p.side)} at ${usdK(p.strike)} · {remaining} {symbol}</Link>
-          {p.expired ? <Badge tone="amber" dot>expired</Badge> : <Badge tone={itm ? "green" : "amber"} dot>{mark === null ? "no feed" : itm ? "in the money" : "out of the money"}</Badge>}
+          {p.expired ? <Badge tone="amber" dot>expired</Badge> : <Badge tone={!market || mark === null ? undefined : itm ? "green" : "amber"} dot>{!market ? "reading price" : mark === null ? "no price yet" : itm ? "in the money" : "out of the money"}</Badge>}
           <Badge>{dayLabel(p.expiryTs)} · {p.expired ? "settled by the term" : countdown(p.expiryTs, nowTs)}</Badge>
         </div>
         <div className="small" style={{ marginTop: 8 }}>
           <KV items={[
             { k: "Premium paid", v: <span className="mono">${usdSmart(p.premiumPaid)}</span> },
-            { k: "Intrinsic value now", v: <span className={`mono ${value !== null && value > 0 ? "up" : ""}`}>{value === null ? "no feed" : `$${usdSmart(value)}`}</span> },
+            { k: "Intrinsic value now", v: <span className={`mono ${value !== null && value > 0 ? "up" : ""}`}>{!market ? "reading…" : value === null ? "no price yet" : value > 0 ? `$${usdSmart(value)}` : "$0, out of the money"}</span> },
             { k: "Exercising requires", v: <span className="mono">{words}</span> },
-            { k: "Auto-exercise", v: p.autoExercise ? (autoExerciseLive ? `on: the keeper exercises in the hour before expiry if in the money by more than $${usd(keeperFeeUsd)}, paid from the fee vault` : `on: the delegate is set, but no keeper cranks on this cluster yet (it needs a Pyth key), so exercise yourself before expiry`) : "off: nothing happens at expiry unless you exercise" },
+            { k: "At expiry", v: autoExerciseLive ? (p.autoExercise ? `auto-exercised in the last hour if in the money by more than $${usd(keeperFeeUsd)}, fee paid by the protocol` : "nothing happens unless you exercise; turn on auto-exercise to have it done for you") : "exercise yourself before expiry; an unexercised contract expires worthless" },
             { k: "Bought", v: <span className="mono">{p.signature ? `${p.signature.slice(0, 8)}…${p.signature.slice(-8)}` : "no signature on this cluster"}</span> },
             { k: "Vault bid", v: bid ? <span className="mono">${usdSmart(bid.perShare)} per share for up to {usdK(bid.maxShares)} {symbol}: sell without paying the strike</span> : <span className="muted">none right now; exercise or hold to expiry</span> },
             ...(p.exercised > 0 ? [{ k: "Exercised so far", v: <span className="mono">{p.exercised} {symbol}</span> }] : [])
@@ -177,7 +181,8 @@ function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExer
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <button className="btn secondary sm" onClick={toggleAuto} disabled={!can || busy(auto.state)} data-testid="auto-toggle">{p.autoExercise ? "Revoke auto-exercise" : "Enable auto-exercise"}</button>
+            {/* Auto-exercise is offered only where a keeper cranks it; an existing opt-in can always be revoked. */}
+            {autoExerciseLive || p.autoExercise ? <button className="btn secondary sm" onClick={toggleAuto} disabled={!can || busy(auto.state)} data-testid="auto-toggle">{p.autoExercise ? "Revoke auto-exercise" : "Enable auto-exercise"}</button> : null}
             <button className="btn secondary sm" onClick={() => setConfirm(true)} disabled={remaining === 0 || p.expired} data-testid="exercise">Exercise now</button>
             {bid && bid.maxShares > 0 ? <button className="btn primary sm" onClick={sellToVault} disabled={!can || busy(sell.state)} data-testid="sell-to-vault" title="The vault's live bid per share; the fill is refused below one percent under it">Sell {Math.min(count, bid.maxShares, remaining)} at ${usdSmart(bid.perShare)}</button> : null}
           </div>

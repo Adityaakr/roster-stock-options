@@ -115,7 +115,7 @@ function ActInner({ id }: { id: string }) {
                 { k: `Fee, ${data.feeBps} bps`, v: <span className="mono">{c.fillable ? `$${usd(c.fee)}` : "n/a"}</span> },
                 { k: "Total", v: <span className="mono ink" style={{ fontWeight: 500 }} data-testid="total">{c.fillable ? `$${usdSmart(c.total)}` : "n/a"}</span> },
                 { k: "Cost as a share of the mark", v: <span className="mono">{ask === null || u.mark <= 0 ? "n/a" : `${((ask / u.mark) * 100).toFixed(2)}%`}</span> },
-                { k: "Backed by", v: c.fillable ? `${c.writers} of ${live.length} live maker${live.length === 1 ? "" : "s"} at this size, collateral locked` : `${Math.floor(t.capacity)} ${u.symbol} available` },
+                { k: "Backed by", v: c.fillable ? `${c.writers} of ${live.length} live maker${live.length === 1 ? "" : "s"}, collateral locked` : `${Math.floor(t.capacity)} ${u.symbol} available` },
                 { k: "Fillable on this term", v: <span className="mono">{Math.floor(t.capacity)} {u.symbol}</span> },
                 { k: "Referrer", v: "none" }
               ]} />

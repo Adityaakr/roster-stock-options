@@ -6,7 +6,6 @@ import { Suspense, useSyncExternalStore, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Icon } from "@/components/icons";
 import { WalletMenu } from "@/components/wallet-menu";
-import { Badge } from "@/components/ui";
 import { useCluster } from "@/lib/cluster";
 
 const NAV = [
@@ -108,10 +107,7 @@ function Shell({ children }: { children: ReactNode }) {
             <span>/</span>
             <b>{CRUMB[first] ?? first}</b>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge dot tone={cluster.programDeployed ? "green" : "amber"}>{cluster.label}</Badge>
-            <WalletMenu />
-          </div>
+          <WalletMenu />
         </header>
         <main className="main">{children}</main>
       </div>

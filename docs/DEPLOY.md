@@ -36,7 +36,7 @@ Deploy `Dockerfile.services`, or run `pnpm tsx packages/services/src/main.ts` un
 | `NEXT_PUBLIC_RPC_URL` | **leave empty.** Set it only for a public endpoint with no key in it; empty means the browser reads through `/api/rpc` and the provider key stays on the server |
 | `DEPLOYER_SECRET_KEY` | devnet only, for the faucet's mint authority. Never set it on a mainnet deployment |
 | `DEVNET_MINTS_JSON` | devnet only, the contents of `fixtures/devnet-mints.json`, if the deployment does not ship the file |
-| `GEO_BLOCKED_COUNTRIES` | `US,GB,CA,AU` at minimum. **The gate only works behind an edge that sets a country header** (`x-vercel-ip-country` or `cf-ipcountry`); with no header nothing is blocked |
+| `GEO_BLOCKED_COUNTRIES` | `US,GB,CA,AU` at minimum. **The gate only works behind an edge that sets a country header** (`x-vercel-ip-country` or `cf-ipcountry`); with no header nothing is blocked. **The current deployment serves the web app from Railway, which sets no such header: put Cloudflare in front, or the gate is inert** |
 
 ## 3. After the first deploy
 

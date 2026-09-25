@@ -38,3 +38,35 @@ describe("ask decision", () => {
     expect(ps).toEqual([182_000_000n, 178_000_000n, 173_000_000n]);
   });
 });
+
+describe("gridPlan: the cap never leaves the book dark at an expiry", async () => {
+  const { gridPlan } = await import("./quoter");
+  const H = 3600n;
+  const now = 1_000_000n;
+  const e1 = now + 20n * H; // tomorrow
+  const e2 = now + 44n * H; // the day after
+  const e3 = now + 7n * 24n * H;
+  const sides = [{ side: "call" as const, strikes: [10n, 11n, 12n] }, { side: "put" as const, strikes: [9n, 8n, 7n] }];
+
+  it("gives both of the next two expiries an Upside and a Floor before any second strike", () => {
+    const first4 = gridPlan([e1, e2, e3], now, H, 1, sides).pairs.slice(0, 4).map((p) => `${p.side}@${p.expiry === e1 ? 1 : p.expiry === e2 ? 2 : 3}`);
+    expect(first4).toEqual(["call@1", "put@1", "call@2", "put@2"]);
+  });
+
+  it("never creates a series for an expiry inside the grace period, but keeps quoting it", () => {
+    const soon = now + H / 2n;
+    const plan = gridPlan([soon, e1, e2], now, H, 1, sides);
+    expect(plan.pairs.some((p) => p.expiry === soon)).toBe(false);
+    expect(plan.quotable).toContain(soon);
+  });
+
+  it("quotes two creatable expiries on Tier 2, plus any about to expire", () => {
+    expect(gridPlan([e1, e2, e3], now, H, 2, sides).quotable).toEqual([e1, e2]);
+    expect(gridPlan([now + 10n, e1, e2, e3], now, H, 2, sides).quotable).toEqual([now + 10n, e1, e2]);
+  });
+
+  it("with a cap of eight covers two expiries with two strikes a side each", () => {
+    const eight = gridPlan([e1, e2, e3], now, H, 1, sides).pairs.slice(0, 8);
+    for (const e of [e1, e2]) for (const side of ["call", "put"]) expect(eight.filter((p) => p.expiry === e && p.side === side).length).toBe(2);
+  });
+});

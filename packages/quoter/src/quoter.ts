@@ -93,35 +93,31 @@ export class Quoter {
     // 1. Keep the grid populated: three strikes a side per allowed expiry, within the live cap.
     let live = m.liveSeries;
     let capSaid = false;
-    // Tier 2 quotes the nearest expiry, and the next one as well once the nearest is within grace of expiring, so the
-    // market never goes dark between an expiry and the close that frees its series slots.
-    const ahead = m.allowedExpiries.filter((e) => e > BigInt(ctx.nowTs)).sort((a, b) => (a < b ? -1 : 1));
-    const nearExpiry = ahead[0] !== undefined && ahead[0] - BigInt(ctx.nowTs) <= BigInt(ctx.graceSecs);
-    const quotable = ahead.slice(0, ctx.tier === 2 ? (nearExpiry ? 2 : 1) : undefined);
-    for (const expiry of quotable) {
-      // Both sides on every mint: a Floor on a transfer-fee mint has the holder deliver gross (docs/03-prestocks-decision.md).
-      for (const side of ["call", "put"] as ("call" | "put")[]) {
-        for (const strike of gridStrikes(side, forwardPerLot, m.strikeStep).slice(0, this.cfg.strikesPerSide)) {
-          if (strike < m.minStrike || strike > m.maxStrike) continue;
-          const key = `${side}-${strike}-${expiry}`;
-          if (byKey.has(key)) continue;
-          if (live >= m.maxLiveSeries) {
-            if (!capSaid) this.say({ at, market: mk, action: "skip", detail: `live series cap ${m.maxLiveSeries} reached; grid strikes wait for a series to close` });
-            capSaid = true;
-            continue;
-          }
-          try {
-            const { tx, series } = await this.client.createSeries(m, side, strike, expiry);
-            await this.client.send(tx);
-            const s = await this.client.fetchSeries(series);
-            if (s) byKey.set(key, s);
-            live += 1;
-            sent += 1;
-            this.say({ at, market: mk, series: series.toBase58(), action: "create_series", detail: `${side} ${Number(strike) / 1e6} exp ${expiry}` });
-          } catch (e) {
-            this.say({ at, market: mk, action: "skip", detail: `create_series failed: ${(e as Error).message.slice(0, 120)}` });
-          }
-        }
+    // The cap is spread so the book never goes dark at an expiry. Series are only created for expiries more than a
+    // grace period away (one that expires sooner would hold a slot for nothing), and the slots go by strike rank
+    // across the next two such expiries, calls and puts alike: the at-the-money Upside and Floor of both expiries
+    // first, then the next strike of each. When the nearer expiry passes, the later one already carries both sides.
+    // Further expiries take what is left. Tier 2 quotes two expiries rather than one for the same reason.
+    const strikesBySide = (["call", "put"] as ("call" | "put")[]).map((side) => ({ side, strikes: gridStrikes(side, forwardPerLot, m.strikeStep).slice(0, this.cfg.strikesPerSide).filter((k) => k >= m.minStrike && k <= m.maxStrike) }));
+    const { quotable, pairs } = gridPlan(m.allowedExpiries, BigInt(ctx.nowTs), BigInt(ctx.graceSecs), ctx.tier, strikesBySide);
+    for (const { side, strike, expiry } of pairs) {
+      const key = `${side}-${strike}-${expiry}`;
+      if (byKey.has(key)) continue;
+      if (live >= m.maxLiveSeries) {
+        if (!capSaid) this.say({ at, market: mk, action: "skip", detail: `live series cap ${m.maxLiveSeries} reached; grid strikes wait for a series to close` });
+        capSaid = true;
+        continue;
+      }
+      try {
+        const { tx, series } = await this.client.createSeries(m, side, strike, expiry);
+        await this.client.send(tx);
+        const s = await this.client.fetchSeries(series);
+        if (s) byKey.set(key, s);
+        live += 1;
+        sent += 1;
+        this.say({ at, market: mk, series: series.toBase58(), action: "create_series", detail: `${side} ${Number(strike) / 1e6} exp ${expiry}` });
+      } catch (e) {
+        this.say({ at, market: mk, action: "skip", detail: `create_series failed: ${(e as Error).message.slice(0, 120)}` });
       }
     }
     // 2. Price and refresh asks on every live series.
@@ -234,3 +230,26 @@ export class Quoter {
 }
 
 export { TOKEN_2022_PROGRAM_ID, PublicKey };
+
+/**
+ * Which series to create, in order, and which expiries to keep quoting. Pure, so the allocation is tested without a
+ * chain. Expiries within `grace` of now are quoted (their series exist) but never created; creation goes by strike
+ * rank across the next two creatable expiries, both sides, then further expiries. Tier 2 quotes two expiries.
+ */
+export function gridPlan(
+  allowed: bigint[],
+  now: bigint,
+  grace: bigint,
+  tier: number,
+  strikesBySide: { side: "call" | "put"; strikes: bigint[] }[]
+): { quotable: bigint[]; pairs: { side: "call" | "put"; strike: bigint; expiry: bigint }[] } {
+  const ahead = allowed.filter((e) => e > now).sort((a, b) => (a < b ? -1 : 1));
+  const creatable = ahead.filter((e) => e - now > grace);
+  const quotable = tier === 2 ? ahead.slice(0, ahead.length - creatable.length + 2) : ahead;
+  const rows: { side: "call" | "put"; strike: bigint; expiry: bigint; rank: number; band: number }[] = [];
+  creatable.filter((e) => quotable.includes(e)).forEach((expiry, i) => {
+    for (const { side, strikes } of strikesBySide) strikes.forEach((strike, rank) => rows.push({ side, strike, expiry, rank, band: i < 2 ? 0 : 1 }));
+  });
+  rows.sort((a, b) => a.band - b.band || a.rank - b.rank || (a.expiry < b.expiry ? -1 : a.expiry > b.expiry ? 1 : 0) || (a.side === b.side ? 0 : a.side === "call" ? -1 : 1));
+  return { quotable, pairs: rows.map(({ side, strike, expiry }) => ({ side, strike, expiry })) };
+}

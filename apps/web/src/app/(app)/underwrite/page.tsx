@@ -8,7 +8,7 @@ import { MarketLogo } from "@/components/market-list";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnect } from "@/lib/connect";
 import { TxStatus } from "@/components/tx-status";
-import { Badge, ErrorState, KV, Loading } from "@/components/ui";
+import { Badge, Empty, ErrorState, KV, Loading } from "@/components/ui";
 import { useCluster } from "@/lib/cluster";
 import { usd, usd0, usdK, usdSmart, dayLabel, countdown } from "@/lib/format";
 import { commitMath, DEFAULT_SIZE, lots6ForShares, sharesOf, type Side, type Term, type WriteIdea } from "@/lib/model";
@@ -44,7 +44,7 @@ function UnderwriteInner() {
   const connect = useConnect();
   const tx = useTransaction();
   const wanted = params.get("t");
-  const [side, setSide] = useState<Side>(wanted?.includes("-call-") ? "call" : "put");
+  const [sideWanted, setSide] = useState<Side>(wanted?.includes("-call-") ? "call" : "put");
   const [termId, setTermId] = useState<string | null>(wanted);
   const [size, setSize] = useState(() => Math.max(0, Number(params.get("size"))) || 20);
   const [ask, setAsk] = useState<number | null>(null);
@@ -70,6 +70,15 @@ function UnderwriteInner() {
   }, [wanted, data]);
 
   const ideas = useMemo(() => data?.ideas ?? [], [data]);
+  // This market has nothing quoted on either side right now (a pre-IPO token between quotes, a link to an expired
+  // term): move to the deepest quoted term anywhere rather than stopping on an empty page.
+  const elsewhere = useMemo(() => {
+    if (!data || data.terms.some((x) => !x.halted)) return null;
+    return [...ideas].filter((i) => i.capacity > 0).sort((a, b) => b.capacity * b.strike - a.capacity * a.strike)[0] ?? null;
+  }, [data, ideas]);
+  useEffect(() => {
+    if (elsewhere) router.replace(`/underwrite?m=${elsewhere.market}&t=${elsewhere.id}`);
+  }, [elsewhere, router]);
   // Trending: one term per market, three markets. Markets with buying come first, by what was bought; the rest of
   // the strip is the deepest quoted term on markets nobody has bought on yet, and each card says which it is, so the
   // strip reads across the product without pretending a quote is a fill.
@@ -86,13 +95,17 @@ function UnderwriteInner() {
 
   if (error) return <ErrorState message={`Could not read the terms: ${error}`} next="Reload the page." />;
   if (!data) return <Loading what="terms" />;
-  const terms = data.terms.filter((t) => t.side === side && !t.halted);
+  // The side asked for, unless it has no live term here and the other side does: never an empty form over a live market.
+  const live = data.terms.filter((x) => !x.halted);
+  const side: Side = live.some((x) => x.side === sideWanted) ? sideWanted : live.some((x) => x.side !== sideWanted) ? (sideWanted === "put" ? "call" : "put") : sideWanted;
+  const terms = live.filter((t) => t.side === side);
   const t = terms.find((x) => x.id === termId) ?? terms[0];
   const u = data.underlying;
   const market = data.markets.find((m) => m.symbol === u.symbol);
   const depthUsd = data.markets.reduce((a, m) => a + m.depthUsdc, 0);
   const marketOf = (symbol: string) => data.markets.find((m) => m.symbol === symbol);
-  if (!t || !market) return <ErrorState message="No live terms to underwrite on this market." next="Pick another market from the terms page." />;
+  if (elsewhere) return <Loading what={`the deepest live term, ${elsewhere.market}`} />;
+  if (!t || !market) return <Empty title="Nothing is quoted to underwrite right now." action="The quoter posts new terms every tick; this page refreshes on its own and the form appears the moment one is live." cta={<Link className="btn secondary" href="/markets">See the markets</Link>} />;
   const myAsk = ask ?? Number((t.ask || 0.5).toFixed(4));
   const m = commitMath(side, t.strike, myAsk, size);
   const sym = u.symbol;
@@ -216,7 +229,7 @@ function UnderwriteInner() {
           </div>
           <div className="wside" role="tablist">
             {([["put", "Floors", "get paid to buy lower"], ["call", "Upsides", "get paid to sell higher"]] as [Side, string, string][]).map(([id, label, sub]) => (
-              <button key={id} role="tab" aria-selected={side === id} className={side === id ? "on" : ""} onClick={() => { setSide(id); setTermId(null); setAsk(null); tx.reset(); }}><b>{label}</b><span>{sub}</span></button>
+              <button key={id} role="tab" aria-selected={side === id} className={side === id ? "on" : ""} disabled={!live.some((x) => x.side === id)} title={live.some((x) => x.side === id) ? undefined : `Nothing quoted on this side of ${sym} right now`} onClick={() => { setSide(id); setTermId(null); setAsk(null); tx.reset(); }}><b>{label}</b><span>{live.some((x) => x.side === id) ? sub : "none quoted right now"}</span></button>
             ))}
           </div>
         </div>

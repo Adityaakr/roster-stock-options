@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, use, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, use, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnect } from "@/lib/connect";
 import { PayoffChart } from "@/components/payoff-chart";
@@ -41,10 +41,22 @@ function ActInner({ id }: { id: string }) {
   const [size, setSize] = useState(Math.max(0, Number(search.get("size"))) || DEFAULT_SIZE);
   const [expected, setExpected] = useState<number | null>(null);
 
+  // A link to a term that has expired or been closed forwards to the nearest live term of the same product on the
+  // same market (then the other side, then the market page), so an old link never ends on a dead page.
+  const router = useRouter();
+  const forward = useMemo(() => {
+    if (!data || data.terms.some((x) => x.id === id)) return null;
+    const live = data.terms.filter((x) => !x.halted && x.capacity > 0);
+    const near = (xs: typeof live) => [...xs].sort((a, b) => Math.abs(a.strike - (parsed?.strike ?? a.strike)) - Math.abs(b.strike - (parsed?.strike ?? b.strike)) || a.expiryTs - b.expiryTs)[0];
+    const best = near(live.filter((x) => x.side === parsed?.side)) ?? near(live);
+    return best ? `/trade/${best.id}` : `/markets/${data.underlying.symbol || ""}`;
+  }, [data, id, parsed?.side, parsed?.strike]);
+  useEffect(() => { if (forward) router.replace(forward); }, [forward, router]);
+
   if (error) return <ErrorState message={`Could not read the term: ${error}`} next="Reload the page." />;
   if (!data) return <Loading what="the term" />;
   const t = data.terms.find((x) => x.id === id);
-  if (!t) return <ErrorState message="This term is not live." next={<Link className="link" href="/markets">Back to the markets</Link>} />;
+  if (!t) return <Loading what="the nearest live term" />;
 
   const u = data.underlying;
   const market = data.markets.find((m) => m.symbol === u.symbol);

@@ -388,8 +388,33 @@ async function main() {
     await pullEvents();
     lastTick = Date.now();
     rosterAnswer = null;
+    if (!vaultsRefreshing) vaultsRefreshing = readVaults().catch(() => vaultsAnswer?.body ?? []).finally(() => { vaultsRefreshing = null; });
     if (blocked) console.warn(`[services] blocked on ${blocked}: the quoter cannot price (docs/OPERATOR.md)`);
   }
+
+  /** Every vault's balances and epoch records, read side by side; the tick keeps this warm so no request waits on the RPC. */
+  const readVaults = async (): Promise<unknown[]> => {
+    const all = [...vaultsLive].flatMap(([symbol, vs]) => vs.map((v) => ({ symbol, v })));
+    const out = await Promise.all(all.map(async ({ symbol, v }) => {
+      {
+        const epochs = v.epoch > 0 ? await reader.fetchEpochRecords(v.address, Array.from({ length: Math.min(v.epoch, 30) }, (_, i) => v.epoch - 1 - i)).catch(() => []) : [];
+        const [collateral, other] = await Promise.all([connection.getAccountInfo(v.collateralAta, "confirmed"), connection.getAccountInfo(v.otherAta, "confirmed")]);
+        return ({
+          symbol, address: v.address.toBase58(), kind: v.kind, halted: v.halted, manager: v.manager.toBase58(), shareMint: v.shareMint.toBase58(),
+          collateralMint: v.collateralMint.toBase58(), otherMint: v.otherMint.toBase58(), collateralAta: v.collateralAta.toBase58(), otherAta: v.otherAta.toBase58(),
+          collateralBalance: collateral ? collateral.data.readBigUInt64LE(64).toString() : "0", otherBalance: other ? other.data.readBigUInt64LE(64).toString() : "0",
+          epoch: v.epoch, epochStartTs: Number(v.epochStartTs), nextRollTs: Number(v.nextRollTs), rollIntervalSecs: Number(v.rollIntervalSecs),
+          totalShares: v.totalShares.toString(), lockedRaw: v.lockedRaw.toString(), pendingDepositRaw: v.pendingDepositRaw.toString(), pendingWithdrawShares: v.pendingWithdrawShares.toString(),
+          reservedCollateralRaw: v.reservedCollateralRaw.toString(), reservedOther: v.reservedOther.toString(), capPerSeriesLots6: v.capPerSeriesLots6.toString(), spreadBps: v.spreadBps,
+          lastMarkUsdcPerLot: v.lastMarkUsdcPerLot.toString(), markBandBps: v.markBandBps, epochPremiumIn: v.epochPremiumIn.toString(), epochBuybackOut: v.epochBuybackOut.toString(), epochAssignedLots6: v.epochAssignedLots6.toString(),
+          navPerShare1e6: v.navPerShare1e6.toString(), epochPnlPerShare1e6: v.epochPnlPerShare1e6.toString(),
+          epochs: epochs.sort((a, b) => a.epoch - b.epoch).map((r) => ({ epoch: r.epoch, rolledAt: Number(r.rolledAt), navCollateralRaw: r.navCollateralRaw.toString(), navOther: r.navOther.toString(), markUsdcPerLot: r.markUsdcPerLot.toString(), totalSharesAfter: r.totalSharesAfter.toString(), premiumIn: r.premiumIn.toString(), buybackOut: r.buybackOut.toString(), assignedLots6: r.assignedLots6.toString(), pnlPerShare1e6: r.pnlPerShare1e6.toString(), sharesPerRaw1e12: r.sharesPerRaw1e12.toString(), collateralPerShare1e12: r.collateralPerShare1e12.toString(), otherPerShare1e12: r.otherPerShare1e12.toString() })),
+        });
+      }
+    }));
+    vaultsAnswer = { at: Date.now(), body: out };
+    return out;
+  };
 
   const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://x");
@@ -473,28 +498,6 @@ async function main() {
       if (url.pathname === "/v1/vaults") {
         // Every vault's balances and epoch records are live reads; one answer serves every page open for ten seconds,
         // and the vaults are read side by side rather than one after another.
-        const readVaults = async (): Promise<unknown[]> => {
-          const all = [...vaultsLive].flatMap(([symbol, vs]) => vs.map((v) => ({ symbol, v })));
-          const out = await Promise.all(all.map(async ({ symbol, v }) => {
-            {
-              const epochs = v.epoch > 0 ? await reader.fetchEpochRecords(v.address, Array.from({ length: Math.min(v.epoch, 30) }, (_, i) => v.epoch - 1 - i)).catch(() => []) : [];
-              const [collateral, other] = await Promise.all([connection.getAccountInfo(v.collateralAta, "confirmed"), connection.getAccountInfo(v.otherAta, "confirmed")]);
-              return ({
-                symbol, address: v.address.toBase58(), kind: v.kind, halted: v.halted, manager: v.manager.toBase58(), shareMint: v.shareMint.toBase58(),
-                collateralMint: v.collateralMint.toBase58(), otherMint: v.otherMint.toBase58(), collateralAta: v.collateralAta.toBase58(), otherAta: v.otherAta.toBase58(),
-                collateralBalance: collateral ? collateral.data.readBigUInt64LE(64).toString() : "0", otherBalance: other ? other.data.readBigUInt64LE(64).toString() : "0",
-                epoch: v.epoch, epochStartTs: Number(v.epochStartTs), nextRollTs: Number(v.nextRollTs), rollIntervalSecs: Number(v.rollIntervalSecs),
-                totalShares: v.totalShares.toString(), lockedRaw: v.lockedRaw.toString(), pendingDepositRaw: v.pendingDepositRaw.toString(), pendingWithdrawShares: v.pendingWithdrawShares.toString(),
-                reservedCollateralRaw: v.reservedCollateralRaw.toString(), reservedOther: v.reservedOther.toString(), capPerSeriesLots6: v.capPerSeriesLots6.toString(), spreadBps: v.spreadBps,
-                lastMarkUsdcPerLot: v.lastMarkUsdcPerLot.toString(), markBandBps: v.markBandBps, epochPremiumIn: v.epochPremiumIn.toString(), epochBuybackOut: v.epochBuybackOut.toString(), epochAssignedLots6: v.epochAssignedLots6.toString(),
-                navPerShare1e6: v.navPerShare1e6.toString(), epochPnlPerShare1e6: v.epochPnlPerShare1e6.toString(),
-                epochs: epochs.sort((a, b) => a.epoch - b.epoch).map((r) => ({ epoch: r.epoch, rolledAt: Number(r.rolledAt), navCollateralRaw: r.navCollateralRaw.toString(), navOther: r.navOther.toString(), markUsdcPerLot: r.markUsdcPerLot.toString(), totalSharesAfter: r.totalSharesAfter.toString(), premiumIn: r.premiumIn.toString(), buybackOut: r.buybackOut.toString(), assignedLots6: r.assignedLots6.toString(), pnlPerShare1e6: r.pnlPerShare1e6.toString(), sharesPerRaw1e12: r.sharesPerRaw1e12.toString(), collateralPerShare1e12: r.collateralPerShare1e12.toString(), otherPerShare1e12: r.otherPerShare1e12.toString() })),
-              });
-            }
-          }));
-          vaultsAnswer = { at: Date.now(), body: out };
-          return out;
-        };
         if (vaultsAnswer && Date.now() - vaultsAnswer.at < 10_000) return json(200, vaultsAnswer.body);
         // A stale answer goes out at once while one refresh runs behind it; only the very first call waits on the RPC.
         if (!vaultsRefreshing) vaultsRefreshing = readVaults().finally(() => { vaultsRefreshing = null; });

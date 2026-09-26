@@ -427,7 +427,7 @@ async function main() {
     };
     const json = (code: number, body: unknown) => send(code, stringify(body));
     try {
-      if (url.pathname === "/v1/health") return json(200, { ok: true, cluster, lastTick, blocked, tickMs: TICK_MS, program: ROSTER_PROGRAM_ID.toBase58(), hermesKeyed: hermes.keyed, rpc: rpcHosts(process.env.RPC_URL ?? "", process.env.NEXT_PUBLIC_CLUSTER ?? null) });
+      if (url.pathname === "/v1/health") return json(200, { ok: true, cluster, lastTick, blocked, tickMs: TICK_MS, program: ROSTER_PROGRAM_ID.toBase58(), hermesKeyed: hermes.keyed, rpc: rpcHosts(RPC, rpcCluster) });
       if (url.pathname === "/v1/roster") {
         if (rosterAnswer && Date.now() - rosterAnswer.at < 5_000) return send(200, rosterAnswer.body);
         const nowTs = Math.floor(Date.now() / 1000) + clockOffset;

@@ -17,7 +17,7 @@ import { Hermes, HermesError, estimateVol, readMultiplier, sessionAt, volFromRec
 import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
 import { Quoter, DEFAULT_QUOTER, VaultQuoter, DEFAULT_VAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
-import { failoverFetch, loadSecretKey, mapLimit, nextExpiries, rpcEndpoints, rpcState } from "@roster/core";
+import { failoverFetch, loadSecretKey, mapLimit, nextExpiries, rpcEndpoints, rpcHosts, rpcState } from "@roster/core";
 import { issuerMark, jupiterPrice, launchSet, refreshSnapshots, snapshotOf, snapshotPrice, xstocksQuote, preipoTokens } from "./registry";
 import { changePct, tokenHistory, type Candle, type Pool } from "@roster/registry";
 
@@ -427,7 +427,7 @@ async function main() {
     };
     const json = (code: number, body: unknown) => send(code, stringify(body));
     try {
-      if (url.pathname === "/v1/health") return json(200, { ok: true, cluster, lastTick, blocked, tickMs: TICK_MS, program: ROSTER_PROGRAM_ID.toBase58(), hermesKeyed: hermes.keyed });
+      if (url.pathname === "/v1/health") return json(200, { ok: true, cluster, lastTick, blocked, tickMs: TICK_MS, program: ROSTER_PROGRAM_ID.toBase58(), hermesKeyed: hermes.keyed, rpc: rpcHosts(process.env.RPC_URL ?? "", process.env.NEXT_PUBLIC_CLUSTER ?? null) });
       if (url.pathname === "/v1/roster") {
         if (rosterAnswer && Date.now() - rosterAnswer.at < 5_000) return send(200, rosterAnswer.body);
         const nowTs = Math.floor(Date.now() / 1000) + clockOffset;

@@ -48,7 +48,7 @@ export interface ServicesVault {
 }
 export interface ServicesVaultBid { series: string; bidPerLot: string; maxLots6: string; postedAt: number; expiresAt: number }
 export interface ServicesVaultPosition { shares: string; queuedDepositRaw: string; queuedDepositEpoch: number | null; queuedWithdrawShares: string; queuedWithdrawEpoch: number | null }
-export interface ServicesHealth { ok: boolean; cluster: string; lastTick: number; blocked: string | null; program: string; hermesKeyed: boolean }
+export interface ServicesHealth { ok: boolean; cluster: string; lastTick: number; blocked: string | null; program: string; hermesKeyed: boolean; rpc?: string[] }
 
 async function get<T>(path: string, timeoutMs = TIMEOUT_MS): Promise<T> {
   const res = await fetch(`${SERVICES_URL}${path}`, { cache: "no-store", signal: AbortSignal.timeout(timeoutMs) });

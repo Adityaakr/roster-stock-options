@@ -9,8 +9,12 @@ const PUBLIC: Record<string, string> = { devnet: "https://api.devnet.solana.com"
 
 export function rpcEndpoints(primary: string, cluster: string | null): string[] {
   const extra = (process.env.RPC_FALLBACK_URLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  // A Helius key, when the host has one, is a keyed fallback for free: a second provider before the public endpoint.
+  const heliusKey = process.env.HELIUS_API_KEY?.trim();
+  const helius = heliusKey && (cluster === "devnet" || cluster === "mainnet") ? [`https://${cluster}.helius-rpc.com/?api-key=${heliusKey}`] : [];
+  const devnetExtra = cluster === "devnet" && process.env.DEVNET_RPC_URL ? [process.env.DEVNET_RPC_URL] : [];
   const pub = cluster && PUBLIC[cluster] ? [PUBLIC[cluster]!] : [];
-  return [...new Set([primary, ...extra, ...pub])];
+  return [...new Set([primary, ...extra, ...helius, ...devnetExtra, ...pub])];
 }
 
 const isPublic = (url: string) => Object.values(PUBLIC).some((p) => url.startsWith(p));
@@ -34,6 +38,10 @@ function pacer(perSecond: number): () => Promise<void> {
 export function failoverFetch(urls: string[], timeoutMs = 15_000): (url: string | URL | Request, init?: RequestInit) => Promise<Response> {
   let preferred = 0;
   let preferredSince = 0;
+  // An endpoint that refused for a reason that will not clear in seconds (a spent monthly quota, a billing stop, a
+  // revoked key) is skipped for ten minutes rather than retried on every read.
+  const benchedUntil = urls.map(() => 0);
+  const QUOTA = /capacity|quota|exceeded|billing|upgrade|credits|plan limit|unauthori[sz]ed|forbidden|invalid api key/i;
   const warned = new Set<number>();
   const pace = urls.map((u) => (isPublic(u) ? pacer(8) : null));
   const name = (u: string) => u.replace(/\?.*$/, "").slice(0, 48);
@@ -42,9 +50,12 @@ export function failoverFetch(urls: string[], timeoutMs = 15_000): (url: string 
     if (preferred !== 0 && Date.now() - preferredSince > 30_000) preferred = 0;
     let last: Response | null = null;
     let lastErr: unknown = null;
+    const now = Date.now();
+    const anyOpen = benchedUntil.some((t) => t <= now);
     for (let i = 0; i < urls.length; i++) {
       const at = (preferred + i) % urls.length;
       const url = urls[at]!;
+      if (anyOpen && benchedUntil[at]! > now) continue;
       // Three attempts on every endpoint: a keyed endpoint's 429 is a burst limit that clears in well under a second,
       // so a short wait there beats a detour to the throttled public endpoint. The public one waits longer.
       const attempts = 3;
@@ -52,8 +63,14 @@ export function failoverFetch(urls: string[], timeoutMs = 15_000): (url: string 
         try {
           await pace[at]?.();
           const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
-          if (res.status === 429 || res.status >= 500) {
+          if (res.status === 429 || res.status === 401 || res.status === 403 || res.status >= 500) {
             last = res;
+            const why = res.status >= 500 ? "" : await res.clone().text().catch(() => "");
+            if (res.status === 401 || res.status === 403 || QUOTA.test(why)) {
+              benchedUntil[at] = Date.now() + 10 * 60_000;
+              console.warn(`[rpc] ${name(url)} refused (${res.status}${why ? `: ${why.slice(0, 80)}` : ""}); skipping it for ten minutes`);
+              break;
+            }
             if (n < attempts - 1) { await new Promise((r) => setTimeout(r, pace[at] ? 1500 * (n + 1) : 250 * (n + 1) + Math.random() * 200)); continue; }
             if (!warned.has(at)) { warned.add(at); console.warn(`[rpc] ${name(url)} answered ${res.status}; trying the next endpoint`); }
             break;

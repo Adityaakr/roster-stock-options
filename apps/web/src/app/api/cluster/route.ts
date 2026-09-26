@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rpcHosts } from "@roster/core";
 import { services } from "@/lib/services";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export async function GET() {
     const h = await services.health();
     const cluster = h.cluster === "fork" ? "fork" : h.cluster === "devnet" ? "devnet" : "mainnet";
     return NextResponse.json(
-      { cluster, label: LABEL[cluster], programDeployed: !!h.program, rpcReachable: true, explorer: EXPLORER[cluster] ?? null, blocked: h.blocked, pythKeyed: !!h.hermesKeyed },
+      { cluster, label: LABEL[cluster], programDeployed: !!h.program, rpcReachable: true, explorer: EXPLORER[cluster] ?? null, blocked: h.blocked, pythKeyed: !!h.hermesKeyed, rpc: rpcHosts(process.env.RPC_URL ?? "", process.env.NEXT_PUBLIC_CLUSTER ?? null) },
       { headers: { "cache-control": "public, s-maxage=10, stale-while-revalidate=60" } }
     );
   } catch {

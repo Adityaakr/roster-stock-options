@@ -100,7 +100,7 @@ async function main() {
   const indexer = new Indexer(connection, reader, store, meta);
   /*
    * Every client reads a market's series from the addresses the indexer learned from SeriesCreated, not from a
-   * program-wide scan: Alchemy's free tier, which is what a devnet deployment runs on, refuses getProgramAccounts.
+   * program-wide scan: a free keyed devnet tier can refuse or throttle getProgramAccounts.
    * A series the store has not seen yet is picked up on the next events pull, seconds later.
    */
   for (const client of [reader, quoterClient, keeperClient]) {

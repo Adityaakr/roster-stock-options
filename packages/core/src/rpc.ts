@@ -12,9 +12,17 @@ export function rpcEndpoints(primary: string, cluster: string | null): string[] 
   // A Helius key, when the host has one, is a keyed fallback for free: a second provider before the public endpoint.
   const heliusKey = process.env.HELIUS_API_KEY?.trim();
   const helius = heliusKey && (cluster === "devnet" || cluster === "mainnet") ? [`https://${cluster}.helius-rpc.com/?api-key=${heliusKey}`] : [];
-  const devnetExtra = cluster === "devnet" && process.env.DEVNET_RPC_URL ? [process.env.DEVNET_RPC_URL] : [];
+  const named = [process.env.HELIUS_RPC_URL, process.env.HELIUS_URL, cluster === "devnet" ? process.env.DEVNET_RPC_URL : process.env.MAINNET_RPC_URL].map((u) => u?.trim()).filter((u): u is string => !!u && /^https?:\/\//.test(u));
   const pub = cluster && PUBLIC[cluster] ? [PUBLIC[cluster]!] : [];
-  return [...new Set([primary, ...extra, ...helius, ...devnetExtra, ...pub])];
+  // Keyed endpoints first, in the order given, and every public endpoint last, even when RPC_URL names the public
+  // one: it throttles account reads by hanging, so it is only ever the last resort.
+  const all = [...new Set([primary, ...extra, ...helius, ...named, ...pub].filter(Boolean))];
+  return [...all.filter((u) => !isPublic(u)), ...all.filter((u) => isPublic(u))];
+}
+
+/** The hosts of the endpoint chain, never their keys or paths: for a health route to show what a deployment reads. */
+export function rpcHosts(primary: string, cluster: string | null): string[] {
+  return rpcEndpoints(primary, cluster).map((u) => { try { return new URL(u).host; } catch { return "unparseable"; } });
 }
 
 const isPublic = (url: string) => Object.values(PUBLIC).some((p) => url.startsWith(p));

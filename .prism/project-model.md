@@ -42,6 +42,6 @@ pnpm workspace. `programs/roster_finance` (Anchor 1.2, zero-copy `Series`, 18 in
 
 ## Lessons (continued)
 - Railway: no `VOLUME` in a Dockerfile (attach a volume in the UI); the web image needs `scripts/` because the web tsconfig type-checks the e2e specs; `NEXT_PUBLIC_*` are build args, declare them with `ARG` in `Dockerfile.web`.
-- Alchemy's free devnet tier refuses `getProgramAccounts` and throttles hard when two processes share the key; the public devnet RPC serves filtered scans but rate-limits connections. Never run a local services process against the same key as the hosted one.
+- A free keyed devnet tier can refuse `getProgramAccounts` and throttles hard when two processes share the key (Alchemy was dropped for this on 2026-09-26; Helius is the keyed endpoint); the public devnet RPC serves filtered scans but rate-limits connections. Never run a local services process against the same key as the hosted one.
 - Framer `whileInView` never fires for an element that starts almost fully outside a clipped row (a 290px slide in a 330px column); on narrow screens the stylesheet pins the transform (`.slidein`).
 - The wallet-adapter modal folds every adapter but the first "Installed" one behind "More options"; the browser journeys expand it before picking the burner.

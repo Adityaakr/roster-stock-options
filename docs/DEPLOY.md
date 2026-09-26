@@ -30,6 +30,7 @@ Deploy `Dockerfile.services`, or run `pnpm tsx packages/services/src/main.ts` un
 | --- | --- |
 | `SERVICES_URL` | the services' public URL. The app calls it from the server only |
 | `RPC_URL` | the same RPC as the services. Used to build and relay transactions, and by `/api/rpc` |
+| `RPC_FALLBACK_URLS` | comma-separated keyed endpoints tried when `RPC_URL` refuses. **Set at least one on both services.** The public cluster endpoint is the last resort and throttles account reads by hanging, so it cannot carry the app alone. `HELIUS_API_KEY` is added to the chain automatically when set. An endpoint that refuses for a spent quota, billing or a bad key is skipped for ten minutes |
 | `NEXT_PUBLIC_CLUSTER` | `devnet` or `mainnet`. On devnet it also offers the faucet |
 | `NEXT_PUBLIC_PRIVY_APP_ID` | the Privy app id. Email login and Solana wallets (Phantom, Solflare, Backpack, detected wallets, WalletConnect) through Privy's modal. In the Privy dashboard enable Email and Wallet, Solana, and add the site's domain |
 | `NEXT_PUBLIC_BURNER_WALLET` | leave unset. `1` adds a throwaway burner wallet for the browser journeys on a test cluster |

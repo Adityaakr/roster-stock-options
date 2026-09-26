@@ -64,8 +64,9 @@ export function failoverFetch(urls: string[], timeoutMs = 15_000): (url: string 
           await pace[at]?.();
           const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
           if (res.status === 429 || res.status === 401 || res.status === 403 || res.status >= 500) {
-            last = res;
-            const why = res.status >= 500 ? "" : await res.clone().text().catch(() => "");
+            // Read the refusal once and keep a fresh copy: a body read twice is unusable to whoever gets `last`.
+            const why = await res.text().catch(() => "");
+            last = new Response(why, { status: res.status, statusText: res.statusText, headers: res.headers });
             if (res.status === 401 || res.status === 403 || QUOTA.test(why)) {
               benchedUntil[at] = Date.now() + 10 * 60_000;
               console.warn(`[rpc] ${name(url)} refused (${res.status}${why ? `: ${why.slice(0, 80)}` : ""}); skipping it for ten minutes`);

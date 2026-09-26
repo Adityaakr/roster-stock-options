@@ -157,6 +157,12 @@ function PositionRow({ p, market, nowTs, keeperFeeUsd, programDeployed, autoExer
           <KV items={[
             { k: "Premium paid", v: <span className="mono">${usdSmart(p.premiumPaid)}</span> },
             { k: "Intrinsic value now", v: <span className={`mono ${value !== null && value > 0 ? "up" : ""}`}>{!market ? "reading…" : value === null ? "no price yet" : value > 0 ? `$${usdSmart(value)}` : "$0, out of the money"}</span> },
+            ...(market && mark !== null ? [{ k: "Mark now", v: (() => {
+              // Where the price is against the strike and the break-even, in the direction this contract needs.
+              const be = p.side === "call" ? p.strike + p.premiumPaid / Math.max(1, p.shares) : p.strike - p.premiumPaid / Math.max(1, p.shares);
+              const pct = (x: number) => `${x >= mark ? "+" : "−"}${Math.abs((x / mark - 1) * 100).toFixed(1)}%`;
+              return <span className="mono">${usd(mark)} · {itm ? "past the strike" : `strike ${pct(p.strike)} away`} · break-even ${usd(be)} ({pct(be)})</span>;
+            })() }] : []),
             { k: "Exercising requires", v: <span className="mono">{words}</span> },
             { k: "At expiry", v: autoExerciseLive ? (p.autoExercise ? `auto-exercised in the last hour if in the money by more than $${usd(keeperFeeUsd)}, fee paid by the protocol` : "nothing happens unless you exercise; turn on auto-exercise to have it done for you") : "exercise yourself before expiry; an unexercised contract expires worthless" },
             { k: "Bought", v: <span className="mono">{p.signature ? `${p.signature.slice(0, 8)}…${p.signature.slice(-8)}` : "no signature on this cluster"}</span> },

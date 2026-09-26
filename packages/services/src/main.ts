@@ -17,7 +17,7 @@ import { Hermes, HermesError, estimateVol, readMultiplier, sessionAt, volFromRec
 import { Indexer, SqliteStore, type MarketMeta } from "@roster/indexer";
 import { Quoter, DEFAULT_QUOTER, VaultQuoter, DEFAULT_VAULT_QUOTER } from "@roster/quoter";
 import { Keeper, DEFAULT_KEEPER } from "@roster/keeper";
-import { failoverFetch, loadSecretKey, mapLimit, nextExpiries, rpcEndpoints, rpcHosts, rpcState } from "@roster/core";
+import { failoverFetch, loadSecretKey, mapLimit, nextExpiries, rpcEndpoints, rpcHosts, rpcState, RELAY_METHODS } from "@roster/core";
 import { issuerMark, jupiterPrice, launchSet, refreshSnapshots, snapshotOf, snapshotPrice, xstocksQuote, preipoTokens } from "./registry";
 import { changePct, tokenHistory, type Candle, type Pool } from "@roster/registry";
 
@@ -416,8 +416,27 @@ async function main() {
     return out;
   };
 
+  // The web app's read and send path when its own RPC settings fail it: allowed methods only, over this process's chain.
+  const relayFetch = failoverFetch(rpcEndpoints(RPC, rpcCluster), 10_000);
   const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://x");
+    if (url.pathname === "/v1/rpc" && req.method === "POST") {
+      const chunks: Buffer[] = [];
+      let size = 0;
+      for await (const c of req) { size += (c as Buffer).length; if (size > 256 * 1024) { res.writeHead(413).end(); return; } chunks.push(c as Buffer); }
+      const raw = Buffer.concat(chunks).toString("utf8");
+      let calls: { method?: unknown }[];
+      try { const b = JSON.parse(raw) as unknown; calls = Array.isArray(b) ? (b as { method?: unknown }[]) : [b as { method?: unknown }]; } catch { res.writeHead(400, { "content-type": "application/json" }).end('{"error":"not JSON"}'); return; }
+      if (!calls.length || calls.some((c) => typeof c.method !== "string" || !RELAY_METHODS.has(c.method))) { res.writeHead(403, { "content-type": "application/json" }).end('{"error":"method not relayed"}'); return; }
+      try {
+        const r = await relayFetch(RPC, { method: "POST", headers: { "content-type": "application/json" }, body: raw });
+        const text = await r.text();
+        res.writeHead(r.status, { "content-type": "application/json" }).end(text);
+      } catch (e) {
+        res.writeHead(502, { "content-type": "application/json" }).end(JSON.stringify({ error: (e as Error).message }));
+      }
+      return;
+    }
     const stringify = (body: unknown) => JSON.stringify(body, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
     // Answers above a kilobyte go out gzipped when the caller accepts it: the roster is a few hundred KB of JSON.
     const gzipOk = /\bgzip\b/.test(String(req.headers["accept-encoding"] ?? ""));

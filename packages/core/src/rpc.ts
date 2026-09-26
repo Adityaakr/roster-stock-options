@@ -7,7 +7,10 @@
  */
 const PUBLIC: Record<string, string> = { devnet: "https://api.devnet.solana.com", mainnet: "https://api.mainnet-beta.solana.com" };
 
-export function rpcEndpoints(primary: string, cluster: string | null): string[] {
+/** Endpoints this deployment no longer uses: Alchemy's devnet quota ran out on 2026-09-26 and it was dropped. */
+const DROPPED = /alchemy\.com/i;
+
+export function rpcEndpoints(primary: string, cluster: string | null, relay: string | null = null): string[] {
   const extra = (process.env.RPC_FALLBACK_URLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   // A Helius key, when the host has one, is a keyed fallback for free: a second provider before the public endpoint.
   const heliusKey = process.env.HELIUS_API_KEY?.trim();
@@ -16,14 +19,24 @@ export function rpcEndpoints(primary: string, cluster: string | null): string[] 
   const pub = cluster && PUBLIC[cluster] ? [PUBLIC[cluster]!] : [];
   // Keyed endpoints first, in the order given, and every public endpoint last, even when RPC_URL names the public
   // one: it throttles account reads by hanging, so it is only ever the last resort.
-  const all = [...new Set([primary, ...extra, ...helius, ...named, ...pub].filter(Boolean))];
-  return [...all.filter((u) => !isPublic(u)), ...all.filter((u) => isPublic(u))];
+  const all = [...new Set([primary, ...extra, ...helius, ...named, ...pub].filter(Boolean))].filter((u) => !DROPPED.test(u));
+  // A relay (the services' read path, over their own keyed endpoint) goes after this host's keyed endpoints and before
+  // the public one, so the app works whatever its own RPC settings say.
+  return [...all.filter((u) => !isPublic(u)), ...(relay ? [relay] : []), ...all.filter((u) => isPublic(u))];
 }
 
 /** The hosts of the endpoint chain, never their keys or paths: for a health route to show what a deployment reads. */
-export function rpcHosts(primary: string, cluster: string | null): string[] {
-  return rpcEndpoints(primary, cluster).map((u) => { try { return new URL(u).host; } catch { return "unparseable"; } });
+export function rpcHosts(primary: string, cluster: string | null, relay: string | null = null): string[] {
+  return rpcEndpoints(primary, cluster, relay).map((u) => { try { const x = new URL(u); return u === relay ? `${x.host} (services relay)` : x.host; } catch { return "unparseable"; } });
 }
+
+/** JSON-RPC methods a relay forwards: reads, simulation and sending a signed transaction. Nothing that needs a key. */
+export const RELAY_METHODS = new Set([
+  "getAccountInfo", "getBalance", "getBlockHeight", "getEpochInfo", "getFeeForMessage", "getGenesisHash", "getLatestBlockhash",
+  "getMinimumBalanceForRentExemption", "getMultipleAccounts", "getRecentPrioritizationFees", "getSignatureStatuses",
+  "getSignaturesForAddress", "getSlot", "getTokenAccountBalance", "getTokenAccountsByOwner", "getTokenSupply", "getTransaction",
+  "getVersion", "isBlockhashValid", "getAddressLookupTable", "getTokenLargestAccounts", "simulateTransaction", "sendTransaction"
+]);
 
 const isPublic = (url: string) => Object.values(PUBLIC).some((p) => url.startsWith(p));
 

@@ -1,4 +1,5 @@
 import { failoverFetch, rpcEndpoints } from "@roster/core";
+import { SERVICES_URL } from "./services";
 import "server-only";
 import { createHash } from "node:crypto";
 import { AddressLookupTableAccount, ComputeBudgetProgram, Connection, PublicKey, Transaction, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
@@ -21,8 +22,13 @@ const JUPITER_PROGRAM = new PublicKey("JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTa
  */
 let shared: Connection | null = null;
 export function connection(): Connection {
-  shared ??= new Connection(RPC_URL, { commitment: "confirmed", disableRetryOnRateLimit: true, fetch: failoverFetch(rpcEndpoints(RPC_URL, process.env.NEXT_PUBLIC_CLUSTER ?? null), 8_000) });
+  shared ??= new Connection(RPC_URL, { commitment: "confirmed", disableRetryOnRateLimit: true, fetch: failoverFetch(rpcEndpoints(RPC_URL, process.env.NEXT_PUBLIC_CLUSTER ?? null, servicesRelay()), 8_000) });
   return shared;
+}
+
+/** The services' relay, when the services are remote: their keyed endpoint carries this app's reads if its own fail. */
+export function servicesRelay(): string | null {
+  return /^https?:\/\//.test(SERVICES_URL) && !/127\.0\.0\.1|localhost/.test(SERVICES_URL) ? `${SERVICES_URL.replace(/\/$/, "")}/v1/rpc` : null;
 }
 
 /** A market's config changes only through the authority; ten seconds of reuse spares a read on every build. */

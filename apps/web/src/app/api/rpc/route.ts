@@ -1,4 +1,5 @@
 import { failoverFetch, rpcEndpoints } from "@roster/core";
+import { servicesRelay } from "@/lib/tx-server";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ const READS = new Set([
 ]);
 const MAX_BODY = 256 * 1024;
 // One failover per process, so its pacing and its memory of which endpoint answers cover every browser read.
-const relay = failoverFetch(rpcEndpoints(process.env.RPC_URL ?? process.env.DEVNET_RPC_URL ?? "http://127.0.0.1:8899", process.env.NEXT_PUBLIC_CLUSTER ?? null), 12_000);
+const relay = failoverFetch(rpcEndpoints(process.env.RPC_URL ?? process.env.DEVNET_RPC_URL ?? "http://127.0.0.1:8899", process.env.NEXT_PUBLIC_CLUSTER ?? null, servicesRelay()), 12_000);
 
 const RPC = process.env.RPC_URL ?? process.env.DEVNET_RPC_URL ?? "http://127.0.0.1:8899";
 

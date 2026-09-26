@@ -14,9 +14,35 @@ export const RPC_URL = process.env.RPC_URL ?? process.env.FORK_RPC_URL ?? "http:
 
 const JUPITER_PROGRAM = new PublicKey("JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4");
 
-/** Every RPC read is bounded: a hung RPC must not hold a route open. */
+/**
+ * One connection per server process, so the failover's pacing and its memory of which endpoint answers are shared by
+ * every request. Every read is bounded at eight seconds per attempt, and web3's own rate-limit retry loop (which
+ * doubles its wait up to eight seconds, five times) is off: the failover already retries a 429 briefly and moves on.
+ */
+let shared: Connection | null = null;
 export function connection(): Connection {
-  return new Connection(RPC_URL, { commitment: "confirmed", fetch: failoverFetch(rpcEndpoints(RPC_URL, process.env.NEXT_PUBLIC_CLUSTER ?? null), 10_000) });
+  shared ??= new Connection(RPC_URL, { commitment: "confirmed", disableRetryOnRateLimit: true, fetch: failoverFetch(rpcEndpoints(RPC_URL, process.env.NEXT_PUBLIC_CLUSTER ?? null), 8_000) });
+  return shared;
+}
+
+/** A market's config changes only through the authority; ten seconds of reuse spares a read on every build. */
+const marketCache = new Map<string, { at: number; value: Awaited<ReturnType<RosterClient["fetchMarket"]>> }>();
+async function marketOf(client: RosterClient, mint: PublicKey) {
+  const k = mint.toBase58();
+  const hit = marketCache.get(k);
+  if (hit && hit.value && Date.now() - hit.at < 10_000) return hit.value;
+  const value = await client.fetchMarket(mint);
+  marketCache.set(k, { at: Date.now(), value });
+  return value;
+}
+
+/** A build that has not finished in this long fails with a message that says to try again, instead of hanging. */
+const BUILD_DEADLINE_MS = 25_000;
+function deadline<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const h = setTimeout(() => reject(new Error("timeout: the network is busy and the transaction could not be built in time")), ms);
+    p.then((v) => { clearTimeout(h); resolve(v); }, (e: unknown) => { clearTimeout(h); reject(e); });
+  });
 }
 
 /**
@@ -83,12 +109,20 @@ function safeKey(s: string): boolean {
   try { new PublicKey(s); return true; } catch { return false; }
 }
 
-export async function buildTransaction(body: unknown): Promise<BuildResponse> {
+export function buildTransaction(body: unknown): Promise<BuildResponse> {
+  return deadline(buildTransactionInner(body), BUILD_DEADLINE_MS);
+}
+
+async function buildTransactionInner(body: unknown): Promise<BuildResponse> {
   const req = parseBuildRequest(body);
   const wallet = new PublicKey(req.wallet);
   const client = new RosterClient(connection(), readOnlyWallet(wallet));
   if (req.kind === "protected_buy") return buildProtectedBuy(client, wallet, req);
-  const market = await client.fetchMarket(new PublicKey(req.mint));
+  // The market and the series are read side by side; the market is reused for ten seconds.
+  const [market, seriesRead] = await Promise.all([
+    marketOf(client, new PublicKey(req.mint)),
+    req.series && req.kind !== "vault_deposit" && req.kind !== "vault_request_withdraw" && req.kind !== "vault_claim" ? client.fetchSeries(new PublicKey(req.series)) : Promise.resolve(null)
+  ]);
   if (!market) throw new Error("market not listed");
   // Part 3: the vault's depositor side needs no series, only the vault's kind.
   if (req.kind === "vault_deposit" || req.kind === "vault_request_withdraw" || req.kind === "vault_claim") {
@@ -115,7 +149,7 @@ export async function buildTransaction(body: unknown): Promise<BuildResponse> {
     return { transaction: preparedV.tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64"), lastValidBlockHeight: preparedV.lastValidBlockHeight, summary: vsummary };
   }
   if (!req.series) throw new Error("series is required");
-  const series = await client.fetchSeries(new PublicKey(req.series));
+  const series = seriesRead;
   if (!series) throw new Error("series not found: it may have closed");
   if (!series.market.equals(market.address)) throw new Error("series does not belong to this market");
   let tx: Transaction;

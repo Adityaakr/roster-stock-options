@@ -44,15 +44,32 @@ export function classify(message: string): TxFailure {
   if (has("Expired") || has("NotExpired") || has("block height exceeded")) return { code: "expired", what: has("block height") ? "The transaction expired before the network saw it." : "The series has expired.", next: has("block height") ? "The network was congested. Try again." : "Expired positions settle by the rules on the term; nothing more to sign." };
   if (has("User rejected") || has("rejected the request") || has("WalletSignTransactionError")) return { code: "rejected", what: "The wallet declined to sign.", next: "Nothing was sent. Sign to continue." };
   if (has("not deployed") || has("program that does not exist") || has("ProgramAccountNotFound")) return { code: "not_deployed", what: "The program is not deployed on this cluster.", next: "Nothing can be signed here." };
-  if (has("fetch") || has("429") || has("503") || has("timeout") || has("Blockhash not found")) return { code: "rpc", what: "The RPC did not answer in time.", next: "Wait a moment and try again; the transaction was not sent twice." };
+  if (has("fetch") || has("429") || has("503") || has("timeout") || has("aborted") || has("Blockhash not found")) return { code: "rpc", what: "The network is busy and did not answer in time.", next: "Nothing was signed or sent twice. Try again; it usually goes through on the next attempt." };
   return { code: "other", what: m.length > 220 ? m.slice(0, 220) + "…" : m, next: "Try again. If it repeats, the reason above names the program's check that failed." };
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  const j = (await res.json()) as T & { error?: string };
+/** Every call is bounded: a slow network ends in a message with a next step, never in a button that spins forever. */
+async function post<T>(path: string, body: unknown, timeoutMs: number): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) });
+  } catch (e) {
+    throw new Error((e as Error).name === "TimeoutError" || (e as Error).name === "AbortError" ? "timeout: the network did not answer in time" : `fetch failed: ${(e as Error).message}`);
+  }
+  const j = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (!res.ok) throw new Error(j.error ?? `HTTP ${res.status}`);
   return j;
+}
+
+/** Building touches only reads, so a build that hit a busy network is retried once, quietly, before the user sees it. */
+async function build(body: unknown): Promise<{ transaction: string; lastValidBlockHeight: number }> {
+  try {
+    return await post("/api/tx/build", body, 30_000);
+  } catch (e) {
+    if (classify((e as Error).message).code !== "rpc") throw e;
+    await new Promise((r) => setTimeout(r, 800));
+    return post("/api/tx/build", body, 30_000);
+  }
 }
 
 export function useTransaction(): { state: TxState; run: (req: TxRequest) => Promise<string | null>; reset: () => void } {
@@ -65,7 +82,7 @@ export function useTransaction(): { state: TxState; run: (req: TxRequest) => Pro
     }
     try {
       setState({ status: "building" });
-      const built = await post<{ transaction: string; lastValidBlockHeight: number }>("/api/tx/build", { ...req, wallet: publicKey.toBase58() });
+      const built = await build({ ...req, wallet: publicKey.toBase58() });
       setState({ status: "signing" });
       const bytes = Buffer.from(built.transaction, "base64");
       // A serialized transaction is [signature count][signatures][message]; a versioned message (Protected Buy, with
@@ -75,7 +92,9 @@ export function useTransaction(): { state: TxState; run: (req: TxRequest) => Pro
       const tx = versioned ? VersionedTransaction.deserialize(bytes) : Transaction.from(bytes);
       const signed = await signTransaction(tx);
       setState({ status: "sending" });
-      const { signature } = await post<{ signature: string }>("/api/tx/send", { signed: Buffer.from(signed.serialize()).toString("base64"), lastValidBlockHeight: built.lastValidBlockHeight });
+      // Sending waits for confirmation (up to ninety seconds on the server); never retried here, since a second send of
+      // a transaction that did land would only fail, and the signature is what the receipt shows.
+      const { signature } = await post<{ signature: string }>("/api/tx/send", { signed: Buffer.from(signed.serialize()).toString("base64"), lastValidBlockHeight: built.lastValidBlockHeight }, 110_000);
       setState({ status: "done", signature });
       return signature;
     } catch (e) {

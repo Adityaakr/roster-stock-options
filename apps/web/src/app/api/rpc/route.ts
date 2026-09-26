@@ -17,6 +17,8 @@ const READS = new Set([
   "getTokenSupply", "getTransaction", "getVersion", "isBlockhashValid",
 ]);
 const MAX_BODY = 256 * 1024;
+// One failover per process, so its pacing and its memory of which endpoint answers cover every browser read.
+const relay = failoverFetch(rpcEndpoints(process.env.RPC_URL ?? process.env.DEVNET_RPC_URL ?? "http://127.0.0.1:8899", process.env.NEXT_PUBLIC_CLUSTER ?? null), 12_000);
 
 const RPC = process.env.RPC_URL ?? process.env.DEVNET_RPC_URL ?? "http://127.0.0.1:8899";
 
@@ -40,7 +42,7 @@ export async function POST(req: Request) {
       return refusal((c as { id?: unknown }).id, `${typeof method === "string" ? method : "that method"} is not relayed; reads only, and transactions go through /api/tx/send`);
     }
   }
-  const res = await failoverFetch(rpcEndpoints(RPC, process.env.NEXT_PUBLIC_CLUSTER ?? null), 20_000)(RPC, { method: "POST", headers: { "content-type": "application/json" }, body: raw }).catch(() => null);
+  const res = await relay(RPC, { method: "POST", headers: { "content-type": "application/json" }, body: raw }).catch(() => null);
   if (!res) return NextResponse.json({ error: "the RPC did not answer" }, { status: 502 });
   const text = await res.text();
   return new NextResponse(text, { status: res.status, headers: { "content-type": "application/json" } });

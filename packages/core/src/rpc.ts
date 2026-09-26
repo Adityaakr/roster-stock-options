@@ -33,28 +33,32 @@ function pacer(perSecond: number): () => Promise<void> {
 /** A fetch for `@solana/web3.js`'s Connection that fails over across `urls`; the URL web3 passes is ignored. */
 export function failoverFetch(urls: string[], timeoutMs = 15_000): (url: string | URL | Request, init?: RequestInit) => Promise<Response> {
   let preferred = 0;
+  let preferredSince = 0;
   const warned = new Set<number>();
   const pace = urls.map((u) => (isPublic(u) ? pacer(8) : null));
   const name = (u: string) => u.replace(/\?.*$/, "").slice(0, 48);
   return async (_url, init) => {
+    // A fallback is a detour, not a new home: after thirty seconds the primary gets another chance.
+    if (preferred !== 0 && Date.now() - preferredSince > 30_000) preferred = 0;
     let last: Response | null = null;
     let lastErr: unknown = null;
     for (let i = 0; i < urls.length; i++) {
       const at = (preferred + i) % urls.length;
       const url = urls[at]!;
-      // The public endpoint gets three paced attempts before the next endpoint is tried; a keyed one gets one.
-      const attempts = pace[at] ? 3 : 1;
+      // Three attempts on every endpoint: a keyed endpoint's 429 is a burst limit that clears in well under a second,
+      // so a short wait there beats a detour to the throttled public endpoint. The public one waits longer.
+      const attempts = 3;
       for (let n = 0; n < attempts; n++) {
         try {
           await pace[at]?.();
           const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
           if (res.status === 429 || res.status >= 500) {
             last = res;
-            if (pace[at] && n < attempts - 1) { await new Promise((r) => setTimeout(r, 1500 * (n + 1))); continue; }
+            if (n < attempts - 1) { await new Promise((r) => setTimeout(r, pace[at] ? 1500 * (n + 1) : 250 * (n + 1) + Math.random() * 200)); continue; }
             if (!warned.has(at)) { warned.add(at); console.warn(`[rpc] ${name(url)} answered ${res.status}; trying the next endpoint`); }
             break;
           }
-          if (at !== preferred) { console.warn(`[rpc] now preferring ${name(url)}`); preferred = at; }
+          if (at !== preferred) { console.warn(`[rpc] now preferring ${name(url)}`); preferred = at; preferredSince = Date.now(); }
           rpcState.degraded = !!pace[at];
           return res;
         } catch (e) {

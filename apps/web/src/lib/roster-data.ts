@@ -1,6 +1,6 @@
 import "server-only";
 import { DEFAULT_SIZE, lots6ForShares, sharesOf, sessionAt, termId, walkAsks, type ExerciseEvent, type Market, type Position, type Receipt, type RosterData, type Session, type Term, type Tier, type Underlying, type Underwriter } from "./model";
-import { services, servicesReachable, type ServicesMarket, type ServicesRoster, type ServicesSeries } from "./services";
+import { services, type ServicesMarket, type ServicesRoster, type ServicesSeries } from "./services";
 import { freshSeries } from "./tx-server";
 import { readRegistry } from "@roster/registry";
 
@@ -259,7 +259,7 @@ export async function rosterData(selected?: string, fresh = false): Promise<Rost
 
 /** A wallet's positions across every market, with premium paid and exercised counts from its own events. */
 export async function walletPositions(wallet: string): Promise<{ positions: Position[]; history: Receipt[]; source: string }> {
-  if (!(await servicesReachable())) return { positions: [], history: [], source: RECONNECTING };
+  // No separate health probe: the two reads below are the check, and a failure is reported to the caller to retry.
   const [r, p] = await Promise.all([services.roster(), services.positions(wallet)]);
   const markets = new Map(r.markets.map((m) => [m.market, m]));
   const bought = new Map<string, { premium: number; signature: string | null }>();

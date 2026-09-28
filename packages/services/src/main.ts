@@ -144,6 +144,8 @@ async function main() {
   let protocolCache: Awaited<ReturnType<RosterClient["fetchProtocol"]>> | null = null;
   let rosterAnswer: { at: number; body: string } | null = null;
   let vaultsRefreshing: Promise<unknown[]> | null = null;
+  // Each wallet's positions answer, reused for four seconds: a page and its refresh button never cost two scans.
+  const positionsAnswers = new Map<string, { at: number; body: unknown }>();
   let blocked: string | null = null;
   // Realised vol per symbol, refreshed hourly: Benchmarks is a slow, keyed endpoint and vol does not move per tick.
   const volCache = new Map<string, { at: number; v: Awaited<ReturnType<typeof estimateVol>> }>();
@@ -467,19 +469,28 @@ async function main() {
       const pos = url.pathname.match(/^\/v1\/positions\/([1-9A-HJ-NP-Za-km-z]+)$/);
       if (pos) {
         const wallet = new PublicKey(pos[1]!);
-        // Read the chain's events before answering: a person who just signed reloads within seconds, and their own
-        // receipt arriving on the indexer's next scheduled pull is the difference between "done" and "did it work?".
-        await pullEvents();
+        const key = wallet.toBase58();
+        const hit = positionsAnswers.get(key);
+        if (hit && Date.now() - hit.at < 4_000) return json(200, hit.body);
+        // Give the chain's newest events a moment (a person who just signed reloads within seconds), but never more
+        // than a second and a half: the receipt then arrives on the next refresh instead of holding the whole page.
+        await Promise.race([pullEvents(), new Promise((r) => setTimeout(r, 1_500))]);
         const { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } = await import("@solana/spl-token");
         const { autoExercisePda } = await import("@roster/sdk");
-        const rows = store.series();
+        // Live series and those that expired in the last week: an older series has settled, and reading an account for
+        // every series ever indexed grows by a grid every day on a cluster with daily expiries.
+        const since = Math.floor(Date.now() / 1000) + clockOffset - 7 * 86_400;
+        const rows = store.series().filter((row) => Number(row.expiry_ts) > since);
         // One RPC round trip for every position ATA, then one for the opt-ins of the positions that exist.
         const atas = rows.map((row) => getAssociatedTokenAddressSync(new PublicKey(row.position_mint), wallet, false, TOKEN_2022_PROGRAM_ID));
         const infos = await inChunks(connection, atas);
         const held = rows.map((row, i) => ({ row, amount: infos[i] ? infos[i]!.data.readBigUInt64LE(64) : 0n })).filter((x) => x.amount > 0n);
         const optIns = await inChunks(connection, held.map((x) => autoExercisePda(ROSTER_PROGRAM_ID, wallet, new PublicKey(x.row.address))));
         const out = held.map((x, i) => ({ series: x.row.address, market: x.row.market, side: x.row.side, strike_usdc_per_lot: x.row.strike_usdc_per_lot, expiry_ts: x.row.expiry_ts, position_mint: x.row.position_mint, lots6: x.amount.toString(), autoExercise: !!optIns[i] }));
-        return json(200, { wallet: wallet.toBase58(), positions: out, events: store.events({ wallet: wallet.toBase58(), limit: 100 }) });
+        const body = { wallet: key, positions: out, events: store.events({ wallet: key, limit: 100 }) };
+        positionsAnswers.set(key, { at: Date.now(), body });
+        if (positionsAnswers.size > 500) positionsAnswers.delete(positionsAnswers.keys().next().value!);
+        return json(200, body);
       }
       const th = url.pathname.match(/^\/v1\/history\/([1-9A-HJ-NP-Za-km-z]+)$/);
       if (th) {

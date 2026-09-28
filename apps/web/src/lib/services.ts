@@ -80,7 +80,7 @@ async function memo<T>(key: string, ttlMs: number, staleMs: number, fn: () => Pr
 export const services = {
   health: () => memo("health", 5_000, 30_000, () => get<ServicesHealth>("/v1/health")),
   roster: () => memo("roster", 4_000, 60_000, () => get<ServicesRoster>("/v1/roster")),
-  positions: (wallet: string) => get<ServicesPositions>(`/v1/positions/${wallet}`, 15_000),
+  positions: (wallet: string) => get<ServicesPositions>(`/v1/positions/${wallet}`, 25_000),
   vaults: () => memo("vaults", 5_000, 60_000, () => get<ServicesVault[]>("/v1/vaults", 15_000)),
   vaultBid: (vault: string, series: string) => get<ServicesVaultBid | null>(`/v1/vaults/${vault}/bid/${series}`),
   vaultPosition: (vault: string, wallet: string) => get<ServicesVaultPosition>(`/v1/vaults/${vault}/position/${wallet}`),

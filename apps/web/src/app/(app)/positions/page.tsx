@@ -24,9 +24,15 @@ export default function PositionsPage() {
   const cluster = useCluster();
   const { publicKey } = useWallet();
   const connect = useConnect();
-  const { positions, history, error: perror, reload } = usePositions();
+  const { positions, history, error: perror, loading, reload } = usePositions();
   const list = data?.cluster === "fixture" ? data.positions : positions;
   const markets = new Map((data?.markets ?? []).map((m) => [m.symbol, m]));
+  // The chain's clock when the roster has answered; until then, the time the page opened.
+  const [openedAt] = useState(() => Math.floor(Date.now() / 1000));
+  const nowTs = data?.nowTs ?? openedAt;
+  const open = (list ?? []).filter((p) => !p.expired).sort((a, b) => a.expiryTs - b.expiryTs);
+  const expired = (list ?? []).filter((p) => p.expired).sort((a, b) => b.expiryTs - a.expiryTs);
+  const row = (p: Position) => <PositionRow key={p.id} p={p} market={markets.get(p.market)} nowTs={nowTs} keeperFeeUsd={data?.keeperFeeUsd ?? 0} programDeployed={cluster.programDeployed} autoExerciseLive={data?.autoExerciseLive ?? false} onChange={reload} />;
 
   return (
     <div>
@@ -36,31 +42,51 @@ export default function PositionsPage() {
           <p className="body-sm">What you own across every market, what it is worth now, how long until expiry, and exactly what exercising requires.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="btn secondary sm" onClick={reload} data-testid="refresh">Refresh</button>
+          <button className="btn secondary sm" onClick={reload} disabled={loading || !publicKey} data-testid="refresh">{loading && list ? "Refreshing…" : "Refresh"}</button>
           <Link href="/markets" className="btn primary sm">Buy another</Link>
         </div>
       </div>
-      {error || perror ? <ErrorState message={`Could not read positions: ${error ?? perror}`} next="Reload the page." /> : null}
-      {!data && !error ? <Loading what="positions" /> : null}
-      {data && data.cluster !== "fixture" && !publicKey ? <Empty title="Connect a wallet" action="Positions are read from the wallet's position tokens, so there is nothing to show until one is connected." cta={<button className="btn primary" onClick={() => connect()}>Connect wallet</button>} /> : null}
-      {data && list && list.length === 0 && history.length === 0 && (publicKey || data.cluster === "fixture") ? <Empty title="No positions" action="Buy an Upside or a Floor from the terms and it appears here with its countdown and its exercise terms." cta={<Link href="/markets" className="btn primary">See the terms</Link>} /> : null}
-      {data && list && list.length > 0 ? (
+
+      {/* One state at a time: connect, loading, a failure that keeps retrying, then the positions. */}
+      {!publicKey && data?.cluster !== "fixture" ? (
+        <Empty title="Connect a wallet" action="Positions are read from the wallet's position tokens, so there is nothing to show until one is connected." cta={<button className="btn primary" onClick={() => connect()}>Connect wallet</button>} />
+      ) : list === null ? (
+        perror ? (
+          <ErrorState message="Your positions are taking longer than usual to load." next={<span>Retrying automatically. <button className="link" onClick={reload}>Try now</button></span>} />
+        ) : <Loading what="your positions" />
+      ) : (
         <>
-          <div className="grid-4" style={{ marginBottom: 16 }}>
-            <Stat k="Open positions" v={String(list.filter((p) => !p.expired).length)} s={list.some((p) => p.expired) ? `${list.filter((p) => p.expired).length} expired` : undefined} />
-            <Stat k="Premium paid" v={`$${usdSmart(list.reduce((a, p) => a + p.premiumPaid, 0))}`} s="the most these can lose, plus fees" />
-            <Stat k="In the money" v={String(list.filter((p) => { const m = markets.get(p.market); return m?.mark !== null && m?.mark !== undefined && inTheMoney(p.side, p.strike, m.mark); }).length)} s={`of ${list.length}, at the current marks`} />
-            {data.autoExerciseLive ? <Stat k="Auto-exercise on" v={String(list.filter((p) => p.autoExercise).length)} s="positions with the delegate enabled" /> : (() => {
-              const open = list.filter((p) => !p.expired).sort((a, b) => a.expiryTs - b.expiryTs);
-              const next = open[0];
-              return <Stat k="Next expiry" v={next ? countdown(next.expiryTs, data.nowTs) : "none"} s={next ? `${next.market} ${productName(next.side)}, exercise before then` : "no open positions"} />;
-            })()}
-          </div>
-          <div className="card">
-            {list.map((p) => <PositionRow key={p.id} p={p} market={markets.get(p.market)} nowTs={data.nowTs} keeperFeeUsd={data.keeperFeeUsd} programDeployed={cluster.programDeployed} autoExerciseLive={data.autoExerciseLive} onChange={reload} />)}
-          </div>
+          {perror ? <div className="msg" role="status" style={{ marginBottom: 12 }}>Showing your positions from the last successful read; refreshing in the background.</div> : null}
+          {error && !data ? <div className="msg" role="status" style={{ marginBottom: 12 }}>Prices are reconnecting; values fill in on their own.</div> : null}
+          {open.length === 0 && expired.length === 0 && history.length === 0 ? (
+            <Empty title="No positions" action="Buy an Upside or a Floor and it appears here with its countdown and exactly what exercising requires." cta={<Link className="btn primary" href="/markets">See the markets</Link>} />
+          ) : null}
+          {open.length > 0 || expired.length > 0 ? (
+            <div className="grid-4" style={{ marginBottom: 16 }}>
+              <Stat k="Open positions" v={String(open.length)} s={expired.length ? `${expired.length} expired this week` : undefined} />
+              <Stat k="Premium paid" v={`$${usdSmart(open.reduce((a, p) => a + p.premiumPaid, 0))}`} s="on open positions: the most they can lose" />
+              <Stat k="In the money" v={String(open.filter((p) => { const m = markets.get(p.market); return m?.mark !== null && m?.mark !== undefined && inTheMoney(p.side, p.strike, m.mark); }).length)} s={`of ${open.length}, at the current marks`} />
+              {data?.autoExerciseLive ? <Stat k="Auto-exercise on" v={String(open.filter((p) => p.autoExercise).length)} s="positions with the delegate enabled" /> : (
+                <Stat k="Next expiry" v={open[0] ? countdown(open[0].expiryTs, nowTs) : "none"} s={open[0] ? `${open[0].market} ${productName(open[0].side)}, exercise before then` : "no open positions"} />
+              )}
+            </div>
+          ) : null}
+          {open.length > 0 ? (
+            <div className="card" data-testid="open-positions">
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--line)" }} className="h6">Open · {open.length}</div>
+              {open.map(row)}
+            </div>
+          ) : expired.length > 0 ? (
+            <Empty title="No open positions" action="Everything you held has expired; the record is below." cta={<Link className="btn primary" href="/markets">See the markets</Link>} />
+          ) : null}
+          {expired.length > 0 ? (
+            <details className="card" style={{ marginTop: 16 }} data-testid="expired-positions">
+              <summary style={{ padding: "14px 20px", cursor: "pointer" }} className="h6">Expired · {expired.length}</summary>
+              {expired.map(row)}
+            </details>
+          ) : null}
         </>
-      ) : null}
+      )}
       {data && publicKey && history.length > 0 ? (
         <div className="card" style={{ marginTop: 16 }} data-testid="history">
           <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>

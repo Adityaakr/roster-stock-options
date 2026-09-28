@@ -17,6 +17,15 @@ describe("failoverFetch", () => {
     expect(calls.filter((u) => u.includes("backup")).length).toBe(5);
   });
 
+  it("benches Helius when its credits are spent (\"max usage reached\")", async () => {
+    const calls: string[] = [];
+    const spent = () => new Response(JSON.stringify({ jsonrpc: "2.0", error: { code: -32429, message: "max usage reached" } }), { status: 429 });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => { calls.push(url); return url.includes("helius") ? spent() : ok(); }));
+    const f = failoverFetch(["https://devnet.helius-rpc.com/?api-key=x", "https://backup.example/rpc"], 1_000);
+    for (let i = 0; i < 3; i++) expect((await f("x", { method: "POST" })).status).toBe(200);
+    expect(calls.filter((u) => u.includes("helius")).length).toBe(1);
+  });
+
   it("retries a keyed burst 429 on the same endpoint before detouring", async () => {
     let n = 0;
     const calls: string[] = [];

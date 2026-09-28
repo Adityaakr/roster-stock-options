@@ -62,7 +62,7 @@ export function failoverFetch(urls: string[], timeoutMs = 15_000): (url: string 
   // An endpoint that refused for a reason that will not clear in seconds (a spent monthly quota, a billing stop, a
   // revoked key) is skipped for ten minutes rather than retried on every read.
   const benchedUntil = urls.map(() => 0);
-  const QUOTA = /capacity|quota|exceeded|billing|upgrade|credits|plan limit|unauthori[sz]ed|forbidden|invalid api key/i;
+  const QUOTA = /capacity|quota|exceeded|billing|upgrade|credits|plan limit|max usage|usage reached|limit reached|unauthori[sz]ed|forbidden|invalid api key/i;
   const warned = new Set<number>();
   const pace = urls.map((u) => (isPublic(u) ? pacer(8) : null));
   const name = (u: string) => u.replace(/\?.*$/, "").slice(0, 48);

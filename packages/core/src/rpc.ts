@@ -65,6 +65,10 @@ export function failoverFetch(urls: string[], timeoutMs = 15_000): (url: string 
   const QUOTA = /capacity|quota|exceeded|billing|upgrade|credits|plan limit|max usage|usage reached|limit reached|unauthori[sz]ed|forbidden|invalid api key/i;
   const warned = new Set<number>();
   const pace = urls.map((u) => (isPublic(u) ? pacer(8) : null));
+  // A keyed plan's per-second limit, when the host states it (RPC_MAX_RPS): calls are spaced to stay under it rather
+  // than bouncing off it with 429s. One budget per process, shared by every caller of this fetch.
+  const keyedRps = Number(process.env.RPC_MAX_RPS ?? 0);
+  const keyedPace = urls.map((u) => (!isPublic(u) && keyedRps > 0 ? pacer(keyedRps) : null));
   const name = (u: string) => u.replace(/\?.*$/, "").slice(0, 48);
   return async (_url, init) => {
     // A fallback is a detour, not a new home: after thirty seconds the primary gets another chance.
@@ -83,6 +87,7 @@ export function failoverFetch(urls: string[], timeoutMs = 15_000): (url: string 
       for (let n = 0; n < attempts; n++) {
         try {
           await pace[at]?.();
+          await keyedPace[at]?.();
           const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
           if (res.status === 429 || res.status === 401 || res.status === 403 || res.status >= 500) {
             // Read the refusal once and keep a fresh copy: a body read twice is unusable to whoever gets `last`.
